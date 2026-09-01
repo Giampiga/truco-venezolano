@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Truco">
+  <rect width="512" height="512" rx="112" fill="#f7f1e6"/>
+  <rect x="84" y="60" width="344" height="392" rx="54" fill="#91442f"/>
+  <rect x="104" y="80" width="304" height="352" rx="38" fill="none" stroke="#f7f1e6" stroke-width="8"/>
+  <text x="256" y="342" text-anchor="middle" font-family="Georgia,serif" font-size="290" font-weight="700" fill="#f7f1e6">T</text>
+</svg>

@@ -1,0 +1,21 @@
+{
+  "name": "Truco — La mesa venezolana",
+  "short_name": "Truco",
+  "description": "Partidas de Truco venezolano con reglas claras, salas privadas y voz opcional.",
+  "lang": "es-VE",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f1e6",
+  "theme_color": "#91442f",
+  "categories": ["games", "social"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
