@@ -3,6 +3,7 @@
 import { SyntheticEvent, useState } from 'react';
 import {
   AudioLines,
+  Bot,
   ChevronRight,
   Clock3,
   KeyRound,
@@ -11,13 +12,14 @@ import {
   Plus,
   Radio,
   RotateCcw,
+  Sparkles,
   Users,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { RoomSummary } from '@/lib/product-types';
+import type { GameFormat, RoomSummary } from '@/lib/product-types';
 
 const rooms: RoomSummary[] = [
   {
@@ -25,7 +27,8 @@ const rooms: RoomSummary[] = [
     name: 'Los panas de Catia',
     host: 'Mariale',
     players: '3/4',
-    format: '2 contra 2',
+    format: '2v2',
+    opponent: 'human',
     score: 'A 24 piedras',
     rule: 'Oriental clásico',
     voice: 3,
@@ -37,9 +40,10 @@ const rooms: RoomSummary[] = [
     name: 'Domingo en la plaza',
     host: 'Rafael C.',
     players: '4/4',
-    format: '2 contra 2',
-    score: 'A 30 piedras',
-    rule: 'Occidental · sin flor',
+    format: '2v2',
+    opponent: 'human',
+    score: 'A 32 piedras',
+      rule: 'Larga · sin flor',
     voice: 2,
     tone: 'green',
     status: 'playing',
@@ -49,11 +53,25 @@ const rooms: RoomSummary[] = [
     name: 'Truco sin apuro',
     host: 'Vale_23',
     players: '1/4',
-    format: '2 contra 2',
+    format: '2v2',
+    opponent: 'human',
     score: 'A 24 piedras',
     rule: 'Oriental · con flor',
     voice: 0,
     tone: 'blue',
+    status: 'open',
+  },
+  {
+    id: 'duelo-oriente',
+    name: 'Duelo de Oriente',
+    host: 'Luisana',
+    players: '1/2',
+    format: '1v1',
+    opponent: 'human',
+    score: 'A 24 piedras',
+    rule: 'Oriental clásico',
+    voice: 0,
+    tone: 'green',
     status: 'open',
   },
 ];
@@ -64,6 +82,8 @@ type LobbyViewProps = {
   onCreate: () => void;
   onJoin: (room: RoomSummary) => void;
   onJoinCode: (code: string) => void;
+  onQuickPlay: (format: GameFormat) => void;
+  onPractice: () => void;
   onRefresh: () => void;
 };
 
@@ -73,10 +93,15 @@ export function LobbyView({
   onCreate,
   onJoin,
   onJoinCode,
+  onQuickPlay,
+  onPractice,
   onRefresh,
 }: LobbyViewProps) {
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState('');
+  const [filter, setFilter] = useState<'all' | GameFormat>('all');
+  const [quickFormat, setQuickFormat] = useState<GameFormat>('2v2');
+  const visibleRooms = rooms.filter((room) => filter === 'all' || room.format === filter);
 
   function submitCode(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -136,20 +161,28 @@ export function LobbyView({
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-sm font-bold uppercase tracking-[0.12em]">Mesas abiertas</h2>
-            <Button
-              onClick={onRefresh}
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground"
-            >
-              Actualizar
-            </Button>
+            <div className="flex flex-wrap items-center gap-1">
+              {(['all', '2v2', '1v1'] as const).map((value) => (
+                <Button
+                  key={value}
+                  onClick={() => setFilter(value)}
+                  variant={filter === value ? 'secondary' : 'ghost'}
+                  size="sm"
+                  aria-pressed={filter === value}
+                >
+                  {value === 'all' ? 'Todas' : value}
+                </Button>
+              ))}
+              <Button onClick={onRefresh} variant="ghost" size="sm" className="text-muted-foreground">
+                Actualizar
+              </Button>
+            </div>
           </div>
 
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
-            {rooms.map((room, index) => (
+            {visibleRooms.map((room, index) => (
               <article
                 key={room.name}
                 className="room-row group grid gap-4 border-b border-border p-4 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5"
@@ -173,7 +206,7 @@ export function LobbyView({
                         <Users className="size-3.5 text-muted-foreground" />
                         {room.players}
                       </span>
-                      <span>{room.format}</span>
+                      <span>{room.format === '2v2' ? '2 contra 2' : '1 contra 1'}</span>
                       <span className="text-muted-foreground">{room.score}</span>
                       <Badge variant="outline" className="font-normal">
                         {room.rule}
@@ -200,6 +233,54 @@ export function LobbyView({
         </div>
 
         <aside className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
+          <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+            <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-secondary text-primary">
+              <Sparkles className="size-5" />
+            </div>
+            <h2 className="font-display text-2xl font-bold tracking-[-0.025em]">Partida rápida</h2>
+            <p className="mt-2 text-sm leading-5 text-muted-foreground">
+              Elige formato y te buscamos una mesa con el preset Oriental clásico.
+            </p>
+            <div className="format-segment mt-4" aria-label="Formato de partida rápida">
+              {(['2v2', '1v1'] as GameFormat[]).map((format) => (
+                <button
+                  key={format}
+                  type="button"
+                  onClick={() => setQuickFormat(format)}
+                  aria-pressed={quickFormat === format}
+                >
+                  <strong>{format}</strong>
+                  <small>{format === '2v2' ? 'Social · predeterminado' : 'Duelo directo'}</small>
+                </button>
+              ))}
+            </div>
+            <Button onClick={() => onQuickPlay(quickFormat)} className="mt-4 h-11 w-full rounded-xl">
+              Buscar {quickFormat === '2v2' ? 'mesa 2v2' : 'duelo 1v1'}
+              <ChevronRight className="size-4" />
+            </Button>
+          </section>
+
+          <section className="practice-card rounded-2xl border p-5 sm:p-6">
+            <div className="flex items-start gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-card text-primary">
+                <Bot className="size-5" />
+              </div>
+              <div>
+                <Badge variant="outline" className="mb-2 border-primary/20 text-primary">
+                  Sin cuenta · sin rating
+                </Badge>
+                <h2 className="font-display text-2xl font-bold tracking-[-0.025em]">Sala de práctica</h2>
+                <p className="mt-2 text-sm leading-5 text-muted-foreground">
+                  Juega 1v1 contra Truquito IA con las mismas reglas, Vira y cantos legales.
+                </p>
+              </div>
+            </div>
+            <Button onClick={onPractice} variant="secondary" className="mt-4 h-11 w-full rounded-xl">
+              Practicar contra la IA
+              <ChevronRight className="size-4" />
+            </Button>
+          </section>
+
           <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
             <div className="mb-5 flex size-10 items-center justify-center rounded-xl bg-secondary text-primary">
               <KeyRound className="size-5" />

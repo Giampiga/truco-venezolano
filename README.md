@@ -3,7 +3,8 @@
 MVP navegable y responsive de un juego social de Truco venezolano. Incluye
 salón público, entrada privada por código, configuración de variantes, sala de
 espera, mesa jugable, cantos confirmados por botones, voz opcional,
-moderación, reanudación tras recarga y shell PWA.
+moderación, reanudación tras recarga, formatos 1v1/2v2, práctica contra IA y
+shell PWA.
 
 ## Ejecutar
 
@@ -14,19 +15,25 @@ moderación, reanudación tras recarga y shell PWA.
 ## Qué es real en este MVP
 
 - La navegación, los formularios y los estados de sala/mesa son interactivos.
-- El motor puro en lib/truco-rules.ts resuelve piezas, jerarquía, Envido,
-  Flor y la escalera venezolana de Truco; cuenta con pruebas deterministas.
-- La reanudación guarda un snapshot local de demostración para validar el
-  flujo de producto.
+- Los motores puros en `lib/truco-rules.ts` y `lib/truco-engine.ts` reparten,
+  rotan Mano/Pie, resuelven piezas, vueltas, pardas, Envite, Flor, Truco,
+  chicos y series; cuentan con pruebas deterministas.
+- La sala de práctica ofrece Aprendiz, Criollo y Maestro, modo guiado,
+  pausa, deshacer/rehacer, reinicio de base, nuevo reparto y reanudación.
+- La IA recibe solo su mano, la Vira, cartas públicas, conteos y acciones
+  legales. No recibe la mano rival ni cartas sin repartir y usa la misma API
+  de transición que los demás asientos.
+- La reanudación guarda el snapshot versionado completo de la mesa: formato,
+  reglas firmadas, Vira, reparto, turno, cantos, marcador y serie.
 - El permiso de micrófono solo se solicita después de una confirmación
   explícita y la entrada conserva el micrófono apagado.
 
 ## Integraciones de producción deliberadamente separadas
 
-La UI no finge que una simulación local es una partida multijugador. El
-contrato en lib/protocol.ts define comandos versionados e idempotentes,
-estado público y mano privada por asiento. Un servicio autoritativo debe
-validar turnos, cantos y puntaje antes de emitir el siguiente snapshot.
+La demo multijugador automatiza los demás asientos en el navegador. El motor
+sí valida turnos, acciones legales e idempotencia, y expone proyecciones
+pública/privada; una publicación con red real todavía debe ejecutar ese mismo
+reductor en un servicio autoritativo antes de emitir el siguiente snapshot.
 
 La voz debe conectarse a **LiveKit Cloud** (audio-only SFU) mediante un token
 de corta duración emitido por el servidor y ligado a tableId + seatId.

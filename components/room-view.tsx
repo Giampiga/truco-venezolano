@@ -33,13 +33,6 @@ type RoomViewProps = {
   onToast: (message: string) => void;
 };
 
-const seats = [
-  { name: 'Mariale', role: 'Mano', team: 'ellos', status: 'host', mic: 'speaking' },
-  { name: 'Rafael C.', role: 'Trasmano', team: 'nosotros', status: 'ready', mic: 'on' },
-  { name: 'Vale_23', role: 'Antepie', team: 'ellos', status: 'ready', mic: 'deafened' },
-  { name: 'CantoClaro', role: 'Pie', team: 'nosotros', status: 'you', mic: 'off' },
-] as const;
-
 export function RoomView({
   room,
   config,
@@ -52,6 +45,19 @@ export function RoomView({
   onOpenRules,
   onToast,
 }: RoomViewProps) {
+  const isDuel = config.format === '1v1';
+  const opponentName = config.opponent === 'ai' ? 'Truquito · IA' : 'Mariale';
+  const seats = isDuel
+    ? [
+        { name: opponentName, role: 'Mano', team: 'ellos', status: 'host', mic: 'speaking' },
+        { name: 'CantoClaro', role: 'Pie', team: 'nosotros', status: 'you', mic: 'off' },
+      ] as const
+    : [
+        { name: 'Mariale', role: 'Mano', team: 'ellos', status: 'host', mic: 'speaking' },
+        { name: 'Rafael C.', role: 'Trasmano', team: 'nosotros', status: 'ready', mic: 'on' },
+        { name: 'Vale_23', role: 'Antepie', team: 'ellos', status: 'ready', mic: 'deafened' },
+        { name: 'CantoClaro', role: 'Pie', team: 'nosotros', status: 'you', mic: 'off' },
+      ] as const;
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([
     { author: 'Mariale', text: '¿Dejamos pardas abiertas?' },
@@ -95,7 +101,7 @@ export function RoomView({
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary">{room.status === 'private' ? 'Privada' : 'Abierta'}</Badge>
-                  <span className="text-xs text-muted-foreground">4 de 4 asientos</span>
+                  <span className="text-xs text-muted-foreground">{isDuel ? '2 de 2' : '4 de 4'} asientos</span>
                 </div>
                 <h1 className="mt-3 font-display text-3xl font-bold tracking-[-0.03em] sm:text-4xl">
                   {room.name}
@@ -123,11 +129,11 @@ export function RoomView({
           <div className="p-5 sm:p-7">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                Asientos · parejas alternadas
+                {isDuel ? 'Asientos · duelo Mano/Pie' : 'Asientos · parejas alternadas'}
               </h2>
               <span className="text-xs text-muted-foreground">Reparto antihorario</span>
             </div>
-            <div className="seat-grid">
+            <div className={`seat-grid ${isDuel ? 'seat-grid-duel' : ''}`}>
               {seats.map((seat) => (
                 <article
                   key={seat.name}
@@ -149,7 +155,16 @@ export function RoomView({
                           )}
                         </div>
                         <p className="mt-0.5 text-xs text-muted-foreground">
-                          {seat.role} · {seat.team === 'nosotros' ? 'tu pareja' : 'contrarios'}
+                          {seat.role} ·{' '}
+                          {seat.status === 'you'
+                            ? 'tú'
+                            : isDuel
+                              ? config.opponent === 'ai'
+                                ? 'rival · IA'
+                                : 'tu rival'
+                              : seat.team === 'nosotros'
+                                ? 'tu pareja'
+                                : 'contrarios'}
                         </p>
                       </div>
                     </div>
@@ -219,7 +234,7 @@ export function RoomView({
             <dl className="rule-list mt-5">
               <div>
                 <dt>Formato</dt>
-                <dd>2 contra 2 · {config.target} piedras</dd>
+                <dd>{isDuel ? '1 contra 1' : '2 contra 2'} · {config.target} piedras</dd>
               </div>
               <div>
                 <dt>Flor</dt>
@@ -232,6 +247,10 @@ export function RoomView({
               <div>
                 <dt>Cantos</dt>
                 <dd>Truco · Retruco · Vale 9 · Vale juego</dd>
+              </div>
+              <div>
+                <dt>Final</dt>
+                <dd>{config.privando ? `Privando al llegar a ${Number(config.target) - 1}` : 'Sin prive'}</dd>
               </div>
               <div>
                 <dt>Señas</dt>

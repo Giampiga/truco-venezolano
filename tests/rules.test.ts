@@ -2,9 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  createSpanishDeck,
   envidoScore,
+  florScore,
   getPieces,
   hasFlor,
+  isFlorReservada,
   nextTrucoCall,
   trucoRank,
   trucoRejectedValue,
@@ -23,6 +26,17 @@ void test('la vira determina Perico y Perica', () => {
     perico: { rank: 12, suit: 'oros' },
     perica: { rank: 10, suit: 'oros' },
   });
+
+  assert.deepEqual(getPieces({ rank: 10, suit: 'espadas' }), {
+    perico: { rank: 11, suit: 'espadas' },
+    perica: { rank: 12, suit: 'espadas' },
+  });
+});
+
+void test('la baraja española tiene 40 cartas únicas', () => {
+  const deck = createSpanishDeck();
+  assert.equal(deck.length, 40);
+  assert.equal(new Set(deck.map((card) => `${card.rank}-${card.suit}`)).size, 40);
 });
 
 void test('el Perico mata a las piezas fijas y una carta pasada no mata', () => {
@@ -81,6 +95,15 @@ void test('reconoce la Flor venezolana con una pieza y dos cartas de la misma pi
     ),
     true,
   );
+
+  const reservada: TrucoCard[] = [
+    { rank: 11, suit: 'copas' },
+    { rank: 10, suit: 'copas' },
+    { rank: 7, suit: 'oros' },
+  ];
+  assert.equal(hasFlor(reservada, vira), true);
+  assert.equal(isFlorReservada(reservada, vira), true);
+  assert.equal(florScore(reservada, vira), 46);
 });
 
 void test('usa la escalera venezolana y sus valores de rechazo', () => {
