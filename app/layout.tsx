@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('http://localhost:3001'),
+  metadataBase: new URL('https://truco-venezolano.gga.chatgpt.site'),
   title: 'Truco — La mesa venezolana en línea',
   description:
     'Partidas de Truco venezolano con reglas claras, salas privadas y voz opcional de mesa.',
