@@ -36,3 +36,8 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+
+# Local voice credentials and compiler cache
+.dev.vars*
+!.dev.vars.example
+*.tsbuildinfo

@@ -119,40 +119,6 @@ function cardId(card: TrucoCard) {
   return `${card.rank}-${card.suit}`;
 }
 
-function uniqueDeck(priority: TrucoCard[]) {
-  const used = new Set(priority.map(cardId));
-  return [...priority, ...createSpanishDeck().filter((card) => !used.has(cardId(card)))];
-}
-
-function showcaseDeck(format: RoomConfig['format']) {
-  if (format === '1v1') {
-    return uniqueDeck([
-      { rank: 3, suit: 'copas' },
-      { rank: 12, suit: 'oros' },
-      { rank: 6, suit: 'espadas' },
-      { rank: 7, suit: 'bastos' },
-      { rank: 1, suit: 'copas' },
-      { rank: 4, suit: 'bastos' },
-      { rank: 11, suit: 'oros' },
-    ]);
-  }
-  return uniqueDeck([
-    { rank: 3, suit: 'copas' },
-    { rank: 6, suit: 'espadas' },
-    { rank: 2, suit: 'espadas' },
-    { rank: 12, suit: 'oros' },
-    { rank: 5, suit: 'copas' },
-    { rank: 1, suit: 'oros' },
-    { rank: 7, suit: 'copas' },
-    { rank: 7, suit: 'bastos' },
-    { rank: 4, suit: 'espadas' },
-    { rank: 10, suit: 'copas' },
-    { rank: 6, suit: 'oros' },
-    { rank: 4, suit: 'bastos' },
-    { rank: 11, suit: 'oros' },
-  ]);
-}
-
 function seededDeck(seed: number) {
   const deck = createSpanishDeck();
   let value = seed >>> 0;
@@ -187,7 +153,7 @@ function playerName(id: SeatId, config: RoomConfig) {
     mariale: 'Mariale',
     rafael: 'Rafael C.',
     vale: 'Vale_23',
-    human: 'CantoClaro',
+    human: 'Tú',
   }[id] ?? id;
 }
 
@@ -229,7 +195,7 @@ function initialSnapshot(config: RoomConfig, resumeFromStorage: boolean) {
   }
   const seats = seatsFor(config);
   const snapshot = createEngineSnapshot({
-    deck: showcaseDeck(config.format),
+    deck: seededDeck(crypto.getRandomValues(new Uint32Array(1))[0]),
     seats,
     dealerSeatId: 'human',
     target: Number(config.target),
@@ -602,7 +568,7 @@ export function GameTable({
 
   function resetMatch() {
     const fresh = createEngineSnapshot({
-      deck: showcaseDeck(config.format),
+      deck: seededDeck(crypto.getRandomValues(new Uint32Array(1))[0]),
       seats: seatsFor(config),
       dealerSeatId: 'human',
       target: Number(config.target),
@@ -882,7 +848,7 @@ export function GameTable({
 
           <div className="seat-position seat-bottom">
             <PlayerSeat
-              name="CantoClaro"
+              name="Tú"
               seatRole={`${roleBySeat.human} · Tú`}
               you
               muted={muted || !voiceEnabled || isPractice}
@@ -1355,7 +1321,7 @@ export function GameTable({
                     />
                   ))}
                 <VoiceMember
-                  name="CantoClaro"
+                  name="Tú"
                   state={!voiceEnabled || muted ? 'muted' : 'on'}
                   you
                 />
