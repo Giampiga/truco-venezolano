@@ -261,7 +261,7 @@ export function LobbyView(props: Props) {
               <span className="eyebrow">A TU RITMO</span>
             </div>
             <h2>
-              Afina el canto
+              Afina el canto{' '}
               <br />
               con Truquito.
             </h2>
