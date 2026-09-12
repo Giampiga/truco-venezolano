@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { cappedOpponentPairs, opponentPair } from './opponent-limits';
 import {
   eloDelta,
   INITIAL_RATING,
@@ -57,7 +58,13 @@ export async function settleRanking(room: StoredRoom) {
       const team = entries.filter((e) => e.won === won);
       return team.reduce((sum, e) => sum + e.before, 0) / team.length;
     };
-    const delta = eloDelta(average(true), average(false));
+    const capped = await cappedOpponentPairs(entries.map((e) => e.userId));
+    const rated = !entries.some((a) =>
+      entries.some(
+        (b) => a.won !== b.won && capped.has(opponentPair(a.userId, b.userId)),
+      ),
+    );
+    const delta = rated ? eloDelta(average(true), average(false)) : 0;
     for (const e of entries) {
       e.delta = e.won ? delta : -delta;
       e.rating += e.delta;
@@ -68,9 +75,22 @@ export async function settleRanking(room: StoredRoom) {
     const checks = entries
       .map(() => '(COALESCE((SELECT games FROM ratings WHERE id = ?), 0) = ?)')
       .join(' AND ');
+    const opponents = entries
+      .filter((e) => e.won)
+      .flatMap((a) =>
+        entries.filter((e) => !e.won).map((b) => [a.userId, b.userId]),
+      );
+    const limitChecks = rated
+      ? opponents
+          .map(
+            () =>
+              `(SELECT COUNT(*) FROM ranked_results r, json_each(r.data) a, json_each(r.data) b WHERE r.rated = 1 AND r.created_at > ? AND json_extract(a.value, '$.userId') = ? AND json_extract(b.value, '$.userId') = ? AND json_extract(a.value, '$.won') != json_extract(b.value, '$.won')) < 3`,
+          )
+          .join(' AND ')
+      : '1';
     const claim = db
       .prepare(
-        `INSERT OR IGNORE INTO ranked_results (room_id, token, format, created_at, data) SELECT ?, ?, ?, ?, ? WHERE ${checks}`,
+        `INSERT OR IGNORE INTO ranked_results (room_id, token, format, created_at, data, rated) SELECT ?, ?, ?, ?, ?, ? WHERE ${checks} AND ${limitChecks}`,
       )
       .bind(
         room.id,
@@ -78,10 +98,14 @@ export async function settleRanking(room: StoredRoom) {
         room.config.format,
         Date.now(),
         JSON.stringify(entries),
+        Number(rated),
         ...entries.flatMap((e) => [
           `${room.config.format}:${e.userId}`,
           e.games,
         ]),
+        ...(rated
+          ? opponents.flatMap(([a, b]) => [Date.now() - 86400_000, a, b])
+          : []),
       );
     const results = await db.batch([
       claim,
@@ -96,8 +120,8 @@ export async function settleRanking(room: StoredRoom) {
             room.config.format,
             e.name,
             e.rating,
-            e.games + 1,
-            e.wins + Number(e.won),
+            e.games + Number(rated),
+            e.wins + Number(rated && e.won),
             room.id,
             token,
           ),
@@ -130,12 +154,12 @@ export async function readRanking(
       .first<RatingEntry>(),
     db
       .prepare(
-        'SELECT name, rating, games, wins FROM ratings WHERE format = ? ORDER BY rating DESC, games DESC, id LIMIT 20',
+        'SELECT name, rating, games, wins FROM ratings WHERE format = ? AND games > 0 ORDER BY rating DESC, games DESC, id LIMIT 20',
       )
       .bind(format)
       .all<RatingEntry>(),
     db
-      .prepare(`SELECT r.room_id AS room, r.created_at AS at, json_extract(e.value, '$.won') AS won, json_extract(e.value, '$.delta') AS delta, json_extract(e.value, '$.rating') AS rating
+      .prepare(`SELECT r.room_id AS room, r.created_at AS at, r.rated, json_extract(e.value, '$.won') AS won, json_extract(e.value, '$.delta') AS delta, json_extract(e.value, '$.rating') AS rating
       FROM ranked_results r, json_each(r.data) e WHERE r.format = ? AND json_extract(e.value, '$.userId') = ? ORDER BY r.created_at DESC LIMIT 10`)
       .bind(format, userId)
       .all<Ranking['history'][number]>(),

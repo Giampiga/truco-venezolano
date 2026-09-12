@@ -94,8 +94,8 @@ const parallel = await Promise.all(
 await Promise.all(parallel.map((path) => a(path, { type: 'leave' })));
 const ra = await a('/api/ranking?format=1v1');
 const rb = await b('/api/ranking?format=1v1');
-assert.equal(ra.you.games, 3);
-assert.equal(rb.you.games, 3);
+assert.equal(ra.you.games, 2);
+assert.equal(rb.you.games, 2);
 assert.equal(ra.you.rating + rb.you.rating, 2000);
 assert.equal(ra.history.length, 3);
 await Promise.all(parallel.map((path) => b(path, { type: 'close' })));

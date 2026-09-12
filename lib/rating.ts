@@ -16,6 +16,7 @@ export type Ranking = {
     room: string;
     at: number;
     won: boolean;
+    rated: boolean;
     delta: number;
     rating: number;
   }[];

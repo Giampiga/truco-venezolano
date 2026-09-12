@@ -15,6 +15,13 @@
       "when": 1789201366576,
       "tag": "0001_lame_zemo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789201964106,
+      "tag": "0002_many_lester",
+      "breakpoints": true
     }
   ]
 }

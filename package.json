@@ -13,6 +13,7 @@
     "format": "oxfmt",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "test:integration": "node --experimental-strip-types tests/http-integration.mts",
+    "test:matchmaking": "node --experimental-strip-types tests/matchmaking-integration.mts",
     "test:ranked": "node --experimental-strip-types tests/ranked-integration.mts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",

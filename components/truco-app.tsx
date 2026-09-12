@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Matchmaking } from '@/components/matchmaking';
 import { LobbyView } from '@/components/lobby-view';
 import { RoomView } from '@/components/room-view';
 import { OnlineTable } from '@/components/online-table';
@@ -339,6 +340,7 @@ export function TrucoApp() {
               </Button>
             </div>
           )}
+          {!needsSignin && <div className="club-layout"><Matchmaking name={nickname} onMatched={(room) => { online.enter(room); setOnlineResume(room.id); setInvitation(''); }} /></div>}
           <LobbyView
             rooms={rooms}
             loading={loading}

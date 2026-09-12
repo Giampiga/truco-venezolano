@@ -32,10 +32,30 @@ export const ratings = sqliteTable(
   (t) => [index('ratings_leaderboard').on(t.format, t.rating)],
 );
 
-export const rankedResults = sqliteTable('ranked_results', {
-  roomId: text('room_id').primaryKey(),
-  token: text('token').notNull(),
-  format: text('format').notNull(),
-  createdAt: integer('created_at').notNull(),
-  data: text('data').notNull(),
-});
+export const rankedResults = sqliteTable(
+  'ranked_results',
+  {
+    roomId: text('room_id').primaryKey(),
+    token: text('token').notNull(),
+    rated: integer('rated').notNull().default(1),
+    format: text('format').notNull(),
+    createdAt: integer('created_at').notNull(),
+    data: text('data').notNull(),
+  },
+  (t) => [index('ranked_results_recent').on(t.createdAt)],
+);
+
+export const matchmakingQueue = sqliteTable(
+  'matchmaking_queue',
+  {
+    userId: text('user_id').primaryKey(),
+    ticket: text('ticket').notNull(),
+    name: text('name').notNull(),
+    format: text('format').notNull(),
+    rating: integer('rating').notNull(),
+    joinedAt: integer('joined_at').notNull(),
+    seenAt: integer('seen_at').notNull(),
+    roomId: text('room_id'),
+  },
+  (t) => [index('matchmaking_waiting').on(t.format, t.roomId, t.seenAt)],
+);

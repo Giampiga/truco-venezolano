@@ -12,4 +12,8 @@
 
 Keep `CreateRoomDialog`'s ranked, voice and camera fields. `VoiceRoom` takes `roomId`, `enabled`, and `cameraAllowed`; joining does not request devices. Its separate microphone and camera buttons opt in individually. `RankingPanel` includes format selection, rating/history, sign-in and retry states, and `onPlay(format)`.
 
-This is competitive scoring for hosted rooms, without automated matchmaking or anti-collusion enforcement. Add opponent matching and repeat-opponent limits before treating the ladder as a public tournament ranking. The Site's existing access policy still governs who can visit; room invitations do not change Site access.
+Matchmaking supports solo entry for duels and four-player teams. It chooses nearby Elo, widens the range from 150 to 600 as the caller waits, and balances the selected four players into teams. A live queue entry expires after 90 seconds without polling; assignments and cancellation use atomic database checks so an account cannot be paired twice. Assigned players still confirm readiness before the host deals.
+
+Only three rated matches against each opponent in a rolling 24-hour window count, across both formats. A fourth result is stored with `rated = 0`, zero Elo change, and no rated win/game increment. In pairs, reaching the limit with either opponent makes the entire result unrated. The cap is checked inside the atomic settlement claim, including simultaneous finishes across formats. Matchmaking excludes capped opponents, while manually created rooms remain playable.
+
+This limits repeat-opponent farming; it does not detect coordinated multi-account abuse. Run `npm run test:matchmaking` for queue, cancellation, pairing, capped results and concurrency checks. The Site's existing access policy still governs who can visit; room invitations do not change Site access.

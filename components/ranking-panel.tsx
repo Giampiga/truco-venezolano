@@ -115,7 +115,7 @@ export function RankingPanel({
               {current.history.map((match) => (
                 <div key={match.room}>
                   <span>
-                    {match.won ? 'Victoria' : 'Derrota'}
+                    {match.won ? 'Victoria' : 'Derrota'}{!match.rated && ' · Sin Elo (rival repetido)'}
                     <small>{new Date(match.at).toLocaleDateString('es')}</small>
                   </span>
                   <b>
