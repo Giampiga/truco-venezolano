@@ -2193,6 +2193,13 @@ button[draggable="true"]:active { cursor: grabbing; }
 .canto-popover[data-starting-style], .canto-popover[data-ending-style] { opacity: 0; transform: translateY(-4px); }
 @media (prefers-reduced-motion: reduce) { .canto-popover, .canto-trigger > span { transition: none; } }
 
-.global-chat { margin-top: 24px; }
-.global-chat .chat-scroll { height: 300px; max-height: 40vh; overflow-y: auto; }
+.global-chat { margin: 0; display: flex; flex-direction: column; min-height: 0; max-height: min(560px, calc(100dvh - 120px)); }
+.global-chat .chat-scroll { height: 300px; min-height: 80px; overflow-y: auto; flex: 1 1 auto; }
 .global-chat article p { overflow-wrap: anywhere; }
+
+.global-chat-widget { position: fixed; right: 20px; bottom: max(20px, env(safe-area-inset-bottom)); z-index: 40; }
+.global-chat-toggle { min-height: 48px; border-radius: 24px; padding: 12px 18px; gap: 8px; box-shadow: 0 3px 12px #0002; }
+.global-chat-popup { width: min(380px, calc(100vw - 24px)); padding: 0; overflow: hidden; }
+.global-chat .panel-heading { justify-content: space-between; flex-shrink: 0; }
+.global-chat > form { flex-shrink: 0; }
+@media (max-width: 600px) { .global-chat-widget { right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); } }
