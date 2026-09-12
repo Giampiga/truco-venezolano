@@ -43,7 +43,7 @@ export const presetName = (preset: RoomConfig['preset']) =>
 export const roomRules = (config: RoomConfig): ExecutableRules => ({
   florMode: config.flor,
   pardaMode: config.parda,
-  pardaEngine: config.pardaEngine,
+  pardaEngine: 'apilada-clasica',
   florPoints: Number(config.florPoints),
 });
 export class RoomError extends Error {
@@ -178,6 +178,7 @@ export function validateConfig(input: unknown): RoomConfig {
       parda: 'abierta',
       pardaEngine: 'apilada-clasica',
     });
+  config.pardaEngine = 'apilada-clasica';
   config.voice = source.voice;
   config.isPrivate = source.isPrivate;
   return config;

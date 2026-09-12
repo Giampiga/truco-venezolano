@@ -177,7 +177,7 @@ function rulesForConfig(config: RoomConfig): ExecutableRules {
   return {
     florMode: config.flor,
     pardaMode: config.parda,
-    pardaEngine: config.pardaEngine,
+    pardaEngine: 'apilada-clasica',
     florPoints: Number(config.florPoints),
   };
 }
@@ -1209,9 +1209,7 @@ export function GameTable({
               <div>
                 <dt>Parda</dt>
                 <dd>
-                  {config.pardaEngine === 'apilada-clasica'
-                    ? `Apilada · ${config.parda}`
-                    : 'Tres vueltas · online'}
+                  Apilada · {config.parda}
                 </dd>
               </div>
               <div>

@@ -194,8 +194,7 @@ export function TrucoApp() {
       voice: false,
       flor: options.preset === 'rapida' ? 'off' : 'a-ley',
       parda: options.preset === 'oriental' ? 'abierta' : 'cerrada',
-      pardaEngine:
-        options.preset === 'rapida' ? 'secuencial-online' : 'apilada-clasica',
+      pardaEngine: 'apilada-clasica',
       match: options.preset === 'competitiva' ? 'mejor-de-tres' : 'un-chico',
     };
     const room: RoomSummary = {

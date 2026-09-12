@@ -673,7 +673,7 @@ export function legalActions(context: LegalActionContext): LegalAction[] {
 
   if (!active || context.priority.active !== 'play') return [];
   const actions: LegalAction[] = [
-    context.pardaRevealWindow && context.pardaEngine === 'apilada-clasica'
+    context.pardaRevealWindow
       ? 'play-stack'
       : 'play-card',
     'fold',
@@ -731,7 +731,6 @@ export function legalActionsForSnapshot(
   const actor = snapshot.seats.find((seat) => seat.id === actorSeatId);
   if (!actor) return [];
   const pardaRevealWindow =
-    rules.pardaEngine === 'apilada-clasica' &&
     snapshot.trickResults[0]?.parda === true &&
     snapshot.trickNumber === 2 &&
     Object.keys(snapshot.pardaStacks ?? {}).length < snapshot.seats.length;

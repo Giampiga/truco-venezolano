@@ -44,7 +44,7 @@ export function CreateRoomDialog({
         match: 'un-chico',
         flor: 'off',
         parda: 'cerrada',
-        pardaEngine: 'secuencial-online',
+        pardaEngine: 'apilada-clasica',
         truco: 'cerrado',
         envido: 'escalera-online',
         cardPlay: 'visible',
@@ -240,27 +240,7 @@ export function CreateRoomDialog({
               </NativeSelect>
             </div>
 
-            <div className="field-group">
-              <span>Resolución de parda</span>
-              <NativeSelect
-                aria-label="Motor de resolución de primera parda"
-                value={config.pardaEngine}
-                onChange={(event) =>
-                  update(
-                    'pardaEngine',
-                    event.target.value as RoomConfig['pardaEngine'],
-                  )
-                }
-                className="w-full [&>select]:h-11 [&>select]:rounded-xl"
-              >
-                <NativeSelectOption value="apilada-clasica">
-                  Apilada clásica · mayor arriba
-                </NativeSelectOption>
-                <NativeSelectOption value="secuencial-online">
-                  Tres vueltas · versión en línea
-                </NativeSelectOption>
-              </NativeSelect>
-            </div>
+            <p className="text-sm text-muted-foreground">Primera vuelta parda: se juegan las dos cartas restantes juntas, con la mayor arriba y la menor tapada.</p>
 
             <div className="rule-preview rounded-xl border border-border bg-muted/35 p-4">
               <p className="text-xs font-semibold">Escalera de canto</p>
@@ -546,9 +526,7 @@ export function RulesDialog({
           <RuleDetail
             label="Primera parda"
             value={
-              config.pardaEngine === 'secuencial-online'
-                ? 'Tres vueltas secuenciales; parda total para Mano'
-                : config.parda === 'abierta'
+              config.parda === 'abierta'
                   ? 'Dos cartas juntas; la mayor arriba; admite repique'
                   : 'Dos cartas juntas; sin canto entre carta y destape'
             }

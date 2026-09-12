@@ -510,7 +510,8 @@ void test('la siguiente base rota Pie/Mano sin perder el marcador', () => {
 
 void test('la primera parda apilada termina la base con la mayor arriba', () => {
   for (const pardaMode of ['abierta', 'cerrada'] as const) {
-    const stackRules: ExecutableRules = { ...rules, pardaMode };
+   for (const pardaEngine of ['apilada-clasica', 'secuencial-online'] as const) {
+    const stackRules: ExecutableRules = { ...rules, pardaMode, pardaEngine };
     let snapshot = createEngineSnapshot({
       deck: createSpanishDeck(),
       seats: seats1v1,
@@ -547,6 +548,10 @@ void test('la primera parda apilada termina la base con la mayor arriba', () => 
       `${pardaMode}-2`,
     ).state;
     assert.ok(legalActionsForSnapshot(snapshot, 'human', stackRules).includes('play-stack'));
+    assert.equal(legalActionsForSnapshot(snapshot, 'human', stackRules).includes('play-card'), false);
+    assert.equal(snapshot.activeSeatId, snapshot.manoSeatId);
+    assert.throws(() => transition(snapshot, 'human', {type: 'PLAY_CARD', cardId: '7-bastos'}, stackRules, 'illegal-single'));
+    assert.throws(() => transition(snapshot, 'human', {type: 'PLAY_STACK', cardIds: ['4-oros', '7-bastos']}, stackRules, 'wrong-order'));
     if (pardaMode === 'cerrada') {
       assert.equal(
         legalActionsForSnapshot(snapshot, 'human', stackRules).includes('call-truco'),
@@ -569,6 +574,7 @@ void test('la primera parda apilada termina la base con la mayor arriba', () => 
     ).state;
     assert.equal(snapshot.handComplete, true);
     assert.equal(snapshot.match.score.A, 1);
+   }
   }
 });
 
