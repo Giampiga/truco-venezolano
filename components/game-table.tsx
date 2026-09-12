@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 
 import { EnvidoRaises } from '@/components/envido-raises';
+import { CantoNotice, PlayedStacks } from '@/components/table-context';
 import { manoAnnouncement, gameEventText, actionLabels } from '@/lib/game-copy';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -319,8 +320,6 @@ export function GameTable({
   const viraDescription = describeVira(snapshot.vira);
   const { perico, perica } = getPieces(snapshot.vira);
   const isPractice = config.opponent === 'ai';
-  const currentTrickStart = (snapshot.trickNumber - 1) * seats.length;
-  const visiblePlays = snapshot.played.slice(currentTrickStart);
 
   const roleBySeat = useMemo(() => {
     const start = seats.findIndex((seat) => seat.id === snapshot.manoSeatId);
@@ -771,27 +770,7 @@ export function GameTable({
               <p aria-live="polite">{paused ? 'Práctica en pausa.' : status}</p>
             </div>
 
-            <div className="played-cards" aria-label="Cartas jugadas en esta vuelta">
-              {visiblePlays.map(({ seatId, card }) => {
-                const position =
-                  seatId === 'human'
-                    ? 'bottom'
-                    : seatId === 'rafael'
-                      ? 'left'
-                      : seatId === 'vale'
-                        ? 'right'
-                        : 'top';
-                return (
-                  <div
-                    key={`${seatId}-${cardId(card)}`}
-                    className={`played-card played-${position}`}
-                  >
-                    <FaceCard card={card} compact />
-                    <em>{playerName(seatId, config)}</em>
-                  </div>
-                );
-              })}
-            </div>
+            <PlayedStacks key={snapshot.handNumber} played={snapshot.played} seats={seats} name={(id) => playerName(id, config)} renderCard={(card) => <FaceCard card={card} compact />} />
 
 
           </div>
@@ -963,6 +942,7 @@ export function GameTable({
               </section>
             )}
           <section className="call-dock">
+            <CantoNotice state={snapshot} you="human" name={(id) => playerName(id, config)} canAnswer={humanLegal.includes('answer-quiero')} />
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">

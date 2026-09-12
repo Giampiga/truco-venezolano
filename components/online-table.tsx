@@ -1,4 +1,5 @@
 'use client';
+import { CantoNotice, PlayedStacks } from '@/components/table-context';
 import { useState } from 'react';
 import { ChevronRight, Flag, Layers, Sparkles } from 'lucide-react';
 import { EnvidoRaises } from '@/components/envido-raises';
@@ -89,9 +90,6 @@ export function OnlineTable({
     selection.includes(cardId(card)),
   );
   const stack = legal.includes('play-stack');
-  const currentPlays = state.played.slice(
-    (state.trickNumber - 1) * state.seats.length,
-  );
   const nextCall = nextTrucoCall(
     state.truco.pending?.call ?? state.truco.accepted,
   );
@@ -214,22 +212,7 @@ export function OnlineTable({
                 </span>
               ))}
             </div>
-            <div className="played-line">
-              {currentPlays.length ? (
-                currentPlays.map((play, index) => (
-                  <div className="played-card" key={`${play.seatId}-${index}`}>
-                    <PlayingCard card={play.card} small />
-                    <span>
-                      {play.seatId === room.you ? 'Tú' : name(play.seatId)}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <p className="table-wordmark">
-                  TRUCO<span>LA MESA VENEZOLANA</span>
-                </p>
-              )}
-            </div>
+            <PlayedStacks key={state.handNumber} played={state.played} seats={state.seats} name={(id) => id === room.you ? 'Tú' : name(id)} renderCard={(card) => <PlayingCard card={card} small />} />
           </div>
         </div>
         <output className="turn-line">
@@ -274,6 +257,7 @@ export function OnlineTable({
       ) : (
         <>
           <section className="player-console" aria-label="Tu mano y cantos">
+          <CantoNotice state={state} you={room.you} name={(id) => id === room.you ? 'Tú' : name(id)} canAnswer={legal.includes('answer-quiero')} />
           <div className="your-hand">
             <div className="hand-label">
               <p className="eyebrow">TU MANO</p>

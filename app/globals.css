@@ -2140,3 +2140,21 @@ fieldset:disabled { opacity:.65; }
 @media(max-width:600px) { .player-console .call-buttons>button { flex:1 1 140px; } .envido-raise { width:100%; } .envido-raise>button { flex:1; } }
 
 .player-console .call-confirm { position:static; width:auto; max-width:none; transform:none; margin:12px 16px; }
+
+.canto-notice { margin: 12px 16px; padding: 12px 16px; border-left: 4px solid var(--primary); background: var(--muted); color: var(--foreground); font-size: 14px; line-height: 1.5; }
+.canto-notice strong { display: block; font-size: 17px; }
+.canto-notice p { margin-top: 4px; }
+.played-stacks { display: flex; flex-wrap: wrap; justify-content: center; align-items: start; gap: 12px; padding: 12px 0; }
+.felt > .played-stacks { position: absolute; inset: 65px 12px 12px; overflow: auto; align-content: center; }
+.player-stack { width: 120px; color: inherit; font-size: 12px; }
+.player-stack summary { cursor: pointer; list-style: none; display: grid; gap: 5px; text-align: center; }
+.player-stack summary:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.player-stack summary > span:first-child { font-weight: 700; overflow-wrap: anywhere; }
+.stack-preview { display: grid; height: 100px; justify-content: start; }
+.stack-preview > span { grid-area: 1 / 1; }
+.stack-preview .face-card, .stack-preview .playing-card { width: 64px; height: 88px; }
+.stack-empty { display: grid; place-content: center; width: 90px; border: 1px dashed currentColor; border-radius: 4px; opacity: .65; }
+.player-stack ol { padding: 8px; margin-top: 4px; background: var(--card); color: var(--foreground); border: 1px solid var(--border); border-radius: 4px; list-style: none; line-height: 1.6; }
+.player-stack[open] summary small { font-weight: 700; }
+.player-stack li { display: grid; justify-items: center; gap: 4px; padding: 6px 0; }
+.player-stack li .face-card, .player-stack li .playing-card { width: 64px; height: 88px; }

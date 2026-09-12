@@ -1,3 +1,4 @@
+import { trucoAcceptedValue, trucoRejectedValue } from './truco-rules.ts';
 export const manoAnnouncement = (name: string, isYou: boolean) =>
   isYou ? 'Eres mano.' : `${name} es mano.`;
 
@@ -22,3 +23,18 @@ export const actionLabels: Record<string, string> = {
   'call-falta': 'La falta', 'declare-flor': 'Cantar flor',
   'call-flor-envida': 'Mi flor envida',
 };
+
+export function pendingCanto(state: Pick<import('./truco-engine.ts').EngineSnapshot, 'priority' | 'truco' | 'envido' | 'handComplete'>) {
+  if (state.handComplete || state.priority.active === 'play') return null;
+  const labels = { truco: 'Truco', retruco: 'Retruco', 'vale-nueve': 'Vale nueve', 'vale-juego': 'Vale juego' };
+  const points = (n: number) => `${n} ${n === 1 ? 'punto' : 'puntos'}`;
+  const pending = state.priority.active === 'truco' ? state.truco.pending : state.envido.pending;
+  if (!pending) return null;
+  const suspended = state.priority.suspendedTruco ? labels[state.priority.suspendedTruco.call] : null;
+  if ('call' in pending) {
+    const accepted = trucoAcceptedValue(pending.call);
+    const rejected = trucoRejectedValue(pending.call);
+    return { ...pending, label: labels[pending.call], accept: accepted !== 'game' ? `La base vale ${points(accepted)}.` : 'La base decide el chico.', reject: `El equipo que cantó gana ${points(rejected)} y termina la base.`, suspended };
+  }
+  return { ...pending, label: `${state.priority.active === 'flor' ? 'Mi flor envida' : pending.kind === 'falta' ? 'La falta' : 'Envido'} · ${points(pending.stake)}`, accept: `Se comparan los tantos por ${points(pending.stake)}.${state.priority.active === 'flor' ? ' Se suman además los puntos de flor.' : ''}`, reject: `El equipo que cantó gana ${points(pending.rejectionAward)}.`, suspended };
+}

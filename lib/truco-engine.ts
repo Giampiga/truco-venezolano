@@ -59,6 +59,7 @@ export type TrucoState = {
   pending: null | {
     call: Exclude<TrucoCall, 'none'>;
     by: TeamId;
+    bySeatId?: SeatId;
   };
 };
 
@@ -67,6 +68,7 @@ export type EnvidoState = {
   acceptedStake: number;
   pending: null | {
     by: TeamId;
+    bySeatId?: SeatId;
     stake: number;
     rejectionAward: number;
     kind: 'envido' | 'n-mas' | 'falta';
@@ -1039,6 +1041,7 @@ export function transition(
     const called = callTruco(next.truco, actorTeam);
     if (called.pending?.call !== command.call) throw new Error('Ese aumento no sigue la escalera.');
     next.truco = called;
+    if (next.truco.pending) next.truco.pending.bySeatId = actorSeatId;
     next.priority = { active: 'truco', suspendedTruco: null };
     events.push(`Canto pendiente: ${command.call}.`);
     return { state: next, events };
@@ -1048,6 +1051,7 @@ export function transition(
     const answered = answerTruco(next.truco, actorTeam, 'raise');
     if (answered.state.pending?.call !== command.call) throw new Error('Ese repique no sigue la escalera.');
     next.truco = answered.state;
+    if (next.truco.pending) next.truco.pending.bySeatId = actorSeatId;
     next.priority = { active: 'truco', suspendedTruco: null };
     events.push(`Quiero y ${command.call}.`);
     return { state: next, events };
@@ -1062,6 +1066,7 @@ export function transition(
       next.match.target,
       command.amount === 'falta' ? 'falta' : 'envido',
     );
+    if (next.envido.pending) next.envido.pending.bySeatId = actorSeatId;
     next.priority = interrupted
       ? interruptTrucoWithEnvido(next.priority, next.truco.pending)
       : { active: 'envido', suspendedTruco: null };
@@ -1078,6 +1083,7 @@ export function transition(
       command.amount === 'falta' ? 'falta' : command.amount === 2 ? 'envido' : 'n-mas',
       typeof command.amount === 'number' ? command.amount : 0,
     );
+    if (next.envido.pending) next.envido.pending.bySeatId = actorSeatId;
     events.push(command.amount === 'falta' ? 'Quiero y la falta.' : `Quiero y ${command.amount} más.`);
     return { state: next, events };
   }
@@ -1106,6 +1112,7 @@ export function transition(
     }
     if (!next.florDeclarations.includes(actorSeatId)) next.florDeclarations.push(actorSeatId);
     next.envido = callEnvido(next.envido, actorTeam, next.match.score, next.match.target);
+    if (next.envido.pending) next.envido.pending.bySeatId = actorSeatId;
     next.priority = { active: 'flor', suspendedTruco: next.truco.pending };
     events.push('Mi Flor envida.');
     return { state: next, events };
