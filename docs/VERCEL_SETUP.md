@@ -12,6 +12,8 @@ In **Connect**, copy the Transaction pooler connection string (port 6543) to `DA
 
 ## 2. Create Vercel
 
+The project `giampigas-projects/truco-venezolano` has been created. GitHub auto-deployment still needs Vercel access to the private repository; CLI deployment is available. Supabase has not been provisioned yet.
+
 Import `Giampiga/truco-venezolano`, select Next.js, and use `codex/vercel-launch` for the migration preview. Set the three variables above and `NEXT_PUBLIC_SITE_URL` to the chosen Vercel domain. Set Node.js 22 or later. Do not set `TRUCO_LOCAL_TEST_AUTH` or `TRUCO_LOCAL_DATABASE` on Vercel.
 
 The app uses polling for rooms and chat. LiveKit runs separately; put its three credentials from `.env.example` in Vercel to enable room voice/camera. Hosting the frontend does not provision media infrastructure.
