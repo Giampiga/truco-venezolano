@@ -1601,27 +1601,23 @@ select:focus-visible {
   flex-shrink: 0;
 }
 .club-logo {
-  width: 35px;
-  height: 44px;
-  border: 1px solid #b8ccbf;
-  border-radius: 3px;
-  display: grid;
-  place-items: center;
-  font:
-    700 28px Georgia,
-    serif;
-  color: #e7c775;
+  width: 58px;
+  height: 58px;
+  display: block;
+  flex-shrink: 0;
 }
-.club-brand > span:last-child {
-  font-size: 24px;
-  font-weight: 650;
-  letter-spacing: 0.14em;
-  line-height: 1.1;
+.club-wordmark {
+  font:
+    700 30px/0.95 Georgia,
+    serif;
+  letter-spacing: 0.045em;
 }
 .club-brand small {
   display: block;
-  margin-top: 6px;
-  font-size: 10px;
+  margin-top: 7px;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  font-size: 8px;
+  line-height: 1.2;
   letter-spacing: 0.15em;
   color: #bacfc1;
   font-weight: 500;
@@ -2816,8 +2812,8 @@ select:focus-visible {
   .club-header nav {
     gap: 20px;
   }
-  .club-brand > span:last-child {
-    font-size: 20px;
+  .club-wordmark {
+    font-size: 26px;
   }
   .club-brand small {
     font-size: 8px;
@@ -2882,9 +2878,8 @@ select:focus-visible {
     font-size: 8px;
   }
   .club-logo {
-    width: 29px;
-    height: 37px;
-    font-size: 24px;
+    width: 46px;
+    height: 46px;
   }
   .header-profile {
     gap: 6px;
@@ -4306,12 +4301,11 @@ button[draggable='true']:active {
     min-height: 56px;
   }
   .in-match .club-logo {
-    height: 32px;
-    width: 27px;
-    font-size: 24px;
+    height: 40px;
+    width: 40px;
   }
-  .in-match .club-brand > span:last-child {
-    font-size: 19px;
+  .in-match .club-wordmark {
+    font-size: 24px;
   }
   .in-match .club-brand small {
     font-size: 8px;

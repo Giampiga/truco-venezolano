@@ -287,8 +287,66 @@ export function TrucoApp() {
               aria-label="Truco, volver al salón"
               onClick={openLeave}
             >
-              <span className="club-logo">T</span>
-              <span>
+              <svg
+                className="club-logo"
+                viewBox="0 0 64 64"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <g transform="rotate(8 42 35)">
+                  <rect
+                    x="25"
+                    y="11"
+                    width="32"
+                    height="46"
+                    rx="3"
+                    fill="#233c2e"
+                    stroke="#b8ccbf"
+                    strokeWidth="1.2"
+                  />
+                  <text
+                    x="50"
+                    y="22"
+                    textAnchor="middle"
+                    fontFamily="Georgia, serif"
+                    fontSize="10"
+                    fill="#e7c775"
+                  >
+                    1
+                  </text>
+                  <path d="M45 25 42 30v13h6V30Z" fill="#e7c775" />
+                  <path
+                    d="M45 29v13M40 43h10M45 43v7M43 50h4"
+                    fill="none"
+                    stroke="#e7c775"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                  <path d="M45 29v12" stroke="#233c2e" strokeWidth=".8" />
+                </g>
+                <rect
+                  x="2"
+                  y="3"
+                  width="34"
+                  height="46"
+                  rx="3"
+                  fill="#182820"
+                  stroke="#b8ccbf"
+                  strokeWidth="1.2"
+                />
+                <text
+                  x="19"
+                  y="36"
+                  textAnchor="middle"
+                  fontFamily="Georgia, serif"
+                  fontSize="31"
+                  fontWeight="700"
+                  fill="#e7c775"
+                >
+                  T
+                </text>
+              </svg>
+              <span className="club-wordmark">
                 TRUCO<small>LA MESA VENEZOLANA</small>
               </span>
             </button>
