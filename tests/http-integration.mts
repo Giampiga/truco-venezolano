@@ -144,6 +144,12 @@ for (const format of ['1v1', '2v2'] as const) {
     assert.equal(ra.you.rating + rb.you.rating, 2000);
     assert.equal(ra.history.length, 1);
   }
+  const profile = await a('/api/profile');
+  const saved = profile.history.matches.find((m: any) => m.room_id === room.id);
+  assert.ok(saved, 'Finished match is in the durable profile history');
+  assert.equal(saved.mode, format === '1v1' ? 'ranked' : 'casual');
+  assert.ok(saved.opponents && saved.score);
+  assert.equal(JSON.stringify(profile).includes('user_id'), false);
   room = await a(path, { type: 'close' });
   assert.equal((await b(path, { type: 'heartbeat' })).closed, true);
   console.log(

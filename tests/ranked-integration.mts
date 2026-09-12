@@ -66,6 +66,10 @@ for (const format of ['1v1', '2v2'] as const) {
     assert.equal(results[i].history[0].delta, i % 2 ? 16 : -16);
     assert.equal(JSON.stringify(results[i]).includes('userId'), false);
   }
+  const profile = await b('/api/profile?mode=ranked');
+  assert.equal(profile.ratings.find((r: any) => r.format === format).peak, 1016);
+  assert.ok(profile.history.matches.some((m: any) => m.room_id === room.id && m.won));
+  assert.equal((await outsider('/api/profile')).history.matches.length, 0);
   await b(path, { type: 'close' });
   console.log(
     `${format}: authenticated accounts, fixed rules, forfeit, atomic Elo, repeat settlement and private history passed.`,

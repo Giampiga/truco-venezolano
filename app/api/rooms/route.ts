@@ -1,3 +1,4 @@
+import { requireRegistered } from '@/lib/server/identity';
 import { profileRoom } from '@/lib/server/profiles';
 import { getDb, getVoiceEnv } from '@/lib/server/db';
 import {
@@ -16,9 +17,10 @@ import {
   type StoredRoom,
 } from '@/lib/room-model';
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const viewer = await identity(request);
+    if (!process.env.DATABASE_URL && !(process.env.NODE_ENV !== 'production' && process.env.TRUCO_LOCAL_DATABASE))
+      throw new RoomError('El salón en línea aún no está disponible. Mientras tanto, puedes practicar con Truquito.', 503);
     const rows = await getDb()
       .prepare(
         "SELECT data FROM rooms WHERE status = 'waiting' AND is_private = 0 AND updated_at > ? ORDER BY updated_at DESC LIMIT 40",
@@ -38,7 +40,6 @@ export async function GET(request: Request) {
         ),
       },
       200,
-      viewer.cookie,
     );
   } catch (error) {
     return failure(error);
@@ -52,6 +53,8 @@ export async function POST(request: Request) {
     if (!payload || typeof payload !== 'object')
       throw new RoomError('Solicitud inválida.');
     const config = validateConfig(payload.config);
+    if (config.ranked) requireRegistered(viewer);
+    const profile = await getDb().prepare('SELECT name FROM profiles WHERE user_id = ?').bind(viewer.id).first<{name:string}>();
     const existing = await getDb()
       .prepare(
         "SELECT id FROM rooms WHERE owner_id = ? AND status != 'closed' AND updated_at > ? LIMIT 3",
@@ -73,12 +76,12 @@ export async function POST(request: Request) {
         crypto.randomUUID(),
         code,
         viewer.id,
-        payload.name,
+        profile?.name ?? payload.name,
         config,
       );
       const result = await getDb()
         .prepare(
-          'INSERT OR IGNORE INTO rooms (id, code, owner_id, is_private, status, revision, updated_at, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          'INSERT INTO rooms (id, code, owner_id, is_private, status, revision, updated_at, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING',
         )
         .bind(
           room.id,

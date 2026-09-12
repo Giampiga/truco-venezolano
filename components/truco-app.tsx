@@ -7,12 +7,10 @@ import {
   Download,
   LockKeyhole,
   BookOpen,
-  UserRound,
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ProfilePanel } from '@/components/profile-panel';
+import { AccountMenu } from '@/components/account-menu';
 import { Matchmaking } from '@/components/matchmaking';
 import { LobbyView } from '@/components/lobby-view';
 import { RoomView } from '@/components/room-view';
@@ -52,6 +50,8 @@ type InstallPrompt = Event & {
 export function TrucoApp() {
   const online = useRoom();
   const [nickname, setNickname] = useState('');
+  const [accountOpen,setAccountOpen] = useState(false);
+  const [registered,setRegistered] = useState(false);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [lobbyError, setLobbyError] = useState('');
@@ -92,7 +92,7 @@ export function TrucoApp() {
   }, []);
   useEffect(() => {
     const initialize = window.setTimeout(() => {
-      setNickname(localStorage.getItem('truco-nickname') ?? '');
+      setNickname(localStorage.getItem('truco-nickname') ?? 'Invitado');
       setPracticeResume(!!localStorage.getItem('truco-active-table'));
       setOnlineResume(localStorage.getItem('truco-online-room') ?? '');
       setInvitation(
@@ -134,7 +134,7 @@ export function TrucoApp() {
   function ensureName() {
     if (nickname.trim().length >= 2) return true;
     setActionError('Elige un nombre de al menos 2 caracteres para sentarte.');
-    document.getElementById('player-name')?.focus();
+    setAccountOpen(true);
     return false;
   }
   async function join(id: string) {
@@ -150,6 +150,7 @@ export function TrucoApp() {
       setOnlineResume(room.id);
       setInvitation('');
     } catch (error) {
+      if (error instanceof RoomRequestError && error.status === 401) setAccountOpen(true);
       setActionError(
         error instanceof Error ? error.message : 'No pudimos entrar a la mesa.',
       );
@@ -171,6 +172,7 @@ export function TrucoApp() {
       setOnlineResume(room.id);
       setCreateOpen(false);
     } catch (error) {
+      if (error instanceof RoomRequestError && error.status === 401) setAccountOpen(true);
       setActionError(
         error instanceof Error ? error.message : 'No pudimos crear la mesa.',
       );
@@ -290,29 +292,15 @@ export function TrucoApp() {
                   <Download size={17} />
                 </Button>
               )}
-              <UserRound size={17} />
-              <Input
-                id="player-name"
-                aria-label="Tu nombre de jugador"
-                placeholder="Tu nombre"
-                maxLength={24}
-                value={nickname}
-                onChange={(event) => updateName(event.target.value)}
-              />
+              <AccountMenu open={accountOpen} onOpenChange={setAccountOpen} name={nickname} onName={updateName} onSession={value => {setRegistered(value); void refresh();}} playing={!!online.room} />
             </div>
           </div>
         </header>
       )}
-      {!practice && <ProfilePanel />}
       {needsSignin && !practice && (
         <div className="invitation-strip">
           <span>Inicia sesión para jugar con tus panas.</span>
-          <a
-            href={`/signin-with-chatgpt?return_to=${encodeURIComponent(invitation ? `/?mesa=${invitation}` : '/')}`}
-            target="_top"
-          >
-            Continuar con ChatGPT →
-          </a>
+          <Button onClick={()=>setAccountOpen(true)}>Entrar o crear cuenta</Button>
         </div>
       )}
       {!online.room && online.error && (
@@ -333,16 +321,15 @@ export function TrucoApp() {
           {invitation && (
             <div className="invitation-strip">
               <span>
-                Te invitaron a la mesa <strong>{invitation}</strong>. Escribe tu
-                nombre arriba y toma asiento.
+                Te invitaron a la mesa <strong>{invitation}</strong>. Toma asiento para empezar.
               </span>
               <Button disabled={busy} onClick={() => void join(invitation)}>
                 Entrar a esta mesa <ArrowUpRight size={16} />
               </Button>
             </div>
           )}
-          {!needsSignin && <div className="club-layout"><Matchmaking name={nickname} onMatched={(room) => { online.enter(room); setOnlineResume(room.id); setInvitation(''); }} /></div>}
           <LobbyView
+            matchmaking={registered ? <Matchmaking name={nickname} onMatched={room=>{online.enter(room);setOnlineResume(room.id);setInvitation('');}}/> : <div className="competitive-signin"><p>Inicia sesión con una cuenta confirmada para competir y guardar tu Elo.</p><Button onClick={()=>setAccountOpen(true)}>Entrar o crear cuenta</Button></div>}
             nickname={nickname}
             rooms={rooms}
             loading={loading}
@@ -353,6 +340,7 @@ export function TrucoApp() {
             onResume={resumePractice}
             onOnlineResume={() => void join(onlineResume)}
             onCreate={(ranked = false, format = '2v2') => {
+              if (ranked && !registered) {setAccountOpen(true);return;}
               if (ensureName()) {
                 setConfig({
                   ...DEFAULT_CONFIG,

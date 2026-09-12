@@ -5,7 +5,7 @@ import { Popover, PopoverTrigger, PopoverContent, PopoverTitle } from '@/compone
 import { AccountLabel } from '@/components/account-label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-type Message = {id:number;author:string;handle:string|null;message:string;at:number;own:number};
+type Message = {id:number;author:string;handle:string|null;message:string;at:number;own:boolean};
 export function GlobalChat({name}: {name:string}) {
   const [open,setOpen] = useState(false);
   const [messages,setMessages] = useState<Message[]>([]);

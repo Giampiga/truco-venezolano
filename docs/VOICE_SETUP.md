@@ -2,16 +2,16 @@
 
 1. Crea o abre un proyecto en [LiveKit Cloud](https://cloud.livekit.io/).
 2. En los ajustes de LiveKit, obtén su URL `wss://…`, API key y API secret.
-3. Añade estas variables al entorno de producción del sitio en Sites:
+3. Añade estas variables al entorno de producción del proyecto en Vercel:
    - `LIVEKIT_URL`: URL del servidor LiveKit (debe usar `wss:`).
    - `LIVEKIT_API_KEY`: clave de API.
    - `LIVEKIT_API_SECRET`: secreto; guárdalo como **secret**.
-4. Publica una versión para que Sites aplique el nuevo entorno.
-5. Autoriza a los jugadores en el acceso del sitio. Un código de mesa no evita el control de acceso de Sites.
+4. Despliega una nueva versión para aplicar el entorno.
+5. Los jugadores deben entrar con su cuenta o como invitados.
 6. Abre la misma mesa desde dos cuentas/perfiles autorizados. Pulsa **Entrar a la voz** en ambos. Se conectarán para escuchar con el micrófono apagado.
 7. Activa cada micrófono y verifica audio en ambas direcciones, silencio, dejar de escuchar, indicador de hablante y salida de la sala. Si aparece **Activar sonido del navegador**, púlsalo.
 
-Para pruebas locales, copia `.dev.vars.example` a `.dev.vars`, introduce los valores y reinicia el servidor. Estos archivos están excluidos de Git. Nunca pongas credenciales en variables `NEXT_PUBLIC_*`, componentes, `.openai/hosting.json`, capturas ni mensajes de chat.
+Para pruebas locales, copia `.env.example` a `.env.local`, introduce los valores y reinicia el servidor. Estos archivos están excluidos de Git. Nunca pongas credenciales en variables `NEXT_PUBLIC_*`, componentes, capturas ni mensajes de chat.
 
 ## Comportamiento de acceso
 

@@ -1,63 +1,42 @@
 # Truco — la mesa venezolana
 
-Juego social de Truco venezolano con salas reales para 1v1 y 2v2, chat compartido, voz opcional y práctica individual contra IA. Interfaz responsive con salón, invitaciones, asientos, reglas visibles y mesa de juego.
+Truco venezolano en línea: mesas 1v1 y 2v2, partidas entre panas, competitivo con Elo, perfiles y amigos, historial, chat global y de mesa, voz y cámara opcionales, y práctica local contra Truquito.
+
+Esta rama prepara la migración a **Vercel + Supabase**. El despliegue anterior en Sites no se actualiza con estos cambios. La configuración de proyectos y proveedores está en [docs/VERCEL_SETUP.md](docs/VERCEL_SETUP.md).
 
 ## Desarrollo
 
-Requiere Node 22.13 o superior.
+Node 22.13 o superior:
 
 ```sh
 npm ci
-npm run db:local
-npm run dev -- --port 3012
+TRUCO_LOCAL_DATABASE=/tmp/truco-local-db TRUCO_LOCAL_TEST_AUTH=1 npm run dev -- --port 3013
 ```
 
-El entorno local usa una cookie HttpOnly por navegador para permitir varias identidades de prueba. En producción, las salas requieren la identidad autenticada que entrega Sites; no existe acceso de invitado a la API. Para probar varios jugadores localmente, usa perfiles de navegador independientes.
+PGlite ejecuta el esquema Postgres localmente. El acceso de prueba usa una cookie HttpOnly y solo funciona con el indicador explícito **fuera de producción**. Para probar la autenticación real, copia `.env.example` a `.env.local`, configura Supabase y omite ambos indicadores de prueba.
 
 ```sh
-npm test                 # motor, IA, salas, autorización y tokens de voz
-npm run test:integration # servidor local en localhost:3012
+npm test
 npm run typecheck
+TRUCO_TEST_URL=http://localhost:3013 npm run test:integration
+TRUCO_TEST_URL=http://localhost:3013 npm run test:ranked
+TRUCO_TEST_URL=http://localhost:3013 npm run test:matchmaking
 npm run build
 ```
 
-`TRUCO_TEST_URL` permite cambiar el origen local de las pruebas. La suite HTTP rechaza orígenes externos y crea/cierra mesas de prueba. Las migraciones se generan con `npm run db:generate`; Sites aplica las de `drizzle/` durante la publicación.
+## Cuentas y datos
 
-## Funcionalidad
+- Google, Facebook, Apple y correo/contraseña mediante Supabase Auth; confirmación de correo y recuperación de contraseña.
+- Los invitados pueden jugar entre panas. El servidor exige una cuenta confirmada para competir, guardar un perfil y agregar amigos.
+- Nombre visible y usuario único editables, biografía, amigos, Elo actual/máximo por formato e historial de partidas terminadas con resultados y rivales.
+- El historial y el Elo se calculan en el servidor. Las manos privadas nunca se entregan a otros jugadores.
+- Las tablas Postgres tienen RLS habilitado sin acceso público directo; solo las rutas del servidor acceden a los datos.
+- La práctica contra IA se guarda en este navegador, separada del historial de partidas en línea.
 
-- Mesas públicas o privadas, códigos únicos, enlaces de invitación, búsqueda y filtros 1v1/2v2.
-- Asientos reales, anfitrión transferible, todos listos antes de repartir y detección de desconexiones.
-- Motor ejecutado en el servidor: solo cada jugador recibe sus cartas. El cliente no decide turnos, reparto ni puntajes.
-- Estado persistido en D1 con actualización atómica por revisión, verificación de versión de juego e idempotencia.
-- Chat de mesa compartido, mensajes acotados y límite de frecuencia.
-- Escalera de Truco, Envite/Falta, Flor, pardas y series con variantes realmente soportadas.
-- IA Aprendiz/Criollo/Maestro con guía, pausa, deshacer/rehacer, nuevo reparto y reanudación local.
-- Instalación PWA. El service worker nunca almacena respuestas de la API, tokens o páginas autenticadas.
+## Juego y servicios
 
-## Voz
+`lib/truco-engine.ts` contiene el motor puro; `lib/room-model.ts` controla asientos y acciones. Las rutas API guardan revisiones con compare-and-swap. Ranking y matchmaking usan transacciones para evitar resultados duplicados. Las salas y el chat se actualizan mediante polling; una acción remota suele verse en 1,5 segundos. Las salas caducan tras 48 horas sin actividad; el historial permanece.
 
-La integración con LiveKit está implementada: entrada para escuchar sin permiso de micrófono, activación explícita, silenciar, dejar de escuchar, participantes, hablantes activos, selector de micrófono, recuperación de autoplay y reconexión. Al cambiar de sala o salir se cierran las pistas. El audio no determina jugadas.
+[Reglas venezolanas](docs/RULES.md) · [Competitivo](docs/COMPETITIVE.md) · [Activar voz y cámara con LiveKit](docs/VOICE_SETUP.md)
 
-**La voz requiere configurar un proyecto LiveKit; no viene con credenciales ni un servidor de medios incorporado.** Consulta [docs/VOICE_SETUP.md](docs/VOICE_SETUP.md). Sin configuración, el chat y el juego siguen funcionando y la interfaz informa que la voz no está disponible.
-
-## Arquitectura
-
-- `lib/truco-engine.ts` y `lib/truco-rules.ts`: motor puro y reglas venezolanas.
-- `lib/room-model.ts`: reglas de pertenencia, lista de jugadores, chat y transiciones de sala.
-- `lib/server/rooms.ts`: persistencia con compare-and-swap; `app/api/rooms/`: API autenticada.
-- `lib/command-validation.ts`: validación de comandos en tiempo de ejecución.
-- `hooks/use-room.ts`: transporte HTTP (1,5 s visible; 5 s en segundo plano), heartbeat, reconexión y rechazo de respuestas antiguas.
-- `components/online-table.tsx`: mesa de red basada únicamente en proyecciones públicas/privadas.
-- `components/game-table.tsx`: práctica local con IA; su snapshot nunca se usa para partidas de red.
-- `lib/voice-token.ts`: tokens HS256 breves, ligados a una identidad de membresía y una sola sala, con permiso exclusivo de micrófono.
-- `lib/server/voice.ts`: revocaciones de voz persistidas y reintentadas después de salir o cerrar una mesa.
-
-## Límites conocidos
-
-Las salas usan polling HTTP, no WebSockets; una acción remota suele aparecer dentro de 1,5 segundos. Las mesas dejan de resolverse tras 48 horas sin actividad. Los abandonos durante la partida conservan el asiento y pausan las jugadas hasta que vuelva esa persona; el anfitrión puede cerrar la mesa. No hay reemplazo de jugadores durante una partida, clasificación competitiva ni moderación humana.
-
-El sitio conserva su acceso privado. Compartir el código de mesa no otorga acceso al sitio: sus jugadores también necesitan estar autorizados en Sites. Cambiar la audiencia se hace desde la configuración de acceso del sitio.
-
-Las variantes que antes eran solo controles de demostración (carta del compañero visible, Matar tapado y Privando integrado) ya no se ofrecen como ajustes jugables. Las variantes regionales documentadas están en [docs/RULES.md](docs/RULES.md).
-
-La revisión de dependencias actualizó React/RSC a 19.2.8, Vite a 8.2.2 y Undici a 7.29.0. El parser `image-size` heredado de Vinext sigue teniendo avisos; en esta app procesa archivos locales de metadatos durante la compilación, sin endpoint de carga de imágenes. Actualizar Vinext beta.9 no resuelve ese parser: lo incorpora al bundle. No se presenta la auditoría de dependencias como libre de avisos.
+La voz/cámara necesita credenciales de LiveKit. La autenticación social necesita configurar cada proveedor en Supabase. Los ID de cuentas de Sites no se pueden convertir en cuentas nuevas por nombre: la importación de datos anteriores necesita una verificación de propiedad explícita.

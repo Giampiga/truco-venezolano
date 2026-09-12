@@ -61,9 +61,7 @@ export function RankingPanel({
         <div className="ranking-error">
           <p role="alert">{error}</p>
           {signin ? (
-            <a href="/signin-with-chatgpt?return_to=%2F" target="_top">
-              Iniciar sesión con ChatGPT
-            </a>
+            <p>Usa «Entrar» en la parte superior para acceder a tu cuenta.</p>
           ) : (
             <Button variant="outline" onClick={() => setRetry(retry + 1)}>
               Reintentar
@@ -88,9 +86,10 @@ export function RankingPanel({
           <Button className="w-full" onClick={() => onPlay(format)}>
             Crear competitiva
           </Button>
-          <p className="ranking-explainer">
-            24 piedras. Reglas fijas. El resultado se guarda en tu cuenta.
+          <details className="inline-help"><summary>¿Cómo cambia mi Elo?</summary><p className="ranking-explainer">
+            24 piedras y reglas fijas. Ganas o pierdes Elo según el resultado y la fuerza del rival. Solo cuentan tres partidas contra los mismos rivales en 24 horas.
           </p>
+          </details>
           {current.leaders.length ? (
             <ol className="leaderboard">
               {current.leaders.map((player, i) => (

@@ -1,5 +1,5 @@
 'use client';
-import { useState, type SyntheticEvent } from 'react';
+import { useState, type ReactNode, type SyntheticEvent } from 'react';
 import {
   ArrowUpRight,
   Bot,
@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import type { GameFormat, RoomSummary } from '@/lib/product-types';
 
 type Props = {
+  matchmaking: ReactNode;
   nickname: string;
   rooms: RoomSummary[];
   loading: boolean;
@@ -101,7 +102,8 @@ export function LobbyView(props: Props) {
         <button aria-pressed={mode === 'casual'} onClick={() => setMode('casual')}><Users size={24} /><span><strong>Entre panas</strong><small>A tu manera. Sin puntos de ranking.</small></span><b>01</b></button>
         <button aria-pressed={mode === 'ranked'} onClick={() => setMode('ranked')}><Trophy size={24} /><span><strong>Competitivo</strong><small>Reglas fijas. Cada partida cuenta.</small></span><b>02</b></button>
       </div>
-      <form className="quick-invite" onSubmit={join}><KeyRound size={18} /><label htmlFor="invite-code-input">¿Tienes un código?</label><Input id="invite-code-input" aria-label="Código de invitación" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))} placeholder="ABC123" maxLength={6} autoComplete="off" /><Button variant="outline" disabled={props.busy}>Entrar</Button>{codeError && <span role="alert">{codeError}</span>}</form>
+      <div hidden={mode !== 'ranked'}>{props.matchmaking}</div>
+      <form className="quick-invite" onSubmit={join}><KeyRound size={18} /><label htmlFor="invite-code-input">¿Tienes un código?</label><Input id="invite-code-input" aria-label="Código de invitación" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))} placeholder="ABC123" maxLength={6} autoComplete="off" /><Button type="submit" variant="outline" disabled={props.busy}>Entrar</Button>{codeError && <span role="alert">{codeError}</span>}</form>
       <div className="lobby-columns">
         <section className="lobby-main">
           <div className="section-top">
@@ -228,8 +230,8 @@ export function LobbyView(props: Props) {
           <GlobalChat name={props.nickname} />
         </section>
         <aside className="lobby-sidebar">
-          <RankingPanel onPlay={(format) => props.onCreate(true, format)} />
-          <section className="practice-panel">
+          {mode === 'ranked' && <RankingPanel onPlay={(format) => props.onCreate(true, format)} />}
+          {mode === 'casual' && <section className="practice-panel">
             <div className="panel-heading">
               <Bot size={20} />
               <span className="eyebrow">A TU RITMO</span>
@@ -249,7 +251,8 @@ export function LobbyView(props: Props) {
             <Button onClick={props.onPractice}>
               Jugar contra la IA <ArrowUpRight size={16} />
             </Button>
-          </section>
+          </section>}
+          <details className="inline-help"><summary>¿Cómo funcionan las mesas?</summary><button onClick={props.onRules}>Consultar las reglas</button>
           <div className="voice-lobby-note">
             <Headphones size={20} />
             <p>
@@ -262,7 +265,7 @@ export function LobbyView(props: Props) {
                 ? 'Habla en la sala y durante la partida. La voz es opcional.'
                 : 'Coordina la partida por escrito. La voz estará disponible cuando se conecte el servicio.'}
             </p>
-          </div>
+          </div></details>
         </aside>
       </div>
       <footer className="club-footer">

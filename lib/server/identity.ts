@@ -1,33 +1,34 @@
+import { getDb } from './db';
+import { serverAuth } from '../auth/server';
 import { RoomError } from '../room-model.ts';
 export async function identity(request: Request) {
   // Local guest identities are compiled out of production builds.
-  if (import.meta.env.DEV) {
+  if (process.env.NODE_ENV !== 'production' && process.env.TRUCO_LOCAL_TEST_AUTH === '1') {
     const existing = request.headers
       .get('cookie')
       ?.match(/(?:^|;\s*)truco_dev=([a-f0-9-]{36})(?:;|$)/)?.[1];
     const id = existing ?? crypto.randomUUID();
     return {
       id,
+      registered: request.headers.get('x-truco-test-guest') !== '1',
       cookie: existing
         ? null
         : `truco_dev=${id}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800`,
     };
   }
-  const userId = request.headers.get('oai-authenticated-user-id');
-  if (userId) {
-    const hash = await crypto.subtle.digest(
-      'SHA-256',
-      new TextEncoder().encode(userId),
-    );
-    return {
-      id: Array.from(new Uint8Array(hash), (b) =>
-        b.toString(16).padStart(2, '0'),
-      ).join(''),
-      cookie: null,
-    };
+  const auth = await serverAuth();
+  const { data } = auth ? await auth.auth.getUser() : { data: { user: null } };
+  if (data.user) {
+    const registered = !data.user.is_anonymous && !!data.user.email_confirmed_at;
+    if (registered && !await getDb().prepare('SELECT user_id FROM profiles WHERE user_id = ?').bind(data.user.id).first()) await getDb().prepare("INSERT INTO profiles (user_id, handle, name, bio) VALUES (?, ?, 'Jugador', '') ON CONFLICT DO NOTHING").bind(data.user.id, `jugador_${data.user.id.replaceAll('-', '').slice(0,12)}`).run();
+    return { id: data.user.id, cookie: null, registered };
   }
-  throw new RoomError('Inicia sesión con ChatGPT para entrar a una mesa.', 401);
+  throw new RoomError('Inicia sesión o entra como invitado para jugar.', 401);
 }
+export function requireRegistered(viewer: {registered: boolean}) {
+  if (!viewer.registered) throw new RoomError('Necesitas una cuenta con correo confirmado para usar esta función.', 403);
+}
+
 export function assertSameOrigin(request: Request) {
   const origin = request.headers.get('origin');
   if (origin && origin !== new URL(request.url).origin)

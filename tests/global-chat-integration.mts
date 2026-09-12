@@ -38,7 +38,7 @@ await a('/api/chat', {id:crypto.randomUUID(),name:'Ana',text:'Too fast'},429);
 await b('/api/chat', {id:crypto.randomUUID(),name:'Temporal',handle,verified:true,text:'Hola temporal'});
 const {messages}=await b('/api/chat');
 const registered=messages.findLast((m:any)=>m.handle===handle);
-assert.equal(registered.author,'Ana'); assert.equal(registered.own,0);
+assert.equal(registered.author,'Ana'); assert.equal(registered.own,false);
 assert.equal(typeof registered.id,'number');assert.equal('user_id' in registered,false);
 const temp=messages.findLast((m:any)=>m.own);
 assert.equal(temp.handle,null);assert.equal(temp.author,'Temporal');

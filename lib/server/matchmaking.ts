@@ -92,7 +92,8 @@ export async function matchmaking(
   if (action.type === 'join') {
     if (!['1v1', '2v2'].includes(action.format as string))
       throw new RoomError('Elige duelo o parejas.');
-    const name = cleanName(action.name);
+    const profile = await db.prepare('SELECT name FROM profiles WHERE user_id = ?').bind(userId).first<{name:string}>();
+    const name = profile?.name ?? cleanName(action.name);
     if (ticket && ticket.format !== action.format)
       throw new RoomError(
         'Cancela la búsqueda antes de cambiar de formato.',
@@ -235,7 +236,7 @@ export async function matchmaking(
     await db.batch([
       db
         .prepare(
-          `INSERT OR IGNORE INTO rooms (id, code, owner_id, is_private, status, revision, updated_at, data) SELECT ?, ?, ?, 1, 'waiting', ?, ?, ? WHERE ${checks}`,
+          `INSERT INTO rooms (id, code, owner_id, is_private, status, revision, updated_at, data) SELECT ?, ?, ?, 1, 'waiting', ?, ?, ? WHERE ${checks} ON CONFLICT DO NOTHING`,
         )
         .bind(
           id,

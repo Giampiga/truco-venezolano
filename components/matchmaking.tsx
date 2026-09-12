@@ -99,10 +99,7 @@ export function Matchmaking({
   return (
     <section aria-label="Buscar partida competitiva" className="ranked-result">
       <h2>Encontrar partida</h2>
-      <p>
-        Rivales de Elo cercano. En parejas, te asignamos compañero. Micrófono y
-        cámara son opcionales.
-      </p>
+      <p>Encuentra rivales de tu nivel.</p>
       {state.status === 'searching' ? (
         <>
           <p role="status">
@@ -135,10 +132,10 @@ export function Matchmaking({
           </Button>
         </div>
       )}
-      <p>
+      <details className="inline-help"><summary>¿Cómo funciona la búsqueda?</summary><p>En parejas, te asignamos compañero. Micrófono y cámara son opcionales.</p><p>
         Solo las primeras 3 partidas contra el mismo rival en 24 horas dan Elo.
         En parejas, el límite se aplica a cada rival.
-      </p>
+      </p></details>
       {error && <p role="alert">{error}</p>}
     </section>
   );
