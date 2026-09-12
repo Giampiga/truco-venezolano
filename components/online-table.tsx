@@ -1,6 +1,7 @@
 'use client';
 import { AccountLabel } from '@/components/account-label';
 import { cardDrag } from '@/lib/card-drag';
+import { tablePosition } from '@/lib/table-seats';
 import {
   CantoNotice,
   PlayedStacks,
@@ -141,7 +142,10 @@ export function OnlineTable({
           ? `Envite a ${state.envido.pending?.stake ?? 2}`
           : null;
   return (
-    <section className="online-game">
+    <section
+      className="online-game"
+      data-format={state.seats.length === 4 ? '2v2' : '1v1'}
+    >
       <div className="match-score">
         <div>
           <span>NOSOTROS · {team}</span>
@@ -194,6 +198,7 @@ export function OnlineTable({
             <div
               className={`online-player ${state.activeSeatId === seat.id && !state.handComplete ? 'active-player' : ''}`}
               key={seat.id}
+              data-position={tablePosition(state.seats, seat.id, room.you)}
             >
               <span className="opponent-initial">
                 {name(seat.id).slice(0, 1)}
@@ -211,9 +216,11 @@ export function OnlineTable({
           ))}
         </div>
         <div className="felt-center">
-          <TableVira card={state.vira}>
-            <PlayingCard card={state.vira} small />
-          </TableVira>
+          {state.seats.length === 2 && (
+            <TableVira card={state.vira}>
+              <PlayingCard card={state.vira} small />
+            </TableVira>
+          )}
           <div className="trick-zone">
             <div className="trick-progress">
               {[0, 1, 2].map((index) => (
@@ -234,6 +241,8 @@ export function OnlineTable({
             <PlayedStacks
               key={state.handNumber}
               you={room.you}
+              manoSeatId={state.manoSeatId}
+              vira={state.vira}
               onPlayCard={
                 !disabled && legal.includes('play-card')
                   ? (id) => {
