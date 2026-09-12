@@ -1,7 +1,11 @@
 'use client';
 import { AccountLabel } from '@/components/account-label';
 import { cardDrag } from '@/lib/card-drag';
-import { CantoNotice, PlayedStacks, CantoBranch } from '@/components/table-context';
+import {
+  CantoNotice,
+  PlayedStacks,
+  CantoBranch,
+} from '@/components/table-context';
 import { useState } from 'react';
 import { ChevronRight, Flag, Layers, Sparkles } from 'lucide-react';
 import { EnvidoRaises } from '@/components/envido-raises';
@@ -165,7 +169,23 @@ export function OnlineTable({
       {!everyonePresent && (
         <output className="connection-banner">
           La partida está en pausa mientras un jugador vuelve a conectarse.
-          {room.config.ranked && <Button variant="outline" disabled={pending || !connected || !room.members.some((m) => room.serverTime - m.lastSeen >= 120_000 && state.seats.find((s) => s.id === m.seatId)?.team !== team)} onClick={() => void act({ type: 'claim-forfeit' })}>Reclamar victoria tras 2 minutos</Button>}
+          {room.config.ranked && (
+            <Button
+              variant="outline"
+              disabled={
+                pending ||
+                !connected ||
+                !room.members.some(
+                  (m) =>
+                    room.serverTime - m.lastSeen >= 120_000 &&
+                    state.seats.find((s) => s.id === m.seatId)?.team !== team,
+                )
+              }
+              onClick={() => void act({ type: 'claim-forfeit' })}
+            >
+              Reclamar victoria tras 2 minutos
+            </Button>
+          )}
         </output>
       )}
       <div className="online-felt">
@@ -179,7 +199,9 @@ export function OnlineTable({
                 {name(seat.id).slice(0, 1)}
               </span>
               <strong>{name(seat.id)}</strong>
-              <AccountLabel handle={room.members.find(m => m.seatId === seat.id)?.handle} />
+              <AccountLabel
+                handle={room.members.find((m) => m.seatId === seat.id)?.handle}
+              />
               <small>
                 {seat.team === team ? 'Tu pareja' : 'Rival'} ·{' '}
                 {state.cardCounts[seat.id]} cartas
@@ -215,7 +237,22 @@ export function OnlineTable({
                 </span>
               ))}
             </div>
-            <PlayedStacks key={state.handNumber} you={room.you} onPlayCard={!disabled && legal.includes('play-card') ? (id) => { if (game.private.hand.some(card => cardId(card) === id)) void command({ type: 'PLAY_CARD', cardId: id }); } : undefined} played={state.played} seats={state.seats} name={(id) => id === room.you ? 'Tú' : name(id)} renderCard={(card) => <PlayingCard card={card} small />} />
+            <PlayedStacks
+              key={state.handNumber}
+              you={room.you}
+              onPlayCard={
+                !disabled && legal.includes('play-card')
+                  ? (id) => {
+                      if (game.private.hand.some((card) => cardId(card) === id))
+                        void command({ type: 'PLAY_CARD', cardId: id });
+                    }
+                  : undefined
+              }
+              played={state.played}
+              seats={state.seats}
+              name={(id) => (id === room.you ? 'Tú' : name(id))}
+              renderCard={(card) => <PlayingCard card={card} small />}
+            />
           </div>
         </div>
         <output className="turn-line">
@@ -260,196 +297,255 @@ export function OnlineTable({
       ) : (
         <>
           <section className="player-console" aria-label="Tu mano y cantos">
-          <CantoNotice state={state} you={room.you} name={(id) => id === room.you ? 'Tú' : name(id)} canAnswer={legal.includes('answer-quiero')} />
-          <div className="your-hand">
-            <div className="hand-label">
-              <p className="eyebrow">TU MANO</p>
-              <AccountLabel handle={room.members.find(m => m.seatId === room.you)?.handle} />
-              <strong>
-                {envidoScore(game.private.dealtHand, state.vira)} de envite
-              </strong>
-              {hasFlor(game.private.dealtHand, state.vira) && (
-                <span>
-                  <Sparkles size={14} />
-                  Tienes flor
-                </span>
-              )}
-            </div>
-            <div className="online-hand-cards">
-              {game.private.hand.map((card, index) => (
-                <button
-                  key={cardId(card)}
-                  {...cardDrag(cardId(card), !disabled && legal.includes('play-card'))}
-                  className={`select-card ${selection.includes(cardId(card)) ? 'selected-card' : ''}`}
-                  aria-label={`Seleccionar ${card.rank} de ${card.suit}`}
-                  aria-pressed={selection.includes(cardId(card))}
-                  disabled={
-                    disabled || (!legal.includes('play-card') && !stack)
+            <CantoNotice
+              state={state}
+              you={room.you}
+              name={(id) => (id === room.you ? 'Tú' : name(id))}
+              canAnswer={legal.includes('answer-quiero')}
+            />
+            <div className="your-hand">
+              <div className="hand-label">
+                <p className="eyebrow">TU MANO</p>
+                <AccountLabel
+                  handle={
+                    room.members.find((m) => m.seatId === room.you)?.handle
                   }
-                  onClick={() => select(cardId(card))}
-                >
-                  <PlayingCard card={card} />
-                  <span className="card-index">{index + 1}</span>
-                </button>
-              ))}
+                />
+                <strong>
+                  {envidoScore(game.private.dealtHand, state.vira)} de envite
+                </strong>
+                {hasFlor(game.private.dealtHand, state.vira) && (
+                  <span>
+                    <Sparkles size={14} />
+                    Tienes flor
+                  </span>
+                )}
+              </div>
+              <div className="online-hand-cards">
+                {game.private.hand.map((card, index) => (
+                  <button
+                    key={cardId(card)}
+                    {...cardDrag(
+                      cardId(card),
+                      !disabled && legal.includes('play-card'),
+                    )}
+                    className={`select-card ${selection.includes(cardId(card)) ? 'selected-card' : ''}`}
+                    aria-label={`Seleccionar ${card.rank} de ${card.suit}`}
+                    aria-pressed={selection.includes(cardId(card))}
+                    disabled={
+                      disabled || (!legal.includes('play-card') && !stack)
+                    }
+                    onClick={() => select(cardId(card))}
+                  >
+                    <PlayingCard card={card} />
+                    <span className="card-index">{index + 1}</span>
+                  </button>
+                ))}
+              </div>
+              <Button
+                className="play-card-button"
+                onClick={play}
+                disabled={
+                  disabled ||
+                  (stack ? selected.length !== 2 : selected.length !== 1)
+                }
+              >
+                {stack ? 'Jugar apiladas' : 'Jugar carta'}
+                <ChevronRight size={16} />
+              </Button>
             </div>
-            <Button
-              className="play-card-button"
-              onClick={play}
-              disabled={
-                disabled ||
-                (stack ? selected.length !== 2 : selected.length !== 1)
-              }
-            >
-              {stack ? 'Jugar apiladas' : 'Jugar carta'}
-              <ChevronRight size={16} />
-            </Button>
-          </div>
-          <div className="call-tray" aria-label="Cantos y acciones">
-            <div>
-              <span className="eyebrow">CANTOS Y ACCIONES</span>
-              <small>Elige un canto o juega una carta.</small>
-            </div>
-            <div className="call-buttons">
-              {legal.includes('answer-quiero') && (
-                <Button
-                  disabled={disabled}
-                  onClick={() =>
-                    void command({ type: 'ANSWER_CALL', answer: 'quiero' })
-                  }
-                >
-                  Quiero
-                </Button>
-              )}
-              {legal.includes('answer-no-quiero') && (
-                <Button
-                  variant="outline"
-                  disabled={disabled}
-                  onClick={() =>
-                    void command({ type: 'ANSWER_CALL', answer: 'no-quiero' })
-                  }
-                >
-                  No quiero
-                </Button>
-              )}
-              {(legal.includes('call-truco') ||
-                legal.includes('raise-truco')) &&
-                nextCall != null &&
-                nextCall !== 'none' && (
+            <div className="call-tray" aria-label="Cantos y acciones">
+              <div>
+                <span className="eyebrow">CANTOS Y ACCIONES</span>
+                <small>Elige un canto o juega una carta.</small>
+              </div>
+              <div className="call-buttons">
+                {legal.includes('answer-quiero') && (
+                  <Button
+                    disabled={disabled}
+                    onClick={() =>
+                      void command({ type: 'ANSWER_CALL', answer: 'quiero' })
+                    }
+                  >
+                    Quiero
+                  </Button>
+                )}
+                {legal.includes('answer-no-quiero') && (
                   <Button
                     variant="outline"
                     disabled={disabled}
                     onClick={() =>
+                      void command({ type: 'ANSWER_CALL', answer: 'no-quiero' })
+                    }
+                  >
+                    No quiero
+                  </Button>
+                )}
+                {(legal.includes('call-truco') ||
+                  legal.includes('raise-truco')) &&
+                  nextCall != null &&
+                  nextCall !== 'none' && (
+                    <Button
+                      variant="outline"
+                      disabled={disabled}
+                      onClick={() =>
+                        setConfirmation({
+                          title: `${state.truco.pending ? 'Quiero y ' : ''}${callName[nextCall]}`,
+                          command: {
+                            type: state.truco.pending
+                              ? 'RAISE_TRUCO'
+                              : 'CALL_TRUCO',
+                            call: nextCall,
+                          },
+                        })
+                      }
+                    >
+                      {state.truco.pending ? 'Quiero y ' : ''}
+                      {callName[nextCall]}
+                    </Button>
+                  )}
+                <CantoBranch
+                  disabled={disabled}
+                  title="Envido"
+                  available={['call-envido', 'call-falta', 'raise-envido'].some(
+                    (action) =>
+                      legal.includes(action as (typeof legal)[number]),
+                  )}
+                >
+                  {legal.includes('call-envido') && (
+                    <Button
+                      variant="outline"
+                      disabled={disabled}
+                      onClick={() =>
+                        setConfirmation({
+                          title: 'Envido',
+                          command: { type: 'CALL_ENVIDO', amount: 2 },
+                        })
+                      }
+                    >
+                      Envido
+                    </Button>
+                  )}
+                  {legal.includes('call-falta') && (
+                    <Button
+                      variant="outline"
+                      disabled={disabled}
+                      onClick={() =>
+                        setConfirmation({
+                          title: 'La falta',
+                          command: { type: 'CALL_ENVIDO', amount: 'falta' },
+                        })
+                      }
+                    >
+                      La falta
+                    </Button>
+                  )}
+                  {legal.includes('raise-envido') && (
+                    <EnvidoRaises
+                      disabled={disabled}
+                      onSelect={(amount) =>
+                        setConfirmation({
+                          title:
+                            amount === 'falta'
+                              ? 'Quiero y la Falta'
+                              : amount === 2
+                                ? 'Quiero y Envido'
+                                : `Quiero y ${amount} más`,
+                          command: { type: 'RAISE_ENVIDO', amount },
+                        })
+                      }
+                    />
+                  )}
+                </CantoBranch>
+                <CantoBranch
+                  disabled={disabled}
+                  title="Flor"
+                  available={
+                    legal.includes('declare-flor') ||
+                    legal.includes('call-flor-envida')
+                  }
+                >
+                  {legal.includes('declare-flor') && (
+                    <Button
+                      variant="outline"
+                      disabled={disabled}
+                      onClick={() =>
+                        setConfirmation({
+                          title: 'Flor tengo',
+                          command: { type: 'DECLARE_FLOR', mode: 'flor' },
+                        })
+                      }
+                    >
+                      Flor tengo
+                    </Button>
+                  )}
+                  {legal.includes('declare-flor') &&
+                    room.config.flor === 'a-ley' && (
+                      <Button
+                        variant="outline"
+                        disabled={disabled}
+                        onClick={() =>
+                          setConfirmation({
+                            title: 'A ley',
+                            command: { type: 'DECLARE_FLOR', mode: 'a-ley' },
+                          })
+                        }
+                      >
+                        A ley
+                      </Button>
+                    )}
+                  {legal.includes('call-flor-envida') && (
+                    <Button
+                      variant="outline"
+                      disabled={disabled}
+                      onClick={() =>
+                        setConfirmation({
+                          title: 'Mi flor envida',
+                          command: { type: 'CALL_FLOR_ENVIDA' },
+                        })
+                      }
+                    >
+                      Mi flor envida
+                    </Button>
+                  )}
+                </CantoBranch>
+                {legal.includes('pass-card') && (
+                  <Button
+                    variant="ghost"
+                    disabled={disabled}
+                    onClick={() =>
                       setConfirmation({
-                        title: `${state.truco.pending ? 'Quiero y ' : ''}${callName[nextCall]}`,
-                        command: {
-                          type: state.truco.pending
-                            ? 'RAISE_TRUCO'
-                            : 'CALL_TRUCO',
-                          call: nextCall,
-                        },
+                        title: 'Pasar las tres cartas',
+                        command: { type: 'PASS_CARDS' },
                       })
                     }
                   >
-                    {state.truco.pending ? 'Quiero y ' : ''}
-                    {callName[nextCall]}
+                    <Layers size={15} />
+                    Pasar
                   </Button>
                 )}
-              <CantoBranch disabled={disabled} title="Envido" available={['call-envido', 'call-falta', 'raise-envido'].some(action => legal.includes(action as typeof legal[number]))}>
-              {legal.includes('call-envido') && (
-                <Button
-                  variant="outline"
-                  disabled={disabled}
-                  onClick={() =>
-                    setConfirmation({
-                      title: 'Envido',
-                      command: { type: 'CALL_ENVIDO', amount: 2 },
-                    })
-                  }
-                >
-                  Envido
-                </Button>
-              )}
-              {legal.includes('call-falta') && (
-                <Button
-                  variant="outline"
-                  disabled={disabled}
-                  onClick={() =>
-                    setConfirmation({
-                      title: 'La falta',
-                      command: { type: 'CALL_ENVIDO', amount: 'falta' },
-                    })
-                  }
-                >
-                  La falta
-                </Button>
-              )}
-              {legal.includes('raise-envido') && <EnvidoRaises disabled={disabled} onSelect={(amount) => setConfirmation({ title: amount === 'falta' ? 'Quiero y la Falta' : amount === 2 ? 'Quiero y Envido' : `Quiero y ${amount} más`, command: { type: 'RAISE_ENVIDO', amount } })} />}
-              </CantoBranch>
-              <CantoBranch disabled={disabled} title="Flor" available={legal.includes('declare-flor') || legal.includes('call-flor-envida')}>
-              {legal.includes('declare-flor') && (
-                <Button
-                  variant="outline"
-                  disabled={disabled}
-                  onClick={() =>
-                    setConfirmation({
-                      title: 'Flor tengo',
-                      command: { type: 'DECLARE_FLOR', mode: 'flor' },
-                    })
-                  }
-                >
-                  Flor tengo
-                </Button>
-              )}
-              {legal.includes('declare-flor') && room.config.flor === 'a-ley' && <Button variant="outline" disabled={disabled} onClick={() => setConfirmation({ title: 'A ley', command: { type: 'DECLARE_FLOR', mode: 'a-ley' } })}>A ley</Button>}
-              {legal.includes('call-flor-envida') && (
-                <Button
-                  variant="outline"
-                  disabled={disabled}
-                  onClick={() =>
-                    setConfirmation({
-                      title: 'Mi flor envida',
-                      command: { type: 'CALL_FLOR_ENVIDA' },
-                    })
-                  }
-                >
-                  Mi flor envida
-                </Button>
-              )}
-              </CantoBranch>
-              {legal.includes('pass-card') && (
-                <Button
-                  variant="ghost"
-                  disabled={disabled}
-                  onClick={() =>
-                    setConfirmation({
-                      title: 'Pasar las tres cartas',
-                      command: { type: 'PASS_CARDS' },
-                    })
-                  }
-                >
-                  <Layers size={15} />
-                  Pasar
-                </Button>
-              )}
-              {legal.includes('fold') && (
-                <Button
-                  variant="ghost"
-                  disabled={disabled}
-                  onClick={() =>
-                    setConfirmation({
-                      title: 'Irme al mazo',
-                      command: { type: 'FOLD_HAND' },
-                    })
-                  }
-                >
-                  <Flag size={15} />
-                  Al mazo
-                </Button>
-              )}
+                {legal.includes('fold') && (
+                  <Button
+                    variant="ghost"
+                    disabled={disabled}
+                    onClick={() =>
+                      setConfirmation({
+                        title: 'Irme al mazo',
+                        command: { type: 'FOLD_HAND' },
+                      })
+                    }
+                  >
+                    <Flag size={15} />
+                    Al mazo
+                  </Button>
+                )}
+              </div>
+              <p className="canto-help">
+                Los cantos cambian según el turno y tu mano. Retruco, Vale nueve
+                y Vale juego aparecen al avanzar la apuesta; Flor, cuando tienes
+                flor.
+              </p>
             </div>
-            <p className="canto-help">Los cantos cambian según el turno y tu mano. Retruco, Vale nueve y Vale juego aparecen al avanzar la apuesta; Flor, cuando tienes flor.</p>
-          </div>
           </section>
         </>
       )}

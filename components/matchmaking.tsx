@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { roomRequest } from '@/hooks/use-room';
 import type { RoomState } from '@/lib/room-model';
@@ -21,9 +21,15 @@ export function Matchmaking({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const onMatch = useRef(onMatched);
-  onMatch.current = onMatched;
-  const request = useRef(false);
+  useEffect(() => {
+    onMatch.current = onMatched;
+  }, [onMatched]);
+  const request = useRef<AbortController | null>(null);
   const generation = useRef(0);
+  const cancelRequests = useCallback(() => {
+    generation.current++;
+    request.current?.abort();
+  }, []);
   function accept(next: SearchState) {
     setState(next);
     if (next.status === 'matched' && next.room) onMatch.current(next.room);
@@ -37,16 +43,19 @@ export function Matchmaking({
           accept(next);
       })
       .catch(() => {});
-    return () => abort.abort();
-  }, []);
+    return () => {
+      abort.abort();
+      cancelRequests();
+    };
+  }, [cancelRequests]);
   useEffect(() => {
     if (state.status !== 'searching') return;
     const abort = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     async function poll() {
+      const attempt = generation.current;
       try {
         if (!request.current) {
-          const attempt = generation.current;
           const next = await roomRequest<SearchState>(
             '/api/matchmaking',
             { type: 'poll' },
@@ -58,7 +67,7 @@ export function Matchmaking({
           }
         }
       } catch (e) {
-        if (!abort.signal.aborted)
+        if (!abort.signal.aborted && attempt === generation.current)
           setError(
             e instanceof Error
               ? e.message
@@ -75,25 +84,32 @@ export function Matchmaking({
   }, [state.status]);
   async function act(type: 'join' | 'cancel') {
     if (request.current) return;
-    generation.current++;
-    request.current = true;
+    const attempt = ++generation.current;
+    const abort = new AbortController();
+    request.current = abort;
     setBusy(true);
     setError('');
     try {
-      accept(
-        await roomRequest<SearchState>('/api/matchmaking', {
+      const next = await roomRequest<SearchState>(
+        '/api/matchmaking',
+        {
           type,
           name,
           format,
-        }),
+        },
+        abort.signal,
       );
+      if (!abort.signal.aborted && attempt === generation.current) accept(next);
     } catch (e) {
+      if (abort.signal.aborted || attempt !== generation.current) return;
       setError(
         e instanceof Error ? e.message : 'No pudimos buscar una partida.',
       );
     } finally {
-      request.current = false;
-      setBusy(false);
+      if (request.current === abort) {
+        request.current = null;
+        setBusy(false);
+      }
     }
   }
   return (
@@ -102,10 +118,10 @@ export function Matchmaking({
       <p>Encuentra rivales de tu nivel.</p>
       {state.status === 'searching' ? (
         <>
-          <p role="status">
+          <output className="block">
             Buscando {state.format === '2v2' ? 'cuatro jugadores' : 'un rival'}…
             Ampliamos el rango de Elo mientras esperas.
-          </p>
+          </output>
           <Button
             variant="outline"
             disabled={busy}
@@ -132,10 +148,16 @@ export function Matchmaking({
           </Button>
         </div>
       )}
-      <details className="inline-help"><summary>¿Cómo funciona la búsqueda?</summary><p>En parejas, te asignamos compañero. Micrófono y cámara son opcionales.</p><p>
-        Solo las primeras 3 partidas contra el mismo rival en 24 horas dan Elo.
-        En parejas, el límite se aplica a cada rival.
-      </p></details>
+      <details className="inline-help">
+        <summary>¿Cómo funciona la búsqueda?</summary>
+        <p>
+          En parejas, te asignamos compañero. Micrófono y cámara son opcionales.
+        </p>
+        <p>
+          Solo las primeras 3 partidas contra el mismo rival en 24 horas dan
+          Elo. En parejas, el límite se aplica a cada rival.
+        </p>
+      </details>
       {error && <p role="alert">{error}</p>}
     </section>
   );

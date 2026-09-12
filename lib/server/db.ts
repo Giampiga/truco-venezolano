@@ -10,7 +10,7 @@ function connection() {
     throw new Error('Falta configurar DATABASE_URL.');
   return (database.trucoSql ??= postgres(process.env.DATABASE_URL, {
     prepare: false,
-      ssl: true,
+    ssl: true,
     max: 3,
     types: { bigint: { to: 20, from: [20], serialize: String, parse: Number } },
   }));

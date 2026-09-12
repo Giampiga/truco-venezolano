@@ -50,8 +50,8 @@ type InstallPrompt = Event & {
 export function TrucoApp() {
   const online = useRoom();
   const [nickname, setNickname] = useState('');
-  const [accountOpen,setAccountOpen] = useState(false);
-  const [registered,setRegistered] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [registered, setRegistered] = useState(false);
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [lobbyError, setLobbyError] = useState('');
@@ -114,6 +114,9 @@ export function TrucoApp() {
     };
   }, [refresh]);
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [online.room?.id, practice]);
+  useEffect(() => {
     if (!online.room && !practice) {
       const timer = setInterval(() => {
         if (!document.hidden) void refresh();
@@ -150,7 +153,8 @@ export function TrucoApp() {
       setOnlineResume(room.id);
       setInvitation('');
     } catch (error) {
-      if (error instanceof RoomRequestError && error.status === 401) setAccountOpen(true);
+      if (error instanceof RoomRequestError && error.status === 401)
+        setAccountOpen(true);
       setActionError(
         error instanceof Error ? error.message : 'No pudimos entrar a la mesa.',
       );
@@ -172,7 +176,8 @@ export function TrucoApp() {
       setOnlineResume(room.id);
       setCreateOpen(false);
     } catch (error) {
-      if (error instanceof RoomRequestError && error.status === 401) setAccountOpen(true);
+      if (error instanceof RoomRequestError && error.status === 401)
+        setAccountOpen(true);
       setActionError(
         error instanceof Error ? error.message : 'No pudimos crear la mesa.',
       );
@@ -292,7 +297,17 @@ export function TrucoApp() {
                   <Download size={17} />
                 </Button>
               )}
-              <AccountMenu open={accountOpen} onOpenChange={setAccountOpen} name={nickname} onName={updateName} onSession={value => {setRegistered(value); void refresh();}} playing={!!online.room} />
+              <AccountMenu
+                open={accountOpen}
+                onOpenChange={setAccountOpen}
+                name={nickname}
+                onName={updateName}
+                onSession={(value) => {
+                  setRegistered(value);
+                  void refresh();
+                }}
+                playing={!!online.room}
+              />
             </div>
           </div>
         </header>
@@ -300,7 +315,9 @@ export function TrucoApp() {
       {needsSignin && !practice && (
         <div className="invitation-strip">
           <span>Inicia sesión para jugar con tus panas.</span>
-          <Button onClick={()=>setAccountOpen(true)}>Entrar o crear cuenta</Button>
+          <Button onClick={() => setAccountOpen(true)}>
+            Entrar o crear cuenta
+          </Button>
         </div>
       )}
       {!online.room && online.error && (
@@ -321,7 +338,8 @@ export function TrucoApp() {
           {invitation && (
             <div className="invitation-strip">
               <span>
-                Te invitaron a la mesa <strong>{invitation}</strong>. Toma asiento para empezar.
+                Te invitaron a la mesa <strong>{invitation}</strong>. Toma
+                asiento para empezar.
               </span>
               <Button disabled={busy} onClick={() => void join(invitation)}>
                 Entrar a esta mesa <ArrowUpRight size={16} />
@@ -329,7 +347,28 @@ export function TrucoApp() {
             </div>
           )}
           <LobbyView
-            matchmaking={registered ? <Matchmaking name={nickname} onMatched={room=>{online.enter(room);setOnlineResume(room.id);setInvitation('');}}/> : <div className="competitive-signin"><p>Inicia sesión con una cuenta confirmada para competir y guardar tu Elo.</p><Button onClick={()=>setAccountOpen(true)}>Entrar o crear cuenta</Button></div>}
+            matchmaking={
+              registered ? (
+                <Matchmaking
+                  name={nickname}
+                  onMatched={(room) => {
+                    online.enter(room);
+                    setOnlineResume(room.id);
+                    setInvitation('');
+                  }}
+                />
+              ) : (
+                <div className="competitive-signin">
+                  <p>
+                    Inicia sesión con una cuenta confirmada para competir y
+                    guardar tu Elo.
+                  </p>
+                  <Button onClick={() => setAccountOpen(true)}>
+                    Entrar o crear cuenta
+                  </Button>
+                </div>
+              )
+            }
             nickname={nickname}
             rooms={rooms}
             loading={loading}
@@ -340,7 +379,10 @@ export function TrucoApp() {
             onResume={resumePractice}
             onOnlineResume={() => void join(onlineResume)}
             onCreate={(ranked = false, format = '2v2') => {
-              if (ranked && !registered) {setAccountOpen(true);return;}
+              if (ranked && !registered) {
+                setAccountOpen(true);
+                return;
+              }
               if (ensureName()) {
                 setConfig({
                   ...DEFAULT_CONFIG,
@@ -378,7 +420,8 @@ export function TrucoApp() {
             <div>
               <p className="eyebrow">
                 {online.room.config.isPrivate ? 'MESA PRIVADA' : 'MESA ABIERTA'}{' '}
-                / {online.room.config.format}{online.room.config.ranked ? ' / COMPETITIVA · ELO' : ''}
+                / {online.room.config.format}
+                {online.room.config.ranked ? ' / COMPETITIVA · ELO' : ''}
               </p>
               <h1>{online.room.config.name}</h1>
               <p>
@@ -432,7 +475,13 @@ export function TrucoApp() {
                     pending={online.pending}
                   />
                 )}
-                {online.room.config.ranked && online.room.game?.public.match.complete && <p className="ranked-result">Partida competitiva finalizada. Consulta tu Elo y el resultado en la clasificación del salón.</p>}
+                {online.room.config.ranked &&
+                  online.room.game?.public.match.complete && (
+                    <p className="ranked-result">
+                      Partida competitiva finalizada. Consulta tu Elo y el
+                      resultado en la clasificación del salón.
+                    </p>
+                  )}
                 <div className="room-rules-strip">
                   <LockKeyhole size={16} />
                   <span>
@@ -517,36 +566,47 @@ export function TrucoApp() {
           <DialogHeader>
             <DialogTitle>¿Sales de la mesa?</DialogTitle>
             <DialogDescription>
-              {online.room?.config.ranked && online.room.game && !online.room.game.public.match.complete
+              {online.room?.config.ranked &&
+              online.room.game &&
+              !online.room.game.public.match.complete
                 ? 'Abandonar cuenta como derrota para tu equipo y cambia el Elo. Se apagarán tu cámara y micrófono.'
-                : online.room?.game ? 'La partida se pausará hasta que vuelvas. Cámara y micrófono se desconectarán.'
-                : 'Tu asiento quedará libre. Cámara y micrófono se desconectarán.'}
+                : online.room?.game
+                  ? 'La partida se pausará hasta que vuelvas. Cámara y micrófono se desconectarán.'
+                  : 'Tu asiento quedará libre. Cámara y micrófono se desconectarán.'}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLeaveOpen(false)}>
               Me quedo
             </Button>
-            {online.room?.host === online.room?.you && !(online.room?.config.ranked && online.room.game && !online.room.game.public.match.complete) && (
-              <Button
-                variant="outline"
-                disabled={online.pending}
-                onClick={async () => {
-                  if (await online.act({ type: 'close' })) {
-                    online.detach();
-                    setOnlineResume('');
-                    setLeaveOpen(false);
-                    void refresh();
-                  }
-                }}
-              >
-                Cerrar la mesa
-              </Button>
-            )}
+            {online.room?.host === online.room?.you &&
+              !(
+                online.room?.config.ranked &&
+                online.room.game &&
+                !online.room.game.public.match.complete
+              ) && (
+                <Button
+                  variant="outline"
+                  disabled={online.pending}
+                  onClick={async () => {
+                    if (await online.act({ type: 'close' })) {
+                      online.detach();
+                      setOnlineResume('');
+                      setLeaveOpen(false);
+                      void refresh();
+                    }
+                  }}
+                >
+                  Cerrar la mesa
+                </Button>
+              )}
             <Button
               disabled={online.pending}
               onClick={async () => {
-                const saved = online.room?.game && !online.room.config.ranked ? online.room.id : '';
+                const saved =
+                  online.room?.game && !online.room.config.ranked
+                    ? online.room.id
+                    : '';
                 if (await online.act({ type: 'leave' })) {
                   setOnlineResume(saved);
                   if (saved) localStorage.setItem('truco-online-room', saved);

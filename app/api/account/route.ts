@@ -9,7 +9,11 @@ export async function GET(request: Request) {
           .bind(viewer.id)
           .first()
       : null;
-    return json({ registered: viewer.registered, profile }, 200, viewer.cookie);
+    return json(
+      { id: viewer.id, registered: viewer.registered, profile },
+      200,
+      viewer.cookie,
+    );
   } catch (error) {
     return failure(error);
   }

@@ -1,32 +1,6 @@
 import assert from 'node:assert/strict';
 import { DEFAULT_CONFIG } from '../lib/room-model.ts';
-const origin = process.env.TRUCO_TEST_URL ?? 'http://localhost:3012';
-assert.ok(
-  new URL(origin).hostname === 'localhost' ||
-    new URL(origin).hostname === '127.0.0.1',
-  'Integration suite is restricted to a local server.',
-);
-function client() {
-  let cookie = '';
-  return async (path: string, payload?: unknown, status = 200) => {
-    const response = await fetch(origin + path, {
-      method: payload ? 'POST' : 'GET',
-      headers: {
-        ...(payload
-          ? { 'Content-Type': 'application/json', Origin: origin }
-          : {}),
-        Cookie: cookie,
-      },
-      body: payload ? JSON.stringify(payload) : undefined,
-    });
-    if (response.headers.get('set-cookie'))
-      cookie = response.headers.get('set-cookie')!.split(';')[0];
-    const data: any = await response.json();
-    assert.equal(response.status, status, `${path}: ${JSON.stringify(data)}`);
-    assert.equal(response.headers.get('cache-control'), 'no-store');
-    return data;
-  };
-}
+import { client, origin } from './http-client.mts';
 const a = client(),
   b = client(),
   c = client(),
@@ -53,7 +27,7 @@ for (const format of ['1v1', '2v2'] as const) {
   await stranger(path + '/voice', {}, 403);
   const publicRooms = await stranger('/api/rooms');
   assert.equal(
-    publicRooms.rooms.some((item: any) => item.id === room.id),
+    publicRooms.rooms.some((item: { id: string }) => item.id === room.id),
     format === '2v2',
   );
   await b(`/api/rooms/${room.code}`, { type: 'join', name: 'Luis' });
@@ -70,7 +44,7 @@ for (const format of ['1v1', '2v2'] as const) {
     players.map((user) => user(path, { type: 'ready', ready: true })),
   );
   room = await a(path);
-  assert.ok(room.members.every((member: any) => member.ready));
+  assert.ok(room.members.every((member: { ready: boolean }) => member.ready));
   await a(path, {
     type: 'chat',
     text: '¡Buena partida!',
@@ -145,7 +119,9 @@ for (const format of ['1v1', '2v2'] as const) {
     assert.equal(ra.history.length, 1);
   }
   const profile = await a('/api/profile');
-  const saved = profile.history.matches.find((m: any) => m.room_id === room.id);
+  const saved = profile.history.matches.find(
+    (m: { room_id: string }) => m.room_id === room.id,
+  );
   assert.ok(saved, 'Finished match is in the durable profile history');
   assert.equal(saved.mode, format === '1v1' ? 'ranked' : 'casual');
   assert.ok(saved.opponents && saved.score);

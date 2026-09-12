@@ -58,7 +58,11 @@ export async function readHistory(
     AND (NOT EXISTS (SELECT 1 FROM match_history h WHERE h.room_id = r.id AND h.user_id = ?) OR (r.data::jsonb#>>'{config,ranked}' = 'true' AND NOT EXISTS (SELECT 1 FROM ranked_results x WHERE x.room_id = r.id))) LIMIT 20`)
     .bind(userId, userId)
     .all<{ data: string }>();
-  for (const row of pending.results) { const room = JSON.parse(row.data) as StoredRoom; await saveHistory(room); await settleRanking(room); }
+  for (const row of pending.results) {
+    const room = JSON.parse(row.data) as StoredRoom;
+    await saveHistory(room);
+    await settleRanking(room);
+  }
   const rows = await db
     .prepare(`SELECT h.room_id, h.mode, h.format, h.at, h.won, h.opponents, h.score,
     (e.value->>'delta')::int AS delta, (e.value->>'rating')::int AS rating, r.rated

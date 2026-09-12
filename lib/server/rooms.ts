@@ -23,10 +23,17 @@ export async function mutateRoom(
 ) {
   for (let attempt = 0; attempt < 4; attempt++) {
     const previous = await readRoom(id);
-    const profile = await getDb().prepare('SELECT handle, name FROM profiles WHERE user_id = ?').bind(userId).first<{handle: string; name: string}>();
-    const member = previous.members.find(m => m.userId === userId);
-    if (member && profile) { member.handle = profile.handle; member.name = profile.name; }
-    if (action.type === 'join' && profile) action = { type: 'join', name: profile.name };
+    const profile = await getDb()
+      .prepare('SELECT handle, name FROM profiles WHERE user_id = ?')
+      .bind(userId)
+      .first<{ handle: string; name: string }>();
+    const member = previous.members.find((m) => m.userId === userId);
+    if (member && profile) {
+      member.handle = profile.handle;
+      member.name = profile.name;
+    }
+    if (action?.type === 'join' && profile)
+      action = { type: 'join', name: profile.name };
     let next: StoredRoom;
     try {
       next = applyRoomAction(previous, userId, action);

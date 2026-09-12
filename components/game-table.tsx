@@ -32,7 +32,11 @@ import {
 
 import { EnvidoRaises } from '@/components/envido-raises';
 import { cardDrag } from '@/lib/card-drag';
-import { CantoNotice, PlayedStacks, CantoBranch } from '@/components/table-context';
+import {
+  CantoNotice,
+  PlayedStacks,
+  CantoBranch,
+} from '@/components/table-context';
 import { manoAnnouncement, gameEventText, actionLabels } from '@/lib/game-copy';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -68,7 +72,11 @@ import {
   observeForAi,
   type PracticeDifficulty,
 } from '@/lib/practice-ai';
-import type { NetworkState, RoomConfig, RoomSummary } from '@/lib/product-types';
+import type {
+  NetworkState,
+  RoomConfig,
+  RoomSummary,
+} from '@/lib/product-types';
 import {
   createSpanishDeck,
   envidoScore,
@@ -152,17 +160,28 @@ function seatsFor(config: RoomConfig): Seat[] {
 }
 
 function playerName(id: SeatId, config: RoomConfig) {
-  return {
-    opponent: config.opponent === 'ai' ? 'Truquito · IA' : 'Mariale',
-    mariale: 'Mariale',
-    rafael: 'Rafael C.',
-    vale: 'Vale_23',
-    human: 'Tú',
-  }[id] ?? id;
+  return (
+    {
+      opponent: config.opponent === 'ai' ? 'Truquito · IA' : 'Mariale',
+      mariale: 'Mariale',
+      rafael: 'Rafael C.',
+      vale: 'Vale_23',
+      human: 'Tú',
+    }[id] ?? id
+  );
 }
 
 function presentEvent(event: string, config: RoomConfig) {
-  return gameEventText(event, Object.fromEntries(['opponent', 'human', 'mariale', 'rafael', 'vale'].map((id) => [id, playerName(id, config)])), 'human');
+  return gameEventText(
+    event,
+    Object.fromEntries(
+      ['opponent', 'human', 'mariale', 'rafael', 'vale'].map((id) => [
+        id,
+        playerName(id, config),
+      ]),
+    ),
+    'human',
+  );
 }
 
 function presetLabel(preset: RoomConfig['preset']) {
@@ -186,7 +205,9 @@ function initialSnapshot(config: RoomConfig, resumeFromStorage: boolean) {
   if (resumeFromStorage && typeof window !== 'undefined') {
     try {
       const saved = window.localStorage.getItem('truco-active-table');
-      const parsed = saved ? (JSON.parse(saved) as { engine?: EngineSnapshot }) : null;
+      const parsed = saved
+        ? (JSON.parse(saved) as { engine?: EngineSnapshot })
+        : null;
       if (parsed?.engine && parsed.engine.format === config.format) {
         return reconnectSnapshot(resumeSnapshot(JSON.stringify(parsed.engine)));
       }
@@ -227,38 +248,55 @@ function commandPrompt(command: EngineCommand) {
   if (command.type === 'CALL_ENVIDO') {
     return {
       eyebrow: 'Envite prioritario',
-      title: command.amount === 'falta' ? '¿Envidas la Falta?' : '¿Cantas Envido?',
+      title:
+        command.amount === 'falta' ? '¿Envidas la Falta?' : '¿Cantas Envido?',
       copy:
         command.amount === 'falta'
           ? 'La apuesta muestra su cantidad exacta al enviarse y se resuelve antes del Truco.'
           : 'Vale 2 si se quiere y 1 si no. Puede interrumpir una respuesta de Truco en la primera vuelta.',
-      confirm: command.amount === 'falta' ? 'Envidar la Falta' : 'Cantar Envido',
+      confirm:
+        command.amount === 'falta' ? 'Envidar la Falta' : 'Cantar Envido',
     };
   }
   if (command.type === 'RAISE_ENVIDO') {
     return {
       eyebrow: 'Repique de Envite',
-      title: command.amount === 'falta' ? '¿Quiero y la Falta?' : command.amount === 2 ? '¿Quiero y Envido?' : `¿Quiero y ${command.amount} más?`,
-      copy:
-        'El aumento acepta lo anterior. Si luego no se quiere, se paga la apuesta que ya estaba aceptada.',
-      confirm: command.amount === 'falta' ? 'Quiero y la Falta' : command.amount === 2 ? 'Quiero y Envido' : `Quiero y ${command.amount} más`,
+      title:
+        command.amount === 'falta'
+          ? '¿Quiero y la Falta?'
+          : command.amount === 2
+            ? '¿Quiero y Envido?'
+            : `¿Quiero y ${command.amount} más?`,
+      copy: 'El aumento acepta lo anterior. Si luego no se quiere, se paga la apuesta que ya estaba aceptada.',
+      confirm:
+        command.amount === 'falta'
+          ? 'Quiero y la Falta'
+          : command.amount === 2
+            ? 'Quiero y Envido'
+            : `Quiero y ${command.amount} más`,
     };
   }
   if (command.type === 'DECLARE_FLOR' || command.type === 'CALL_FLOR_ENVIDA') {
     return {
       eyebrow: 'Flor venezolana',
-      title: command.type === 'CALL_FLOR_ENVIDA' ? '¿Tu Flor envida?' : command.mode === 'a-ley' ? 'A ley' : 'Flor tengo',
-      copy:
-        'La Flor se acredita antes del Truco y anula el Envite normal. La Reservada siempre gana la comparación.',
-      confirm: command.type === 'CALL_FLOR_ENVIDA' ? 'Mi Flor envida' : 'Declarar Flor',
+      title:
+        command.type === 'CALL_FLOR_ENVIDA'
+          ? '¿Tu Flor envida?'
+          : command.mode === 'a-ley'
+            ? 'A ley'
+            : 'Flor tengo',
+      copy: 'La Flor se acredita antes del Truco y anula el Envite normal. La Reservada siempre gana la comparación.',
+      confirm:
+        command.type === 'CALL_FLOR_ENVIDA'
+          ? 'Mi Flor envida'
+          : 'Declarar Flor',
     };
   }
   if (command.type === 'PASS_CARDS') {
     return {
       eyebrow: 'Cartas pasadas',
       title: '¿Pasas la primera?',
-      copy:
-        'Las tres quedan pasadas para el Truco, pero conservan su identidad al calcular el Envite.',
+      copy: 'Las tres quedan pasadas para el Truco, pero conservan su identidad al calcular el Envite.',
       confirm: 'Pasar las tres',
     };
   }
@@ -295,11 +333,15 @@ export function GameTable({
     () => rulesForConfig(config),
     [config],
   );
-  const [snapshot, setSnapshot] = useState(() => initialSnapshot(config, resumeFromStorage));
+  const [snapshot, setSnapshot] = useState(() =>
+    initialSnapshot(config, resumeFromStorage),
+  );
   const [undoStack, setUndoStack] = useState<EngineSnapshot[]>([]);
   const [redoStack, setRedoStack] = useState<EngineSnapshot[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [pendingCommand, setPendingCommand] = useState<EngineCommand | null>(null);
+  const [pendingCommand, setPendingCommand] = useState<EngineCommand | null>(
+    null,
+  );
   const [paused, setPaused] = useState(false);
   const [aiExplanation, setAiExplanation] = useState('');
   const [status, setStatus] = useState(
@@ -331,7 +373,11 @@ export function GameTable({
     return Object.fromEntries(
       order.map((id, index) => [
         id,
-        config.format === '1v1' ? (index === 0 ? 'Mano' : 'Pie') : roleLabels[index],
+        config.format === '1v1'
+          ? index === 0
+            ? 'Mano'
+            : 'Pie'
+          : roleLabels[index],
       ]),
     ) as Record<SeatId, string>;
   }, [config.format, seats, snapshot.manoSeatId]);
@@ -374,7 +420,9 @@ export function GameTable({
       setSnapshot(next);
       setSelected(null);
       setPendingCommand(null);
-      const orderedEvents = events.map((event) => presentEvent(event, config)).reverse();
+      const orderedEvents = events
+        .map((event) => presentEvent(event, config))
+        .reverse();
       setHistory((current) => [...orderedEvents, ...current].slice(0, 12));
       if (orderedEvents[0]) setStatus(orderedEvents[0]);
       if (explanation) setAiExplanation(explanation);
@@ -398,7 +446,9 @@ export function GameTable({
       );
       commit(snapshot, result.state, result.events);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Esa acción ya no es legal.');
+      setStatus(
+        error instanceof Error ? error.message : 'Esa acción ya no es legal.',
+      );
     }
   }
 
@@ -415,8 +465,9 @@ export function GameTable({
     const respondingTeam = pendingTeam === 'A' ? 'B' : 'A';
     if (respondingTeam === 'A') return null;
     return (
-      state.seats.find((seat) => seat.team === respondingTeam && seat.id !== 'human')
-        ?.id ?? null
+      state.seats.find(
+        (seat) => seat.team === respondingTeam && seat.id !== 'human',
+      )?.id ?? null
     );
   }, []);
 
@@ -446,7 +497,9 @@ export function GameTable({
       );
     } catch (error) {
       setStatus(
-        error instanceof Error ? error.message : 'La mesa rechazó la acción remota.',
+        error instanceof Error
+          ? error.message
+          : 'La mesa rechazó la acción remota.',
       );
     }
   }, [
@@ -464,7 +517,10 @@ export function GameTable({
     if (!actor || paused || networkState === 'reconnecting') {
       return;
     }
-    aiTimer.current = window.setTimeout(runAutomatedTurn, isPractice ? 480 : 680);
+    aiTimer.current = window.setTimeout(
+      runAutomatedTurn,
+      isPractice ? 480 : 680,
+    );
     return () => {
       if (aiTimer.current) window.clearTimeout(aiTimer.current);
     };
@@ -539,11 +595,12 @@ export function GameTable({
     setPaused(false);
     setSelected(null);
     setPendingCommand(null);
-    setStatus(`Nuevo reparto. ${manoAnnouncement(playerName(fresh.manoSeatId, config), fresh.manoSeatId === 'human')}`);
-    setHistory((current) => [
-      `Nueva base ${fresh.handNumber}.`,
-      ...current,
-    ].slice(0, 12));
+    setStatus(
+      `Nuevo reparto. ${manoAnnouncement(playerName(fresh.manoSeatId, config), fresh.manoSeatId === 'human')}`,
+    );
+    setHistory((current) =>
+      [`Nueva base ${fresh.handNumber}.`, ...current].slice(0, 12),
+    );
   }
 
   function continueAfterHand() {
@@ -561,7 +618,9 @@ export function GameTable({
         `Base ${next.handNumber}. ${manoAnnouncement(playerName(next.manoSeatId, config), next.manoSeatId === 'human')}`,
       );
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'No se pudo repartir.');
+      setStatus(
+        error instanceof Error ? error.message : 'No se pudo repartir.',
+      );
     }
   }
 
@@ -634,8 +693,8 @@ export function GameTable({
               </Badge>
             </div>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Base {snapshot.handNumber} · Chico {snapshot.match.gameNumber} · {formatLabel} ·{' '}
-              {presetLabel(config.preset)}
+              Base {snapshot.handNumber} · Chico {snapshot.match.gameNumber} ·{' '}
+              {formatLabel} · {presetLabel(config.preset)}
             </p>
           </div>
         </div>
@@ -651,7 +710,11 @@ export function GameTable({
           <i>—</i>
           <span>
             <small>
-              {config.format === '1v1' ? (isPractice ? 'IA' : 'Rival') : 'Ellos'}
+              {config.format === '1v1'
+                ? isPractice
+                  ? 'IA'
+                  : 'Rival'
+                : 'Ellos'}
             </small>
             <strong>{snapshot.match.score.B}</strong>
           </span>
@@ -673,7 +736,9 @@ export function GameTable({
                   : 'Todo sincronizado · Caracas 42 ms',
               )
             }
-            aria-label={isPractice ? 'Práctica local guardada' : 'Estado de conexión'}
+            aria-label={
+              isPractice ? 'Práctica local guardada' : 'Estado de conexión'
+            }
           >
             {networkState === 'reconnecting' ? <WifiOff /> : <Wifi />}
             <span className="hidden sm:inline">
@@ -689,7 +754,11 @@ export function GameTable({
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
-                <Button variant="ghost" size="icon" aria-label="Opciones de la mesa" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Opciones de la mesa"
+                />
               }
             >
               <MoreHorizontal className="size-5" />
@@ -703,7 +772,9 @@ export function GameTable({
                 </DropdownMenuItem>
                 {!isPractice && (
                   <DropdownMenuItem
-                    onClick={() => onToast('Seña pública enviada a toda la mesa.')}
+                    onClick={() =>
+                      onToast('Seña pública enviada a toda la mesa.')
+                    }
                   >
                     <Eye />
                     Enviar seña pública
@@ -735,184 +806,216 @@ export function GameTable({
 
       <div className="table-layout">
         <div className="player-play-area">
-        <section
-          className="table-stage"
-          data-format={config.format}
-          aria-label={`Mesa de juego ${formatLabel}`}
-        >
-          {seats
-            .filter((seat) => seat.id !== 'human')
-            .map((seat) => {
-              const position =
-                config.format === '1v1'
-                  ? 'top'
-                  : seat.id === 'mariale'
-                    ? 'top'
-                    : seat.id === 'rafael'
-                      ? 'left'
-                      : 'right';
-              return (
-                <div key={seat.id} className={`seat-position seat-${position}`}>
-                  <PlayerSeat
-                    name={playerName(seat.id, config)}
-                    seatRole={`${roleBySeat[seat.id]} · ${seat.team === 'A' ? 'Pareja' : isPractice ? 'IA' : 'Rival'}`}
-                    speaking={seat.id === 'mariale' && !isPractice}
-                    bot={seat.id === 'opponent' && isPractice}
-                  />
-                </div>
-              );
-            })}
-
-          <div className="felt">
-            <div className="felt-status">
-              <span
-                className={`turn-dot ${snapshot.activeSeatId === 'human' ? 'is-active' : ''}`}
-              />
-              <p aria-live="polite">{paused ? 'Práctica en pausa.' : status}</p>
-            </div>
-
-            <PlayedStacks key={snapshot.handNumber} you="human" onPlayCard={!paused && humanLegal.includes('play-card') ? (id) => { if (humanHand.some(card => cardId(card) === id)) humanCommand({ type: 'PLAY_CARD', cardId: id }); } : undefined} played={snapshot.played} seats={seats} name={(id) => playerName(id, config)} renderCard={(card) => <FaceCard card={card} compact />} />
-
-
-          </div>
-
-          <div
-            className="vira-deck"
-            aria-label={`Vira visible: ${snapshot.vira.rank} de ${snapshot.vira.suit}`}
+          <section
+            className="table-stage"
+            data-format={config.format}
+            aria-label={`Mesa de juego ${formatLabel}`}
           >
-            <div className="deck-stack" aria-hidden="true">
-              <span />
-              <span />
-              <strong>MAZO</strong>
-            </div>
-            <div className="vira-card-wrap">
-              <span className="vira-label">VIRA</span>
-              <FaceCard card={snapshot.vira} vira />
-            </div>
-            <div className="vira-copy">
-              <strong>
-                {snapshot.vira.rank} de {snapshot.vira.suit}
-              </strong>
-              <span>{viraDescription.text}</span>
-              <em>{viraDescription.substitution}</em>
-            </div>
-          </div>
-
-          <div className="seat-position seat-bottom">
-            <PlayerSeat
-              name="Tú"
-              seatRole={`${roleBySeat.human} · Tú`}
-              you
-              muted={muted || !voiceEnabled || isPractice}
-            />
-          </div>
-
-
-        </section>
-
-          <div className="player-console">
-          <section className="hand-zone" aria-label="Tu mano">
-            <div className="hand-heading">
-              <span>
-                <small>
-                  Tu mano · Envite {envidoScore(humanDeal, snapshot.vira)}
-                  {hasFlor(humanDeal, snapshot.vira) ? ' · Flor' : ''}
-                </small>
-                <strong>
-                  {snapshot.match.complete
-                    ? 'Partido terminado'
-                    : snapshot.handComplete
-                      ? 'Base terminada'
-                      : selectedCard
-                        ? `${selectedCard.rank} de ${selectedCard.suit}`
-                        : humanLegal.includes('play-stack')
-                          ? 'Parda: van las dos, mayor arriba'
-                          : 'Elige una carta'}
-                </strong>
-              </span>
-              <Badge
-                variant={snapshot.activeSeatId === 'human' ? 'default' : 'secondary'}
-              >
-                {snapshot.match.complete
-                  ? 'Final'
-                  : snapshot.handComplete
-                    ? 'Cierre'
-                    : snapshot.activeSeatId === 'human'
-                      ? 'Tu turno'
-                      : aiThinking
-                        ? 'Pensando…'
-                        : 'Esperando'}
-              </Badge>
-            </div>
-            <div className="hand-cards">
-              {humanHand.map((card) => {
-                const id = cardId(card);
-                const piece = humanPiece(card);
+            {seats
+              .filter((seat) => seat.id !== 'human')
+              .map((seat) => {
+                const position =
+                  config.format === '1v1'
+                    ? 'top'
+                    : seat.id === 'mariale'
+                      ? 'top'
+                      : seat.id === 'rafael'
+                        ? 'left'
+                        : 'right';
                 return (
-                  <button
-                    key={id}
-                    {...cardDrag(id, !paused && humanLegal.includes('play-card'))}
-                    onClick={() => setSelected(id)}
-                    disabled={
-                      (!humanLegal.includes('play-card') &&
-                        !humanLegal.includes('play-stack')) ||
-                      paused
-                    }
-                    className={`game-card hand-card suit-${card.suit}${selected === id ? ' is-selected' : ''}${card.passed ? ' is-passed' : ''}`}
-                    aria-pressed={selected === id}
-                    aria-label={`${card.rank} de ${card.suit}${piece ? `, ${piece}` : ''}${card.passed ? ', pasada' : ''}`}
+                  <div
+                    key={seat.id}
+                    className={`seat-position seat-${position}`}
                   >
-                    <span>
-                      <b>{card.rank}</b>
-                      <small>{suitShort[card.suit]}</small>
-                    </span>
-                    <em>{piece ?? card.suit}</em>
-                  </button>
+                    <PlayerSeat
+                      name={playerName(seat.id, config)}
+                      seatRole={`${roleBySeat[seat.id]} · ${seat.team === 'A' ? 'Pareja' : isPractice ? 'IA' : 'Rival'}`}
+                      speaking={seat.id === 'mariale' && !isPractice}
+                      bot={seat.id === 'opponent' && isPractice}
+                    />
+                  </div>
                 );
               })}
-              {humanHand.length === 0 && !snapshot.handComplete && (
-                <p className="text-sm text-muted-foreground">
-                  Ya jugaste tus tres cartas.
+
+            <div className="felt">
+              <div className="felt-status">
+                <span
+                  className={`turn-dot ${snapshot.activeSeatId === 'human' ? 'is-active' : ''}`}
+                />
+                <p aria-live="polite">
+                  {paused ? 'Práctica en pausa.' : status}
                 </p>
-              )}
+              </div>
+
+              <PlayedStacks
+                key={snapshot.handNumber}
+                you="human"
+                onPlayCard={
+                  !paused && humanLegal.includes('play-card')
+                    ? (id) => {
+                        if (humanHand.some((card) => cardId(card) === id))
+                          humanCommand({ type: 'PLAY_CARD', cardId: id });
+                      }
+                    : undefined
+                }
+                played={snapshot.played}
+                seats={seats}
+                name={(id) => playerName(id, config)}
+                renderCard={(card) => <FaceCard card={card} compact />}
+              />
             </div>
-            {snapshot.match.complete ? (
-              <Button
-                onClick={resetMatch}
-                className="play-card-button h-12 rounded-xl px-5"
-              >
-                Nueva partida
-              </Button>
-            ) : snapshot.handComplete ? (
-              <Button
-                onClick={continueAfterHand}
-                className="play-card-button h-12 rounded-xl px-5"
-              >
-                {snapshot.match.gameComplete ? 'Siguiente chico' : 'Siguiente base'}
-              </Button>
-            ) : (
-              <Button
-                onClick={() =>
-                  humanLegal.includes('play-stack') && orderedStack.length === 2
-                    ? humanCommand({
-                        type: 'PLAY_STACK',
-                        cardIds: [cardId(orderedStack[0]), cardId(orderedStack[1])],
-                      })
-                    : selectedCard &&
-                      humanCommand({ type: 'PLAY_CARD', cardId: cardId(selectedCard) })
-                }
-                disabled={
-                  paused ||
-                  (humanLegal.includes('play-stack')
-                    ? orderedStack.length !== 2
-                    : !selectedCard || !humanLegal.includes('play-card'))
-                }
-                className="play-card-button h-12 rounded-xl px-6"
-              >
-                {humanLegal.includes('play-stack') ? 'Apilar las dos' : 'Jugar carta'}
-              </Button>
-            )}
+
+            <div
+              className="vira-deck"
+              aria-label={`Vira visible: ${snapshot.vira.rank} de ${snapshot.vira.suit}`}
+            >
+              <div className="deck-stack" aria-hidden="true">
+                <span />
+                <span />
+                <strong>MAZO</strong>
+              </div>
+              <div className="vira-card-wrap">
+                <span className="vira-label">VIRA</span>
+                <FaceCard card={snapshot.vira} vira />
+              </div>
+              <div className="vira-copy">
+                <strong>
+                  {snapshot.vira.rank} de {snapshot.vira.suit}
+                </strong>
+                <span>{viraDescription.text}</span>
+                <em>{viraDescription.substitution}</em>
+              </div>
+            </div>
+
+            <div className="seat-position seat-bottom">
+              <PlayerSeat
+                name="Tú"
+                seatRole={`${roleBySeat.human} · Tú`}
+                you
+                muted={muted || !voiceEnabled || isPractice}
+              />
+            </div>
           </section>
+
+          <div className="player-console">
+            <section className="hand-zone" aria-label="Tu mano">
+              <div className="hand-heading">
+                <span>
+                  <small>
+                    Tu mano · Envite {envidoScore(humanDeal, snapshot.vira)}
+                    {hasFlor(humanDeal, snapshot.vira) ? ' · Flor' : ''}
+                  </small>
+                  <strong>
+                    {snapshot.match.complete
+                      ? 'Partido terminado'
+                      : snapshot.handComplete
+                        ? 'Base terminada'
+                        : selectedCard
+                          ? `${selectedCard.rank} de ${selectedCard.suit}`
+                          : humanLegal.includes('play-stack')
+                            ? 'Parda: van las dos, mayor arriba'
+                            : 'Elige una carta'}
+                  </strong>
+                </span>
+                <Badge
+                  variant={
+                    snapshot.activeSeatId === 'human' ? 'default' : 'secondary'
+                  }
+                >
+                  {snapshot.match.complete
+                    ? 'Final'
+                    : snapshot.handComplete
+                      ? 'Cierre'
+                      : snapshot.activeSeatId === 'human'
+                        ? 'Tu turno'
+                        : aiThinking
+                          ? 'Pensando…'
+                          : 'Esperando'}
+                </Badge>
+              </div>
+              <div className="hand-cards">
+                {humanHand.map((card) => {
+                  const id = cardId(card);
+                  const piece = humanPiece(card);
+                  return (
+                    <button
+                      key={id}
+                      {...cardDrag(
+                        id,
+                        !paused && humanLegal.includes('play-card'),
+                      )}
+                      onClick={() => setSelected(id)}
+                      disabled={
+                        (!humanLegal.includes('play-card') &&
+                          !humanLegal.includes('play-stack')) ||
+                        paused
+                      }
+                      className={`game-card hand-card suit-${card.suit}${selected === id ? ' is-selected' : ''}${card.passed ? ' is-passed' : ''}`}
+                      aria-pressed={selected === id}
+                      aria-label={`${card.rank} de ${card.suit}${piece ? `, ${piece}` : ''}${card.passed ? ', pasada' : ''}`}
+                    >
+                      <span>
+                        <b>{card.rank}</b>
+                        <small>{suitShort[card.suit]}</small>
+                      </span>
+                      <em>{piece ?? card.suit}</em>
+                    </button>
+                  );
+                })}
+                {humanHand.length === 0 && !snapshot.handComplete && (
+                  <p className="text-sm text-muted-foreground">
+                    Ya jugaste tus tres cartas.
+                  </p>
+                )}
+              </div>
+              {snapshot.match.complete ? (
+                <Button
+                  onClick={resetMatch}
+                  className="play-card-button h-12 rounded-xl px-5"
+                >
+                  Nueva partida
+                </Button>
+              ) : snapshot.handComplete ? (
+                <Button
+                  onClick={continueAfterHand}
+                  className="play-card-button h-12 rounded-xl px-5"
+                >
+                  {snapshot.match.gameComplete
+                    ? 'Siguiente chico'
+                    : 'Siguiente base'}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() =>
+                    humanLegal.includes('play-stack') &&
+                    orderedStack.length === 2
+                      ? humanCommand({
+                          type: 'PLAY_STACK',
+                          cardIds: [
+                            cardId(orderedStack[0]),
+                            cardId(orderedStack[1]),
+                          ],
+                        })
+                      : selectedCard &&
+                        humanCommand({
+                          type: 'PLAY_CARD',
+                          cardId: cardId(selectedCard),
+                        })
+                  }
+                  disabled={
+                    paused ||
+                    (humanLegal.includes('play-stack')
+                      ? orderedStack.length !== 2
+                      : !selectedCard || !humanLegal.includes('play-card'))
+                  }
+                  className="play-card-button h-12 rounded-xl px-6"
+                >
+                  {humanLegal.includes('play-stack')
+                    ? 'Apilar las dos'
+                    : 'Jugar carta'}
+                </Button>
+              )}
+            </section>
             {prompt && pendingCommand && (
               <section className="call-confirm" aria-label="Confirmar acción">
                 <button
@@ -934,7 +1037,6 @@ export function GameTable({
                     Todavía no
                   </Button>
                   <Button
-                    autoFocus
                     onClick={() => humanCommand(pendingCommand)}
                     className="h-11 rounded-xl"
                   >
@@ -943,154 +1045,213 @@ export function GameTable({
                 </div>
               </section>
             )}
-          <section className="call-dock">
-            <CantoNotice state={snapshot} you="human" name={(id) => playerName(id, config)} canAnswer={humanLegal.includes('answer-quiero')} />
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  Cantos y acciones
-                </p>
-                <h2 className="mt-1 text-sm font-semibold">
-                  {snapshot.priority.active === 'play'
-                    ? 'Elige tu canto'
-                    : 'Respuesta pendiente'}
-                </h2>
+            <section className="call-dock">
+              <CantoNotice
+                state={snapshot}
+                you="human"
+                name={(id) => playerName(id, config)}
+                canAnswer={humanLegal.includes('answer-quiero')}
+              />
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    Cantos y acciones
+                  </p>
+                  <h2 className="mt-1 text-sm font-semibold">
+                    {snapshot.priority.active === 'play'
+                      ? 'Elige tu canto'
+                      : 'Respuesta pendiente'}
+                  </h2>
+                </div>
+                <Badge variant="outline">
+                  {humanIsMano ? 'Eres mano' : 'Eres pie'}
+                </Badge>
               </div>
-              <Badge variant="outline">
-                {humanIsMano ? 'Eres mano' : 'Eres pie'}
-              </Badge>
-            </div>
-            <fieldset className="call-buttons" disabled={paused}>
-              {humanLegal.includes('answer-quiero') && (
-                <Button
-                  onClick={() =>
-                    humanCommand({ type: 'ANSWER_CALL', answer: 'quiero' })
-                  }
-                  className="h-11 rounded-xl"
-                >
-                  Quiero
-                </Button>
-              )}
-              {humanLegal.includes('answer-no-quiero') && (
-                <Button
-                  onClick={() =>
-                    humanCommand({ type: 'ANSWER_CALL', answer: 'no-quiero' })
-                  }
-                  variant="outline"
-                  className="h-11 rounded-xl"
-                >
-                  No quiero
-                </Button>
-              )}
-              {humanLegal.includes('raise-truco') &&
-                nextCall &&
-                nextCall !== 'none' && (
+              <fieldset className="call-buttons" disabled={paused}>
+                {humanLegal.includes('answer-quiero') && (
                   <Button
                     onClick={() =>
-                      setPendingCommand({ type: 'RAISE_TRUCO', call: nextCall })
+                      humanCommand({ type: 'ANSWER_CALL', answer: 'quiero' })
                     }
+                    className="h-11 rounded-xl"
+                  >
+                    Quiero
+                  </Button>
+                )}
+                {humanLegal.includes('answer-no-quiero') && (
+                  <Button
+                    onClick={() =>
+                      humanCommand({ type: 'ANSWER_CALL', answer: 'no-quiero' })
+                    }
+                    variant="outline"
+                    className="h-11 rounded-xl"
+                  >
+                    No quiero
+                  </Button>
+                )}
+                {humanLegal.includes('raise-truco') &&
+                  nextCall &&
+                  nextCall !== 'none' && (
+                    <Button
+                      onClick={() =>
+                        setPendingCommand({
+                          type: 'RAISE_TRUCO',
+                          call: nextCall,
+                        })
+                      }
+                      variant="secondary"
+                      className="h-11 rounded-xl"
+                    >
+                      Quiero y {callLabels[nextCall]}
+                    </Button>
+                  )}
+                <CantoBranch
+                  disabled={paused}
+                  title="Envido"
+                  available={['call-envido', 'call-falta', 'raise-envido'].some(
+                    (action) =>
+                      humanLegal.includes(
+                        action as (typeof humanLegal)[number],
+                      ),
+                  )}
+                >
+                  {humanLegal.includes('raise-envido') && (
+                    <EnvidoRaises
+                      disabled={paused}
+                      onSelect={(amount) =>
+                        setPendingCommand({ type: 'RAISE_ENVIDO', amount })
+                      }
+                    />
+                  )}
+                  {humanLegal.includes('call-envido') && (
+                    <Button
+                      onClick={() =>
+                        setPendingCommand({ type: 'CALL_ENVIDO', amount: 2 })
+                      }
+                      variant="outline"
+                      className="h-11 rounded-xl"
+                    >
+                      Envido
+                    </Button>
+                  )}
+                  {humanLegal.includes('call-falta') && (
+                    <Button
+                      onClick={() =>
+                        setPendingCommand({
+                          type: 'CALL_ENVIDO',
+                          amount: 'falta',
+                        })
+                      }
+                      variant="outline"
+                      className="h-11 rounded-xl"
+                    >
+                      Falta ·{' '}
+                      {Math.max(
+                        1,
+                        snapshot.match.target -
+                          Math.max(
+                            snapshot.match.score.A,
+                            snapshot.match.score.B,
+                          ),
+                      )}
+                    </Button>
+                  )}
+                </CantoBranch>
+                <CantoBranch
+                  disabled={paused}
+                  title="Flor"
+                  available={
+                    humanLegal.includes('declare-flor') ||
+                    humanLegal.includes('call-flor-envida')
+                  }
+                >
+                  {humanLegal.includes('declare-flor') && (
+                    <Button
+                      onClick={() =>
+                        setPendingCommand({
+                          type: 'DECLARE_FLOR',
+                          mode: 'flor',
+                        })
+                      }
+                      variant="outline"
+                      className="h-11 rounded-xl"
+                    >
+                      Flor
+                    </Button>
+                  )}
+                  {humanLegal.includes('declare-flor') &&
+                    config.flor === 'a-ley' && (
+                      <Button
+                        variant="outline"
+                        onClick={() =>
+                          setPendingCommand({
+                            type: 'DECLARE_FLOR',
+                            mode: 'a-ley',
+                          })
+                        }
+                      >
+                        A ley
+                      </Button>
+                    )}
+                  {humanLegal.includes('call-flor-envida') && (
+                    <Button
+                      onClick={() =>
+                        setPendingCommand({ type: 'CALL_FLOR_ENVIDA' })
+                      }
+                      variant="outline"
+                      className="h-11 rounded-xl"
+                    >
+                      Mi Flor envida
+                    </Button>
+                  )}
+                </CantoBranch>
+                {humanLegal.includes('call-truco') &&
+                  nextCall &&
+                  nextCall !== 'none' && (
+                    <Button
+                      onClick={() =>
+                        setPendingCommand({
+                          type: 'CALL_TRUCO',
+                          call: nextCall,
+                        })
+                      }
+                      className="h-11 rounded-xl"
+                    >
+                      {callLabels[nextCall]}
+                    </Button>
+                  )}
+                {humanLegal.includes('pass-card') && (
+                  <Button
+                    onClick={() => setPendingCommand({ type: 'PASS_CARDS' })}
                     variant="secondary"
                     className="h-11 rounded-xl"
                   >
-                    Quiero y {callLabels[nextCall]}
+                    Pasar cartas
                   </Button>
                 )}
-              <CantoBranch disabled={paused} title="Envido" available={['call-envido', 'call-falta', 'raise-envido'].some(action => humanLegal.includes(action as typeof humanLegal[number]))}>
-              {humanLegal.includes('raise-envido') && <EnvidoRaises disabled={paused} onSelect={(amount) => setPendingCommand({ type: 'RAISE_ENVIDO', amount })} />}
-              {humanLegal.includes('call-envido') && (
-                <Button
-                  onClick={() =>
-                    setPendingCommand({ type: 'CALL_ENVIDO', amount: 2 })
-                  }
-                  variant="outline"
-                  className="h-11 rounded-xl"
-                >
-                  Envido
-                </Button>
-              )}
-              {humanLegal.includes('call-falta') && (
-                <Button
-                  onClick={() =>
-                    setPendingCommand({ type: 'CALL_ENVIDO', amount: 'falta' })
-                  }
-                  variant="outline"
-                  className="h-11 rounded-xl"
-                >
-                  Falta ·{' '}
-                  {Math.max(
-                    1,
-                    snapshot.match.target -
-                      Math.max(snapshot.match.score.A, snapshot.match.score.B),
-                  )}
-                </Button>
-              )}
-              </CantoBranch>
-              <CantoBranch disabled={paused} title="Flor" available={humanLegal.includes('declare-flor') || humanLegal.includes('call-flor-envida')}>
-              {humanLegal.includes('declare-flor') && (
-                <Button
-                  onClick={() =>
-                    setPendingCommand({ type: 'DECLARE_FLOR', mode: 'flor' })
-                  }
-                  variant="outline"
-                  className="h-11 rounded-xl"
-                >
-                  Flor
-                </Button>
-              )}
-              {humanLegal.includes('declare-flor') && config.flor === 'a-ley' && <Button variant="outline" onClick={() => setPendingCommand({ type: 'DECLARE_FLOR', mode: 'a-ley' })}>A ley</Button>}
-              {humanLegal.includes('call-flor-envida') && (
-                <Button
-                  onClick={() => setPendingCommand({ type: 'CALL_FLOR_ENVIDA' })}
-                  variant="outline"
-                  className="h-11 rounded-xl"
-                >
-                  Mi Flor envida
-                </Button>
-              )}
-              </CantoBranch>
-              {humanLegal.includes('call-truco') &&
-                nextCall &&
-                nextCall !== 'none' && (
+                {humanLegal.includes('fold') && (
                   <Button
-                    onClick={() =>
-                      setPendingCommand({ type: 'CALL_TRUCO', call: nextCall })
-                    }
-                    className="h-11 rounded-xl"
+                    onClick={() => setPendingCommand({ type: 'FOLD_HAND' })}
+                    variant="ghost"
+                    className="col-span-2 h-11 rounded-xl text-muted-foreground"
                   >
-                    {callLabels[nextCall]}
+                    Irme al mazo
                   </Button>
                 )}
-              {humanLegal.includes('pass-card') && (
-                <Button
-                  onClick={() => setPendingCommand({ type: 'PASS_CARDS' })}
-                  variant="secondary"
-                  className="h-11 rounded-xl"
-                >
-                  Pasar cartas
-                </Button>
-              )}
-              {humanLegal.includes('fold') && (
-                <Button
-                  onClick={() => setPendingCommand({ type: 'FOLD_HAND' })}
-                  variant="ghost"
-                  className="col-span-2 h-11 rounded-xl text-muted-foreground"
-                >
-                  Irme al mazo
-                </Button>
-              )}
-              {humanLegal.length === 0 &&
-                !snapshot.handComplete &&
-                !snapshot.match.complete && (
-                  <p className="col-span-2 py-2 text-xs leading-5 text-muted-foreground">
-                    Esperando la jugada del rival.
-                  </p>
-                )}
-            </fieldset>
-            <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              Los cantos cambian según el turno y tu mano. Retruco, Vale nueve y Vale juego aparecen al avanzar la apuesta; Flor, cuando tienes flor.
-            </p>
-          </section>
-
+                {humanLegal.length === 0 &&
+                  !snapshot.handComplete &&
+                  !snapshot.match.complete && (
+                    <p className="col-span-2 py-2 text-xs leading-5 text-muted-foreground">
+                      Esperando la jugada del rival.
+                    </p>
+                  )}
+              </fieldset>
+              <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                Los cantos cambian según el turno y tu mano. Retruco, Vale nueve
+                y Vale juego aparecen al avanzar la apuesta; Flor, cuando tienes
+                flor.
+              </p>
+            </section>
           </div>
         </div>
         <aside className="game-side-panel">
@@ -1104,7 +1265,8 @@ export function GameTable({
                   <h2 className="mt-1 flex items-center gap-2 text-sm font-semibold">
                     <Bot className="size-4" />
                     Truquito ·{' '}
-                    {practiceDifficulty[0].toUpperCase() + practiceDifficulty.slice(1)}
+                    {practiceDifficulty[0].toUpperCase() +
+                      practiceDifficulty.slice(1)}
                   </h2>
                 </div>
                 <Badge variant="outline">Sin puntos de clasificación</Badge>
@@ -1149,7 +1311,9 @@ export function GameTable({
                   onClick={startNewDeal}
                   variant="outline"
                   size="sm"
-                  disabled={snapshot.handComplete || snapshot.match.gameComplete}
+                  disabled={
+                    snapshot.handComplete || snapshot.match.gameComplete
+                  }
                 >
                   <RefreshCcw />
                   Nuevo reparto
@@ -1208,9 +1372,7 @@ export function GameTable({
               </div>
               <div>
                 <dt>Parda</dt>
-                <dd>
-                  Apilada · {config.parda}
-                </dd>
+                <dd>Apilada · {config.parda}</dd>
               </div>
               <div>
                 <dt>Piezas</dt>
@@ -1255,7 +1417,9 @@ export function GameTable({
                     : `ganó el equipo ${snapshot.trickResults.at(-1)?.winnerTeam} por jerarquía de carta.`}
                 </p>
               )}
-              {aiExplanation && <p className="ai-reason mt-3">{aiExplanation}</p>}
+              {aiExplanation && (
+                <p className="ai-reason mt-3">{aiExplanation}</p>
+              )}
             </section>
           )}
 
@@ -1365,12 +1529,15 @@ export function GameTable({
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
               Guardando tu asiento
             </p>
-            <h2 id="reconnect-title" className="mt-2 font-display text-3xl font-bold">
+            <h2
+              id="reconnect-title"
+              className="mt-2 font-display text-3xl font-bold"
+            >
               Volviendo a la mesa…
             </h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Vira, manos, formato, turno y canto pendiente permanecen en la última
-              versión confirmada.
+              Vira, manos, formato, turno y canto pendiente permanecen en la
+              última versión confirmada.
             </p>
           </div>
         </div>
@@ -1429,9 +1596,14 @@ function PlayerSeat({
         <small>{seatRole}</small>
       </span>
       {speaking && (
-        <Mic className="seat-audio text-emerald-600" aria-label="Está hablando" />
+        <Mic
+          className="seat-audio text-emerald-600"
+          aria-label="Está hablando"
+        />
       )}
-      {muted && <MicOff className="seat-audio" aria-label="Micrófono apagado" />}
+      {muted && (
+        <MicOff className="seat-audio" aria-label="Micrófono apagado" />
+      )}
     </div>
   );
 }
@@ -1469,7 +1641,9 @@ function VoiceMember({
       <span className="ml-auto">
         {state === 'speaking' && <Mic className="size-4 text-emerald-600" />}
         {state === 'on' && <Mic className="size-4 text-muted-foreground" />}
-        {state === 'muted' && <MicOff className="size-4 text-muted-foreground" />}
+        {state === 'muted' && (
+          <MicOff className="size-4 text-muted-foreground" />
+        )}
       </span>
     </div>
   );

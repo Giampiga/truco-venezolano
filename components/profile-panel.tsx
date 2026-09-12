@@ -1,5 +1,11 @@
 'use client';
-import { useEffect, useState, useCallback, type SyntheticEvent } from 'react';
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  type SyntheticEvent,
+} from 'react';
 import { Button } from '@/components/ui/button';
 type Profile = { handle: string; name: string; bio: string };
 type Friend = Profile & { status: string; outgoing: boolean };
@@ -40,32 +46,55 @@ export function ProfilePanel({
   const [data, setData] = useState<ProfileData | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState('');
+  const mounted = useRef(false);
+  const pending = useRef<AbortController | null>(null);
   const load = useCallback(
     async (handle = '') => {
-      const response = await fetch(
-        `/api/profile?handle=${encodeURIComponent(handle)}&mode=${mode}&offset=${offset}`,
-      );
-      const value = (await response.json()) as ProfileData & { error?: string };
-      if (!response.ok) throw new Error(value.error);
-      return value;
+      pending.current?.abort();
+      const controller = new AbortController();
+      pending.current = controller;
+      try {
+        const response = await fetch(
+          `/api/profile?handle=${encodeURIComponent(handle)}&mode=${mode}&offset=${offset}`,
+          { signal: controller.signal },
+        );
+        const value = (await response.json()) as ProfileData & {
+          error?: string;
+        };
+        if (!response.ok)
+          throw new Error(value.error || 'No pudimos cargar tu perfil.');
+        if (mounted.current && !controller.signal.aborted) {
+          setData(value);
+          setError('');
+        }
+        return value;
+      } catch (error) {
+        if (mounted.current && !controller.signal.aborted)
+          setError(
+            error instanceof Error
+              ? error.message
+              : 'No pudimos cargar tu perfil.',
+          );
+        throw error;
+      } finally {
+        if (mounted.current && !controller.signal.aborted) setLoading(false);
+      }
     },
     [mode, offset],
   );
   useEffect(() => {
-    let alive = true;
-    void load()
-      .then((value) => {
-        if (alive) setData(value);
-      })
-      .catch((e) => {
-        if (alive) setError(e.message);
-      });
+    mounted.current = true;
+    const timer = setTimeout(() => void load().catch(() => {}), 0);
     return () => {
-      alive = false;
+      clearTimeout(timer);
+      mounted.current = false;
+      pending.current?.abort();
     };
   }, [load]);
   async function act(input: Record<string, unknown>) {
+    if (busy || loading) return;
     setBusy(true);
     setError('');
     setNotice('');
@@ -76,19 +105,25 @@ export function ProfilePanel({
         body: JSON.stringify(input),
       });
       const value = (await response.json()) as ProfileData & { error?: string };
-      if (!response.ok) throw new Error(value.error);
-      setData(await load());
-      if (input.type === 'save')
-        onName(String(input.name), String(input.handle));
+      if (!response.ok)
+        throw new Error(value.error || 'No pudimos guardar el cambio.');
+      if (!mounted.current) return;
       setNotice(
         input.type === 'save'
           ? 'Perfil guardado. Tu nombre aparecerá en las mesas.'
           : 'Lista de amigos actualizada.',
       );
+      setLoading(true);
+      const updated = await load();
+      if (mounted.current && input.type === 'save' && updated.me)
+        onName(updated.me.name, updated.me.handle);
     } catch (e) {
-      setError((e as Error).message);
+      if (mounted.current && !(e instanceof Error && e.name === 'AbortError'))
+        setError(
+          e instanceof Error ? e.message : 'No pudimos guardar el cambio.',
+        );
     } finally {
-      setBusy(false);
+      if (mounted.current) setBusy(false);
     }
   }
   function save(event: SyntheticEvent<HTMLFormElement>) {
@@ -99,7 +134,7 @@ export function ProfilePanel({
     });
   }
   return (
-    <section className="account-content">
+    <section className="account-content" aria-busy={busy || loading}>
       <nav className="account-tabs" aria-label="Secciones de la cuenta">
         {[
           ['profile', 'Perfil'],
@@ -109,6 +144,7 @@ export function ProfilePanel({
           <button
             key={id}
             aria-current={section === id ? 'page' : undefined}
+            disabled={busy}
             onClick={() => setSection(id)}
           >
             {label}
@@ -117,6 +153,18 @@ export function ProfilePanel({
       </nav>
       {error && <p role="alert">{error}</p>}
       {notice && <output>{notice}</output>}
+      {loading && <output>Cargando tu perfil…</output>}
+      {!loading && !data && (
+        <Button
+          variant="outline"
+          onClick={() => {
+            setLoading(true);
+            void load().catch(() => {});
+          }}
+        >
+          Volver a intentar
+        </Button>
+      )}
       {data && (
         <>
           {section === 'profile' && (
@@ -148,12 +196,14 @@ export function ProfilePanel({
               <form
                 className="account-form"
                 onSubmit={save}
-                key={data.me?.handle ?? 'new'}
+                key={JSON.stringify(data.me)}
               >
                 <label>
                   Nombre de usuario
                   <input
                     name="handle"
+                    autoComplete="username"
+                    aria-describedby="handle-help"
                     required
                     pattern="[a-zA-Z0-9_]{3,20}"
                     minLength={3}
@@ -162,11 +212,16 @@ export function ProfilePanel({
                     placeholder="tu_usuario"
                   />
                 </label>
+                <small id="handle-help">
+                  Entre 3 y 20 letras, números o guiones bajos. Tus amigos te
+                  encontrarán con este usuario.
+                </small>
                 <label>
                   Nombre visible
                   <input
                     name="name"
                     required
+                    minLength={2}
                     maxLength={24}
                     defaultValue={data.me?.name}
                   />
@@ -179,7 +234,7 @@ export function ProfilePanel({
                     defaultValue={data.me?.bio}
                   />
                 </label>
-                <Button type="submit" disabled={busy}>
+                <Button type="submit" disabled={busy || loading}>
                   Guardar perfil
                 </Button>
               </form>
@@ -192,7 +247,9 @@ export function ProfilePanel({
                   Partidas
                   <select
                     value={mode}
+                    disabled={busy || loading}
                     onChange={(e) => {
+                      setLoading(true);
                       setMode(e.target.value);
                       setOffset(0);
                     }}
@@ -248,15 +305,21 @@ export function ProfilePanel({
               <div className="history-pagination">
                 <Button
                   variant="outline"
-                  disabled={offset === 0}
-                  onClick={() => setOffset(Math.max(0, offset - 20))}
+                  disabled={busy || loading || offset === 0}
+                  onClick={() => {
+                    setLoading(true);
+                    setOffset(Math.max(0, offset - 20));
+                  }}
                 >
                   Anterior
                 </Button>
                 <Button
                   variant="outline"
-                  disabled={!data.history.more}
-                  onClick={() => setOffset(offset + 20)}
+                  disabled={busy || loading || !data.history.more}
+                  onClick={() => {
+                    setLoading(true);
+                    setOffset(offset + 20);
+                  }}
                 >
                   Siguiente
                 </Button>
@@ -273,6 +336,8 @@ export function ProfilePanel({
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
+                  if (busy || loading) return;
+                  setLoading(true);
                   setError('');
                   try {
                     const value = await load(
@@ -280,10 +345,12 @@ export function ProfilePanel({
                         .replace(/^@/, '')
                         .trim(),
                     );
-                    setData(value);
-                    setNotice(value.found ? '' : 'No encontramos ese usuario.');
-                  } catch (e) {
-                    setError((e as Error).message);
+                    if (mounted.current)
+                      setNotice(
+                        value.found ? '' : 'No encontramos ese usuario.',
+                      );
+                  } catch {
+                    /* load displays the error. */
                   }
                 }}
               >
@@ -291,7 +358,7 @@ export function ProfilePanel({
                   Buscar jugador
                   <input name="search" required maxLength={20} />
                 </label>
-                <Button type="submit" disabled={busy}>
+                <Button type="submit" disabled={busy || loading}>
                   Buscar
                 </Button>
               </form>
@@ -305,6 +372,7 @@ export function ProfilePanel({
                     <Button
                       disabled={
                         busy ||
+                        loading ||
                         data.friends.some(
                           (f) => f.handle === data.found!.handle,
                         )
@@ -339,7 +407,7 @@ export function ProfilePanel({
                   </p>
                   {friend.status === 'pending' && !friend.outgoing && (
                     <Button
-                      disabled={busy}
+                      disabled={busy || loading}
                       onClick={() =>
                         void act({ type: 'accept', handle: friend.handle })
                       }
@@ -349,7 +417,7 @@ export function ProfilePanel({
                   )}
                   <Button
                     variant="outline"
-                    disabled={busy}
+                    disabled={busy || loading}
                     onClick={() =>
                       void act({ type: 'remove', handle: friend.handle })
                     }
@@ -364,12 +432,11 @@ export function ProfilePanel({
               ))}
               <Button
                 variant="outline"
-                disabled={busy}
-                onClick={() =>
-                  void load()
-                    .then(setData)
-                    .catch((e) => setError(e.message))
-                }
+                disabled={busy || loading}
+                onClick={() => {
+                  setLoading(true);
+                  void load().catch(() => {});
+                }}
               >
                 Actualizar amigos
               </Button>

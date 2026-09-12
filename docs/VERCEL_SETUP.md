@@ -22,11 +22,22 @@ The app uses polling for rooms and chat. LiveKit runs separately; put its three 
 
 In Supabase Authentication:
 
-- Set **Site URL** to the chosen Vercel domain. Allow that domain's `/auth/callback`, `/auth/callback?reset=1`, and `/auth/confirm` URLs, plus localhost equivalents for development. Use a stable preview domain for OAuth testing.
+- Set **Site URL** to `https://truco-ve.vercel.app` (no trailing slash). Under **Redirect URLs**, add these patterns, retaining the literal backslash before `?`:
+
+  ```text
+  https://truco-ve.vercel.app/auth/callback
+  https://truco-ve.vercel.app/auth/callback\?*
+  http://localhost:3013/auth/callback
+  http://localhost:3013/auth/callback\?*
+  ```
+
+  The app sends an encoded `next` query parameter and sometimes `reset=1`. Supabase matches the query string too: `\?` matches a literal question mark and `*` accepts these encoded values while keeping the origin and callback path fixed. Add the same two entries for a specific preview origin when testing there; use its actual local port if different. See [Supabase's wildcard rules](https://supabase.com/docs/guides/auth/redirect-urls#use-wildcards-in-redirect-urls) and its [query-string matching check](https://github.com/supabase/auth/blob/master/internal/utilities/request_test.go).
+
 - Enable Email/Password, email confirmation, and Anonymous sign-ins. Anonymous users can play casual games; the server blocks profile/friend writes and competitive actions until the user has a confirmed account.
 - Configure your SMTP sender for confirmation and password-reset delivery; test actual delivery before launch.
 - For cross-device confirmation links, set the confirmation template URL to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email` and the recovery template URL to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery`.
 - Enable manual identity linking for anonymous account upgrades. Set the Change Email template URL to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change`; upgraded guests confirm their email before choosing a password. Creating an email account from the guest session uses Supabase's account upgrade to preserve the same user ID. Signing into an existing account switches identities; histories are not merged by name or email.
+- These custom `token_hash` templates always use **Site URL** and do not carry a room invitation: confirmation returns to the lobby; recovery and guest upgrades go through password setup, then the lobby. Reopen the room link afterward. OAuth and the default `{{ .ConfirmationURL }}` email links use the app's supplied callback/`next` and preserve the invitation; the default email flow requires the browser/device that started it because it uses PKCE. Do not append `/auth/confirm` to `{{ .RedirectTo }}` here: this app supplies a complete callback URL, including its query. See [email template variables](https://supabase.com/docs/guides/auth/auth-email-templates) and [PKCE flow](https://supabase.com/docs/guides/auth/sessions/pkce-flow).
 - Configure Google, Facebook, and Apple under Providers. Their client secrets belong in Supabase, never in this repository. Each provider uses Supabase's displayed callback URL (`https://<project-ref>.supabase.co/auth/v1/callback`). Google includes Gmail and other Google accounts.
 - Google: create a web OAuth client, configure the consent screen and authorized redirect URI.
 - Facebook: configure Facebook Login in a Meta app, its valid OAuth redirect URI, and app credentials. Complete Meta's requirements before enabling login for the public.

@@ -129,22 +129,35 @@ export async function POST(request: Request) {
         throw new RoomError('Elige el perfil de otro jugador.');
       const pair = [viewer.id, other.user_id].sort().join(':');
       if (input.type === 'request') {
-        const count = await db
+        const result = await db
           .prepare(
-            'SELECT count(*) AS n FROM friendships WHERE sender = ? OR recipient = ?',
+            `INSERT INTO friendships (pair, sender, recipient, status)
+            SELECT ?, ?, ?, 'pending'
+            WHERE (SELECT COUNT(*) FROM friendships WHERE sender = ? OR recipient = ?) < 200
+            AND (SELECT COUNT(*) FROM friendships WHERE sender = ? OR recipient = ?) < 200
+            ON CONFLICT DO NOTHING`,
           )
-          .bind(viewer.id, viewer.id)
-          .first<{ n: number }>();
-        if ((count?.n ?? 0) >= 200)
-          throw new RoomError(
-            'Has alcanzado el límite de 200 amigos y solicitudes.',
-          );
-        await db
-          .prepare(
-            "INSERT INTO friendships (pair, sender, recipient, status) VALUES (?, ?, ?, 'pending') ON CONFLICT DO NOTHING",
+          .bind(
+            pair,
+            viewer.id,
+            other.user_id,
+            viewer.id,
+            viewer.id,
+            other.user_id,
+            other.user_id,
           )
-          .bind(pair, viewer.id, other.user_id)
           .run();
+        if (
+          !result.meta.changes &&
+          !(await db
+            .prepare('SELECT pair FROM friendships WHERE pair = ?')
+            .bind(pair)
+            .first())
+        )
+          throw new RoomError(
+            'No se puede enviar la solicitud: uno de los jugadores alcanzó el límite de 200 amigos y solicitudes.',
+            429,
+          );
       } else if (input.type === 'accept') {
         const result = await db
           .prepare(

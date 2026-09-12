@@ -86,9 +86,13 @@ export function RankingPanel({
           <Button className="w-full" onClick={() => onPlay(format)}>
             Crear competitiva
           </Button>
-          <details className="inline-help"><summary>¿Cómo cambia mi Elo?</summary><p className="ranking-explainer">
-            24 piedras y reglas fijas. Ganas o pierdes Elo según el resultado y la fuerza del rival. Solo cuentan tres partidas contra los mismos rivales en 24 horas.
-          </p>
+          <details className="inline-help">
+            <summary>¿Cómo cambia mi Elo?</summary>
+            <p className="ranking-explainer">
+              24 piedras y reglas fijas. Ganas o pierdes Elo según el resultado
+              y la fuerza del rival. Solo cuentan tres partidas contra los
+              mismos rivales en 24 horas.
+            </p>
           </details>
           {current.leaders.length ? (
             <ol className="leaderboard">
@@ -97,7 +101,10 @@ export function RankingPanel({
                   <span>{String(i + 1).padStart(2, '0')}</span>
                   <div>
                     <strong>{player.name}</strong>
-                    <small>{player.games} {player.games === 1 ? 'partida' : 'partidas'}</small>
+                    <small>
+                      {player.games}{' '}
+                      {player.games === 1 ? 'partida' : 'partidas'}
+                    </small>
                   </div>
                   <b>{player.rating}</b>
                 </li>
@@ -114,7 +121,8 @@ export function RankingPanel({
               {current.history.map((match) => (
                 <div key={match.room}>
                   <span>
-                    {match.won ? 'Victoria' : 'Derrota'}{!match.rated && ' · Sin Elo (rival repetido)'}
+                    {match.won ? 'Victoria' : 'Derrota'}
+                    {!match.rated && ' · Sin Elo (rival repetido)'}
                     <small>{new Date(match.at).toLocaleDateString('es')}</small>
                   </span>
                   <b>

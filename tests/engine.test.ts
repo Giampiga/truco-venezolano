@@ -91,7 +91,10 @@ void test('reparte 2v2 con parejas fijas y vira decimotercera', () => {
   assert.equal(deal.format, '2v2');
   assert.equal(deal.manoSeatId, 'p1');
   assert.deepEqual(deal.vira, deck[12]);
-  assert.equal(Object.values(deal.hands).every((hand) => hand.length === 3), true);
+  assert.equal(
+    Object.values(deal.hands).every((hand) => hand.length === 3),
+    true,
+  );
 });
 
 void test('rota Pie y Mano en cada base 1v1', () => {
@@ -135,11 +138,23 @@ void test('resuelve vuelta por jerarquía y parda solo entre equipos rivales', (
 void test('resuelve todos los caminos de parda y prioridad de primera', () => {
   assert.equal(resolveHandWinner([result(null), result('B')], 'A'), 'B');
   assert.equal(resolveHandWinner([result('A'), result(null)], 'B'), 'A');
-  assert.equal(resolveHandWinner([result('A'), result('B'), result(null)], 'B'), 'A');
-  assert.equal(resolveHandWinner([result(null), result(null), result(null)], 'A'), 'A');
-  assert.equal(resolveHandWinner([result(null), result(null), result('B')], 'A'), 'B');
+  assert.equal(
+    resolveHandWinner([result('A'), result('B'), result(null)], 'B'),
+    'A',
+  );
+  assert.equal(
+    resolveHandWinner([result(null), result(null), result(null)], 'A'),
+    'A',
+  );
+  assert.equal(
+    resolveHandWinner([result(null), result(null), result('B')], 'A'),
+    'B',
+  );
   assert.equal(pardaContinuation('abierta', 1)?.allowsRaiseBetweenReveal, true);
-  assert.equal(pardaContinuation('cerrada', 1)?.allowsRaiseBetweenReveal, false);
+  assert.equal(
+    pardaContinuation('cerrada', 1)?.allowsRaiseBetweenReveal,
+    false,
+  );
 });
 
 void test('Envido y Flor empatados se resuelven por orden de Mano', () => {
@@ -161,7 +176,10 @@ void test('Envido y Flor empatados se resuelven por orden de Mano', () => {
       ] as TrucoCard[],
     },
   ];
-  assert.equal(resolveDeclarationTie(hands, vira, ['human', 'bot'], 'envido'), 'human');
+  assert.equal(
+    resolveDeclarationTie(hands, vira, ['human', 'bot'], 'envido'),
+    'human',
+  );
 
   const florHands = [
     {
@@ -181,7 +199,10 @@ void test('Envido y Flor empatados se resuelven por orden de Mano', () => {
       ] as TrucoCard[],
     },
   ];
-  assert.equal(resolveDeclarationTie(florHands, vira, ['bot', 'human'], 'flor'), 'bot');
+  assert.equal(
+    resolveDeclarationTie(florHands, vira, ['bot', 'human'], 'flor'),
+    'bot',
+  );
 });
 
 void test('Reservada es Flor invencible aunque una Flor común muestre más puntos', () => {
@@ -268,7 +289,11 @@ void test('escalera de Truco alterna equipos hasta Vale Juego', () => {
   state = answerTruco(state, 'A', 'quiero').state;
   assert.equal(state.accepted, 'vale-juego');
   assert.equal(trucoAcceptedValue('vale-juego'), 'game');
-  assert.deepEqual(trucoHandAward(state, 'B'), { team: 'B', amount: 'game', reason: 'truco' });
+  assert.deepEqual(trucoHandAward(state, 'B'), {
+    team: 'B',
+    amount: 'game',
+    reason: 'truco',
+  });
   assert.throws(() => callTruco(state, 'A'));
 });
 
@@ -332,7 +357,12 @@ void test('la compuerta legal bloquea Envido tras jugar y obliga a responder can
     priority: { active: 'play' as const, suspendedTruco: null },
   };
   assert.ok(legalActions(base).includes('call-envido'));
-  assert.equal(legalActions({ ...base, actorHasPlayedFirstCard: true }).includes('call-envido'), false);
+  assert.equal(
+    legalActions({ ...base, actorHasPlayedFirstCard: true }).includes(
+      'call-envido',
+    ),
+    false,
+  );
 
   const pending = callTruco(createTrucoState(), 'B');
   const response = legalActions({
@@ -395,7 +425,9 @@ void test('aplica Flor/Envido antes de Truco y corta al completar el partido', (
   assert.equal(completed.winner, 'A');
   assert.equal(completed.complete, true);
 
-  const valeJuego = applyAwards(match, [{ team: 'B', amount: 'game', reason: 'truco' }]);
+  const valeJuego = applyAwards(match, [
+    { team: 'B', amount: 'game', reason: 'truco' },
+  ]);
   assert.equal(valeJuego.score.B, 24);
   assert.equal(valeJuego.winner, 'B');
 });
@@ -446,7 +478,9 @@ function resumableSnapshot(): EngineSnapshot {
 void test('disconnect/resume conserva formato, vira, mano, canto, turno y versión', () => {
   const snapshot = resumableSnapshot();
   const disconnected = disconnectSnapshot(snapshot);
-  const resumed = reconnectSnapshot(resumeSnapshot(serializeSnapshot(disconnected)));
+  const resumed = reconnectSnapshot(
+    resumeSnapshot(serializeSnapshot(disconnected)),
+  );
   assert.equal(resumed.format, '1v1');
   assert.deepEqual(resumed.vira, snapshot.vira);
   assert.deepEqual(resumed.hands, snapshot.hands);
@@ -477,7 +511,13 @@ void test('transition valida turno, resuelve vuelta e ignora comando duplicado',
   assert.equal(first.state.activeSeatId, 'bot');
   assert.equal(first.state.hands.human.length, 2);
   assert.throws(() =>
-    transition(snapshot, 'bot', { type: 'PLAY_CARD', cardId: '2-espadas' }, rules, 'bad'),
+    transition(
+      snapshot,
+      'bot',
+      { type: 'PLAY_CARD', cardId: '2-espadas' },
+      rules,
+      'bad',
+    ),
   );
   const duplicate = transition(
     first.state,
@@ -505,77 +545,191 @@ void test('la siguiente base rota Pie/Mano sin perder el marcador', () => {
   assert.equal(next.activeSeatId, 'bot');
   assert.deepEqual(next.match.score, { A: 3, B: 0 });
   assert.equal(next.handNumber, 2);
-  assert.ok(next.appliedCommandIds.every((id) => snapshot.appliedCommandIds.includes(id)));
+  assert.ok(
+    next.appliedCommandIds.every((id) =>
+      snapshot.appliedCommandIds.includes(id),
+    ),
+  );
 });
 
 void test('la primera parda apilada termina la base con la mayor arriba', () => {
   for (const pardaMode of ['abierta', 'cerrada'] as const) {
-   for (const pardaEngine of ['apilada-clasica', 'secuencial-online'] as const) {
-    const stackRules: ExecutableRules = { ...rules, pardaMode, pardaEngine };
-    let snapshot = createEngineSnapshot({
-      deck: createSpanishDeck(),
-      seats: seats1v1,
-      dealerSeatId: 'bot',
-      target: 12,
-      rules: stackRules,
-    });
-    snapshot.vira = { rank: 6, suit: 'copas' };
-    snapshot.hands = {
-      human: [
-        { rank: 3, suit: 'oros' },
-        { rank: 7, suit: 'bastos' },
-        { rank: 4, suit: 'oros' },
-      ],
-      bot: [
-        { rank: 3, suit: 'copas' },
-        { rank: 6, suit: 'bastos' },
-        { rank: 5, suit: 'oros' },
-      ],
-    };
-    snapshot.dealtHands = structuredClone(snapshot.hands);
-    snapshot = transition(
-      snapshot,
-      'human',
-      { type: 'PLAY_CARD', cardId: '3-oros' },
-      stackRules,
-      `${pardaMode}-1`,
-    ).state;
-    snapshot = transition(
-      snapshot,
-      'bot',
-      { type: 'PLAY_CARD', cardId: '3-copas' },
-      stackRules,
-      `${pardaMode}-2`,
-    ).state;
-    assert.ok(legalActionsForSnapshot(snapshot, 'human', stackRules).includes('play-stack'));
-    assert.equal(legalActionsForSnapshot(snapshot, 'human', stackRules).includes('play-card'), false);
-    assert.equal(snapshot.activeSeatId, snapshot.manoSeatId);
-    assert.throws(() => transition(snapshot, 'human', {type: 'PLAY_CARD', cardId: '7-bastos'}, stackRules, 'illegal-single'));
-    assert.throws(() => transition(snapshot, 'human', {type: 'PLAY_STACK', cardIds: ['4-oros', '7-bastos']}, stackRules, 'wrong-order'));
-    if (pardaMode === 'cerrada') {
+    for (const pardaEngine of [
+      'apilada-clasica',
+      'secuencial-online',
+    ] as const) {
+      const stackRules: ExecutableRules = { ...rules, pardaMode, pardaEngine };
+      let snapshot = createEngineSnapshot({
+        deck: createSpanishDeck(),
+        seats: seats1v1,
+        dealerSeatId: 'bot',
+        target: 12,
+        rules: stackRules,
+      });
+      snapshot.vira = { rank: 6, suit: 'copas' };
+      snapshot.hands = {
+        human: [
+          { rank: 3, suit: 'oros' },
+          { rank: 7, suit: 'bastos' },
+          { rank: 4, suit: 'oros' },
+        ],
+        bot: [
+          { rank: 3, suit: 'copas' },
+          { rank: 6, suit: 'bastos' },
+          { rank: 5, suit: 'oros' },
+        ],
+      };
+      snapshot.dealtHands = structuredClone(snapshot.hands);
+      snapshot = transition(
+        snapshot,
+        'human',
+        { type: 'PLAY_CARD', cardId: '3-oros' },
+        stackRules,
+        `${pardaMode}-1`,
+      ).state;
+      snapshot = transition(
+        snapshot,
+        'bot',
+        { type: 'PLAY_CARD', cardId: '3-copas' },
+        stackRules,
+        `${pardaMode}-2`,
+      ).state;
+      assert.ok(
+        legalActionsForSnapshot(snapshot, 'human', stackRules).includes(
+          'play-stack',
+        ),
+      );
       assert.equal(
-        legalActionsForSnapshot(snapshot, 'human', stackRules).includes('call-truco'),
+        legalActionsForSnapshot(snapshot, 'human', stackRules).includes(
+          'play-card',
+        ),
+        false,
+      );
+      assert.equal(snapshot.activeSeatId, snapshot.manoSeatId);
+      assert.throws(() =>
+        transition(
+          snapshot,
+          'human',
+          { type: 'PLAY_CARD', cardId: '7-bastos' },
+          stackRules,
+          'illegal-single',
+        ),
+      );
+      assert.throws(() =>
+        transition(
+          snapshot,
+          'human',
+          { type: 'PLAY_STACK', cardIds: ['4-oros', '7-bastos'] },
+          stackRules,
+          'wrong-order',
+        ),
+      );
+      if (pardaMode === 'cerrada') {
+        assert.equal(
+          legalActionsForSnapshot(snapshot, 'human', stackRules).includes(
+            'call-truco',
+          ),
+          false,
+        );
+      }
+      snapshot = transition(
+        snapshot,
+        'human',
+        { type: 'PLAY_STACK', cardIds: ['7-bastos', '4-oros'] },
+        stackRules,
+        `${pardaMode}-3`,
+      ).state;
+      snapshot = transition(
+        snapshot,
+        'bot',
+        { type: 'PLAY_STACK', cardIds: ['6-bastos', '5-oros'] },
+        stackRules,
+        `${pardaMode}-4`,
+      ).state;
+      assert.equal(snapshot.handComplete, true);
+      assert.equal(snapshot.match.score.A, 1);
+      assert.equal(
+        projectPublic(snapshot).played.length,
+        4,
+        'sin empate arriba, las tapadas siguen privadas',
+      );
+    }
+  }
+});
+
+void test('la parda publica solo las tapadas necesarias para el desempate', () => {
+  let snapshot = createEngineSnapshot({
+    deck: createSpanishDeck(),
+    seats: seats2v2,
+    dealerSeatId: 'p4',
+    target: 12,
+    rules,
+  });
+  snapshot.vira = { rank: 6, suit: 'copas' };
+  snapshot.hands = {
+    p1: [
+      { rank: 3, suit: 'oros' },
+      { rank: 7, suit: 'bastos' },
+      { rank: 6, suit: 'oros' },
+    ],
+    p2: [
+      { rank: 3, suit: 'bastos' },
+      { rank: 7, suit: 'copas' },
+      { rank: 4, suit: 'oros' },
+    ],
+    p3: [
+      { rank: 3, suit: 'copas' },
+      { rank: 6, suit: 'bastos' },
+      { rank: 4, suit: 'bastos' },
+    ],
+    p4: [
+      { rank: 3, suit: 'espadas' },
+      { rank: 5, suit: 'copas' },
+      { rank: 4, suit: 'copas' },
+    ],
+  };
+  snapshot.dealtHands = structuredClone(snapshot.hands);
+  for (const seat of seats2v2) {
+    const card = snapshot.hands[seat.id][0];
+    snapshot = transition(
+      snapshot,
+      seat.id,
+      { type: 'PLAY_CARD', cardId: `${card.rank}-${card.suit}` },
+      rules,
+    ).state;
+  }
+  for (const seat of seats2v2) {
+    const [top, hidden] = snapshot.hands[seat.id];
+    snapshot = transition(
+      snapshot,
+      seat.id,
+      {
+        type: 'PLAY_STACK',
+        cardIds: [`${top.rank}-${top.suit}`, `${hidden.rank}-${hidden.suit}`],
+      },
+      rules,
+    ).state;
+    if (seat.id !== 'p4') {
+      assert.equal(
+        projectPublic(snapshot).played.some(
+          (play) =>
+            play.card.rank === 4 ||
+            (play.card.suit === 'oros' && play.card.rank === 6),
+        ),
         false,
       );
     }
-    snapshot = transition(
-      snapshot,
-      'human',
-      { type: 'PLAY_STACK', cardIds: ['7-bastos', '4-oros'] },
-      stackRules,
-      `${pardaMode}-3`,
-    ).state;
-    snapshot = transition(
-      snapshot,
-      'bot',
-      { type: 'PLAY_STACK', cardIds: ['6-bastos', '5-oros'] },
-      stackRules,
-      `${pardaMode}-4`,
-    ).state;
-    assert.equal(snapshot.handComplete, true);
-    assert.equal(snapshot.match.score.A, 1);
-   }
   }
+  assert.equal(snapshot.handComplete, true);
+  assert.equal(snapshot.match.score.A, 1);
+  const revealed = projectPublic(snapshot).played.slice(8);
+  assert.deepEqual(
+    revealed.map((play) => [play.seatId, play.card]),
+    [
+      ['p1', { rank: 6, suit: 'oros' }],
+      ['p2', { rank: 4, suit: 'oros' }],
+    ],
+  );
 });
 
 void test('Flor se declara una vez, puntúa y cancela el Envite normal', () => {
@@ -654,7 +808,9 @@ void test('Envido usa las tres cartas repartidas aunque Mano ya haya jugado', ()
   ).state;
   assert.deepEqual(snapshot.match.score, { A: 2, B: 0 });
   assert.equal(
-    legalActionsForSnapshot(snapshot, 'bot', envidoRules).includes('call-envido'),
+    legalActionsForSnapshot(snapshot, 'bot', envidoRules).includes(
+      'call-envido',
+    ),
     false,
   );
 });

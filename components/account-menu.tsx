@@ -2,11 +2,13 @@
 import {
   useEffect,
   useState,
+  useRef,
   useEffectEvent,
   type SyntheticEvent,
 } from 'react';
 import { UserRound } from 'lucide-react';
 import { browserAuth, authConfigured } from '@/lib/auth/browser';
+import { authReturnPath } from '@/lib/auth/return-path';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -17,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { ProfilePanel } from '@/components/profile-panel';
 type Account = {
+  id: string;
   registered: boolean;
   profile: { name: string; handle: string } | null;
 };
@@ -40,6 +43,9 @@ export function AccountMenu({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [retry, setRetry] = useState(0);
+  const currentAccount = useRef<Account | null | undefined>(undefined);
   const notify = useEffectEvent((value: Account | null) => {
     onSession(!!value?.registered);
     if (value?.profile) onName(value.profile.name);
@@ -47,12 +53,22 @@ export function AccountMenu({
   const openError = useEffectEvent(() => onOpenChange(true));
   useEffect(() => {
     let alive = true;
+    let pending: AbortController | undefined;
     async function load() {
+      pending?.abort();
+      const controller = new AbortController();
+      pending = controller;
+      setLoading(true);
       try {
-        const response = await fetch('/api/account');
+        const response = await fetch('/api/account', {
+          signal: controller.signal,
+        });
         if (!response.ok && response.status !== 401) throw new Error();
         const value = response.ok ? ((await response.json()) as Account) : null;
-        if (!alive) return;
+        if (!alive || controller.signal.aborted) return;
+        if (currentAccount.current === undefined && value && !value.registered)
+          setMode('signup');
+        currentAccount.current = value;
         setAccount(value);
         notify(value);
         if (new URLSearchParams(location.search).has('auth_error')) {
@@ -60,20 +76,50 @@ export function AccountMenu({
             'El enlace de acceso venció o no es válido. Inténtalo de nuevo.',
           );
           openError();
+          history.replaceState(
+            null,
+            '',
+            authReturnPath(location.pathname + location.search),
+          );
         }
       } catch {
-        if (alive)
+        if (alive && !controller.signal.aborted) {
+          setAccount(null);
+          currentAccount.current = null;
+          notify(null);
           setError('No pudimos consultar tu cuenta. Inténtalo otra vez.');
+        }
+      } finally {
+        if (alive && !controller.signal.aborted) setLoading(false);
       }
     }
     void load();
     const subscription = authConfigured
-      ? browserAuth().auth.onAuthStateChange((event) => {
-          if (event === 'SIGNED_OUT') {
+      ? browserAuth().auth.onAuthStateChange((event, session) => {
+          if (
+            event === 'SIGNED_OUT' ||
+            (event === 'SIGNED_IN' &&
+              currentAccount.current &&
+              currentAccount.current.id !== session?.user.id)
+          ) {
             localStorage.removeItem('truco-online-room');
-            location.assign('/');
+            location.assign(
+              authReturnPath(location.pathname + location.search),
+            );
             return;
           }
+          if (event !== 'SIGNED_IN' && event !== 'USER_UPDATED') return;
+          // Supabase also emits SIGNED_IN when the same user refocuses a tab.
+          // Keep their in-progress profile edits mounted in that case.
+          if (
+            event === 'SIGNED_IN' &&
+            currentAccount.current?.id === session?.user.id &&
+            currentAccount.current?.registered ===
+              !!(
+                !session?.user.is_anonymous && session?.user.email_confirmed_at
+              )
+          )
+            return;
           setTimeout(() => {
             if (alive) void load();
           }, 0);
@@ -81,18 +127,37 @@ export function AccountMenu({
       : null;
     return () => {
       alive = false;
+      pending?.abort();
       subscription?.unsubscribe();
     };
-  }, []);
+  }, [retry]);
+  function callbackUrl(reset = false) {
+    const url = new URL('/auth/callback', location.origin);
+    url.searchParams.set(
+      'next',
+      authReturnPath(location.pathname + location.search),
+    );
+    if (reset) url.searchParams.set('reset', '1');
+    return url.href;
+  }
   async function perform(action: () => Promise<void>) {
     setBusy(true);
     setError('');
     setMessage('');
     try {
       await action();
-    } catch {
+    } catch (cause) {
+      const code =
+        cause && typeof cause === 'object' && 'code' in cause ? cause.code : '';
       setError(
-        'No se pudo completar la solicitud. Revisa tus datos o inténtalo de nuevo.',
+        code === 'email_not_confirmed'
+          ? 'Confirma tu correo antes de iniciar sesión. Revisa también la carpeta de correo no deseado.'
+          : code === 'invalid_credentials'
+            ? 'El correo o la contraseña no son correctos.'
+            : code === 'over_request_rate_limit' ||
+                code === 'over_email_send_rate_limit'
+              ? 'Has hecho varios intentos seguidos. Espera un momento antes de volver a intentarlo.'
+              : 'No se pudo completar la solicitud. Revisa tus datos o inténtalo de nuevo.',
       );
     } finally {
       setBusy(false);
@@ -100,30 +165,32 @@ export function AccountMenu({
   }
   async function email(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy || loading || playing || !authConfigured) return;
     const data = new FormData(event.currentTarget);
     await perform(async () => {
       const auth = browserAuth().auth;
-      const email = data.get('email') as string;
+      const email = (data.get('email') as string).trim();
       const password = data.get('password') as string;
       const result =
         mode === 'reset'
           ? await auth.resetPasswordForEmail(email, {
-              redirectTo: `${location.origin}/auth/callback?reset=1`,
+              redirectTo: callbackUrl(true),
             })
           : mode === 'login'
             ? await auth.signInWithPassword({ email, password })
             : account && !account.registered
               ? await auth.updateUser(
-                  { email },
+                  { email, data: { display_name: name.trim() } },
                   {
-                    emailRedirectTo: `${location.origin}/auth/callback?reset=1`,
+                    emailRedirectTo: callbackUrl(true),
                   },
                 )
               : await auth.signUp({
                   email,
                   password,
                   options: {
-                    emailRedirectTo: `${location.origin}/auth/callback`,
+                    emailRedirectTo: callbackUrl(),
+                    data: { display_name: name.trim() },
                   },
                 });
       if (result.error) throw result.error;
@@ -134,7 +201,7 @@ export function AccountMenu({
       );
       if (mode === 'login') {
         localStorage.removeItem('truco-online-room');
-        location.assign('/');
+        location.assign(authReturnPath(location.pathname + location.search));
       }
     });
   }
@@ -146,7 +213,13 @@ export function AccountMenu({
         onClick={() => onOpenChange(true)}
       >
         <UserRound size={17} />
-        {account?.registered ? 'Mi cuenta' : account ? 'Invitado' : 'Entrar'}
+        {loading
+          ? 'Mi cuenta'
+          : account?.registered
+            ? 'Mi cuenta'
+            : account
+              ? 'Invitado'
+              : 'Entrar'}
       </Button>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="account-dialog">
@@ -163,10 +236,26 @@ export function AccountMenu({
             </DialogDescription>
           </DialogHeader>
           {error && <p role="alert">{error}</p>}
+          {error === 'No pudimos consultar tu cuenta. Inténtalo otra vez.' &&
+            !busy &&
+            !loading && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setError('');
+                  setRetry((value) => value + 1);
+                }}
+              >
+                Volver a consultar la cuenta
+              </Button>
+            )}
           {message && <output>{message}</output>}
-          {account?.registered ? (
+          {loading ? (
+            <output>Consultando tu cuenta…</output>
+          ) : account?.registered ? (
             <>
               <ProfilePanel
+                key={account.id}
                 onName={(name, handle) => {
                   onName(name);
                   setAccount((current) =>
@@ -184,13 +273,17 @@ export function AccountMenu({
               />
               <Button
                 variant="ghost"
-                disabled={busy || playing}
+                disabled={busy || playing || !authConfigured}
                 onClick={() =>
                   void perform(async () => {
-                    const { error } = await browserAuth().auth.signOut();
+                    const { error } = await browserAuth().auth.signOut({
+                      scope: 'local',
+                    });
                     if (error) throw error;
                     localStorage.removeItem('truco-online-room');
-                    location.assign('/');
+                    location.assign(
+                      authReturnPath(location.pathname + location.search),
+                    );
                   })
                 }
               >
@@ -204,13 +297,16 @@ export function AccountMenu({
                 className="guest-form"
                 onSubmit={(e) => {
                   e.preventDefault();
+                  if (busy || loading) return;
                   if (account) {
                     onOpenChange(false);
                     return;
                   }
                   void perform(async () => {
                     const { error } =
-                      await browserAuth().auth.signInAnonymously();
+                      await browserAuth().auth.signInAnonymously({
+                        options: { data: { display_name: name.trim() } },
+                      });
                     if (error) throw error;
                     onOpenChange(false);
                   });
@@ -272,7 +368,7 @@ export function AccountMenu({
                     onClick={() =>
                       void perform(async () => {
                         const options = {
-                          redirectTo: `${location.origin}/auth/callback`,
+                          redirectTo: callbackUrl(),
                         };
                         const { error } =
                           account && mode === 'signup'
@@ -337,6 +433,7 @@ export function AccountMenu({
               </form>
               <div className="account-links">
                 <button
+                  disabled={busy}
                   onClick={() => {
                     setMode(mode === 'signup' ? 'login' : 'signup');
                     setMessage('');
@@ -348,7 +445,12 @@ export function AccountMenu({
                     : 'Crear una cuenta'}
                 </button>
                 <button
-                  onClick={() => setMode(mode === 'reset' ? 'login' : 'reset')}
+                  disabled={busy}
+                  onClick={() => {
+                    setMode(mode === 'reset' ? 'login' : 'reset');
+                    setMessage('');
+                    setError('');
+                  }}
                 >
                   {mode === 'reset'
                     ? 'Volver al inicio de sesión'

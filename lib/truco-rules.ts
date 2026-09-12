@@ -7,7 +7,12 @@ export type TrucoCard = {
   passed?: boolean;
 };
 
-export type TrucoCall = 'none' | 'truco' | 'retruco' | 'vale-nueve' | 'vale-juego';
+export type TrucoCall =
+  | 'none'
+  | 'truco'
+  | 'retruco'
+  | 'vale-nueve'
+  | 'vale-juego';
 
 export type TrucoStake = 1 | 3 | 6 | 9 | 'game';
 
@@ -165,8 +170,10 @@ export function hasFlor(hand: TrucoCard[], vira: TrucoCard) {
 
 export function isFlorReservada(hand: TrucoCard[], vira: TrucoCard) {
   const { perico, perica } = getPieces(vira);
-  return hand.some((card) => sameCard(card, perico)) &&
-    hand.some((card) => sameCard(card, perica));
+  return (
+    hand.some((card) => sameCard(card, perico)) &&
+    hand.some((card) => sameCard(card, perica))
+  );
 }
 
 /**
@@ -190,9 +197,12 @@ export function florScore(hand: TrucoCard[], vira: TrucoCard) {
   if (hasPerico || hasPerica) {
     const piece = hasPerico ? perico : perica;
     const base = hasPerico ? 30 : 29;
-    return base + hand
-      .filter((card) => !sameCard(card, piece))
-      .reduce((total, card) => total + numericValue(card), 0);
+    return (
+      base +
+      hand
+        .filter((card) => !sameCard(card, piece))
+        .reduce((total, card) => total + numericValue(card), 0)
+    );
   }
 
   return 20 + hand.reduce((total, card) => total + numericValue(card), 0);
@@ -204,11 +214,21 @@ export function declarationWinner<T extends string>(
 ) {
   if (entries.length === 0) return null;
   const best = Math.max(...entries.map((entry) => entry.value));
-  return manoOrder.find((id) => entries.some((entry) => entry.id === id && entry.value === best)) ?? null;
+  return (
+    manoOrder.find((id) =>
+      entries.some((entry) => entry.id === id && entry.value === best),
+    ) ?? null
+  );
 }
 
 export function nextTrucoCall(call: TrucoCall): TrucoCall | null {
-  const ladder: TrucoCall[] = ['none', 'truco', 'retruco', 'vale-nueve', 'vale-juego'];
+  const ladder: TrucoCall[] = [
+    'none',
+    'truco',
+    'retruco',
+    'vale-nueve',
+    'vale-juego',
+  ];
   const next = ladder.indexOf(call) + 1;
   return next < ladder.length ? ladder[next] : null;
 }

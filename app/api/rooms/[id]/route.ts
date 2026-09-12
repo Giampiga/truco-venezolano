@@ -43,7 +43,9 @@ export async function POST(request: Request, context: Context) {
     await saveHistory(room);
     await settleRanking(room);
     return json(
-      action.type === 'leave' ? { left: true } : await profileRoom(room, viewer.id),
+      action.type === 'leave'
+        ? { left: true }
+        : await profileRoom(room, viewer.id),
       200,
       viewer.cookie,
     );

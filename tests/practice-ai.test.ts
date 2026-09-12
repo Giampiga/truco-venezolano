@@ -73,17 +73,33 @@ void test('cambiar cartas humanas ocultas no cambia la decisión sembrada', () =
     { rank: 7, suit: 'espadas' },
   ];
   second.dealtHands.human = structuredClone(second.hands.human);
-  const commandA = choosePracticeAiCommand(observeForAi(first, 'bot', rules), 'maestro', 42);
-  const commandB = choosePracticeAiCommand(observeForAi(second, 'bot', rules), 'maestro', 42);
+  const commandA = choosePracticeAiCommand(
+    observeForAi(first, 'bot', rules),
+    'maestro',
+    42,
+  );
+  const commandB = choosePracticeAiCommand(
+    observeForAi(second, 'bot', rules),
+    'maestro',
+    42,
+  );
   assert.deepEqual(commandA, commandB);
 });
 
 void test('todas las dificultades devuelven exactamente un comando legal', () => {
   const snapshot = practiceSnapshot();
   const observation = observeForAi(snapshot, 'bot', rules);
-  for (const difficulty of ['aprendiz', 'criollo', 'maestro'] as PracticeDifficulty[]) {
+  for (const difficulty of [
+    'aprendiz',
+    'criollo',
+    'maestro',
+  ] as PracticeDifficulty[]) {
     const command = choosePracticeAiCommand(observation, difficulty, 7);
-    assert.ok(observation.legalCommands.some((legal) => JSON.stringify(legal) === JSON.stringify(command)));
+    assert.ok(
+      observation.legalCommands.some(
+        (legal) => JSON.stringify(legal) === JSON.stringify(command),
+      ),
+    );
   }
 });
 
@@ -101,7 +117,9 @@ void test('la dificultad cambia estrategia, no información disponible', () => {
 
 void test('la explicación declara el límite de información del bot', () => {
   const observation = observeForAi(practiceSnapshot(), 'bot', rules);
-  const play = observation.legalCommands.find((command) => command.type === 'PLAY_CARD');
+  const play = observation.legalCommands.find(
+    (command) => command.type === 'PLAY_CARD',
+  );
   assert.ok(play);
   assert.match(explainAiChoice(observation, play), /no conoce tu mano/i);
 });
@@ -114,13 +132,17 @@ void test('dos IAs sembradas completan un partido 1v1 entero por la misma API le
     if (snapshot.handComplete) {
       const deck = createSpanishDeck();
       const offset = snapshot.handNumber % deck.length;
-      snapshot = beginNextHand(snapshot, [...deck.slice(offset), ...deck.slice(0, offset)]);
+      snapshot = beginNextHand(snapshot, [
+        ...deck.slice(offset),
+        ...deck.slice(0, offset),
+      ]);
       continue;
     }
     const pendingTeam =
       snapshot.priority.active === 'truco'
         ? snapshot.truco.pending?.by
-        : snapshot.priority.active === 'envido' || snapshot.priority.active === 'flor'
+        : snapshot.priority.active === 'envido' ||
+            snapshot.priority.active === 'flor'
           ? snapshot.envido.pending?.by
           : null;
     const actor =
@@ -129,13 +151,23 @@ void test('dos IAs sembradas completan un partido 1v1 entero por la misma API le
         : snapshot.seats.find((seat) => seat.team !== pendingTeam)?.id;
     assert.ok(actor);
     const observation = observeForAi(snapshot, actor, rules);
-    const command = choosePracticeAiCommand(observation, 'aprendiz', steps + 17);
+    const command = choosePracticeAiCommand(
+      observation,
+      'aprendiz',
+      steps + 17,
+    );
     assert.ok(
       observation.legalCommands.some(
         (legal) => JSON.stringify(legal) === JSON.stringify(command),
       ),
     );
-    snapshot = transition(snapshot, actor, command, rules, `match-${steps}`).state;
+    snapshot = transition(
+      snapshot,
+      actor,
+      command,
+      rules,
+      `match-${steps}`,
+    ).state;
     steps += 1;
   }
   assert.ok(steps < 500, 'el partido debe terminar sin bucles');

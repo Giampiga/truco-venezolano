@@ -70,12 +70,20 @@ export function observeForAi(
 
   for (const action of actions) {
     if (action === 'play-card') {
-      legalCommands.push(...ownHand.map((card) => ({ type: 'PLAY_CARD' as const, cardId: card.id })));
+      legalCommands.push(
+        ...ownHand.map((card) => ({
+          type: 'PLAY_CARD' as const,
+          cardId: card.id,
+        })),
+      );
     } else if (action === 'play-stack' && ownHand.length >= 2) {
       const ordered = [...ownHand].sort(
         (a, b) => trucoRank(b, snapshot.vira) - trucoRank(a, snapshot.vira),
       );
-      legalCommands.push({ type: 'PLAY_STACK', cardIds: [ordered[0].id, ordered[1].id] });
+      legalCommands.push({
+        type: 'PLAY_STACK',
+        cardIds: [ordered[0].id, ordered[1].id],
+      });
     } else if (action === 'pass-card') {
       legalCommands.push({ type: 'PASS_CARDS' });
     } else if (action === 'fold') {
@@ -93,13 +101,21 @@ export function observeForAi(
       legalCommands.push({ type: 'DECLARE_FLOR', mode: 'flor' });
     } else if (action === 'call-flor-envida') {
       legalCommands.push({ type: 'CALL_FLOR_ENVIDA' });
-    } else if (action === 'call-truco' && nextAccepted && nextAccepted !== 'none') {
+    } else if (
+      action === 'call-truco' &&
+      nextAccepted &&
+      nextAccepted !== 'none'
+    ) {
       legalCommands.push({ type: 'CALL_TRUCO', call: nextAccepted });
     } else if (action === 'answer-quiero') {
       legalCommands.push({ type: 'ANSWER_CALL', answer: 'quiero' });
     } else if (action === 'answer-no-quiero') {
       legalCommands.push({ type: 'ANSWER_CALL', answer: 'no-quiero' });
-    } else if (action === 'raise-truco' && nextPending && nextPending !== 'none') {
+    } else if (
+      action === 'raise-truco' &&
+      nextPending &&
+      nextPending !== 'none'
+    ) {
       legalCommands.push({ type: 'RAISE_TRUCO', call: nextPending });
     }
   }
@@ -113,15 +129,21 @@ export function observeForAi(
   return Object.freeze({
     aiSeatId,
     aiTeam: ai.team,
-    ownHand: Object.freeze(ownHand.map((card) => Object.freeze(card))) as unknown as AiCard[],
+    ownHand: Object.freeze(
+      ownHand.map((card) => Object.freeze(card)),
+    ) as unknown as AiCard[],
     ownDealtHand: Object.freeze(
       ownDealtHand.map((card) => Object.freeze(card)),
     ) as unknown as AiCard[],
     vira: Object.freeze({ ...snapshot.vira }),
     played: Object.freeze(
-      snapshot.played.map((play) => Object.freeze({ ...play, card: Object.freeze({ ...play.card }) })),
+      snapshot.played.map((play) =>
+        Object.freeze({ ...play, card: Object.freeze({ ...play.card }) }),
+      ),
     ) as unknown as EngineSnapshot['played'],
-    trickResults: Object.freeze(snapshot.trickResults.map((result) => Object.freeze({ ...result }))) as unknown as EngineSnapshot['trickResults'],
+    trickResults: Object.freeze(
+      snapshot.trickResults.map((result) => Object.freeze({ ...result })),
+    ) as unknown as EngineSnapshot['trickResults'],
     opponentCardCounts: Object.freeze(opponentCardCounts),
     manoSeatId: snapshot.manoSeatId,
     activeSeatId: snapshot.activeSeatId,
@@ -129,14 +151,20 @@ export function observeForAi(
     target: snapshot.match.target,
     truco: Object.freeze({
       ...snapshot.truco,
-      pending: snapshot.truco.pending ? Object.freeze({ ...snapshot.truco.pending }) : null,
+      pending: snapshot.truco.pending
+        ? Object.freeze({ ...snapshot.truco.pending })
+        : null,
     }),
     envido: Object.freeze({
       ...snapshot.envido,
-      pending: snapshot.envido.pending ? Object.freeze({ ...snapshot.envido.pending }) : null,
+      pending: snapshot.envido.pending
+        ? Object.freeze({ ...snapshot.envido.pending })
+        : null,
     }),
     priority: Object.freeze({ ...snapshot.priority }),
-    legalCommands: Object.freeze(legalCommands.map((command) => Object.freeze(command))) as unknown as EngineCommand[],
+    legalCommands: Object.freeze(
+      legalCommands.map((command) => Object.freeze(command)),
+    ) as unknown as EngineCommand[],
   });
 }
 
@@ -178,7 +206,8 @@ function findCommand<T extends EngineCommand['type']>(
 ) {
   return observation.legalCommands.find(
     (command): command is Extract<EngineCommand, { type: T }> =>
-      command.type === type && (!predicate || predicate(command as Extract<EngineCommand, { type: T }>)),
+      command.type === type &&
+      (!predicate || predicate(command as Extract<EngineCommand, { type: T }>)),
   );
 }
 
@@ -199,28 +228,48 @@ export function choosePracticeAiCommand(
     .sort((a, b) => b - a);
   const strongest = ranks[0] ?? 0;
   const second = ranks[1] ?? 0;
-  const nearMatch = observation.score[observation.aiTeam] >= observation.target - 3;
+  const nearMatch =
+    observation.score[observation.aiTeam] >= observation.target - 3;
 
   const declare = findCommand(observation, 'DECLARE_FLOR');
   if (declare && flor) return declare;
 
   if (difficulty === 'aprendiz') {
-    const noQuiero = findCommand(observation, 'ANSWER_CALL', (command) => command.answer === 'no-quiero');
+    const noQuiero = findCommand(
+      observation,
+      'ANSWER_CALL',
+      (command) => command.answer === 'no-quiero',
+    );
     if (noQuiero && strongest < 95) return noQuiero;
     const lowCards = byStrength(observation, false);
     if (lowCards.length) {
-      return lowCards[Math.floor(seededUnit(seed) * lowCards.length) % lowCards.length];
+      return lowCards[
+        Math.floor(seededUnit(seed) * lowCards.length) % lowCards.length
+      ];
     }
     return observation.legalCommands[
-      Math.floor(seededUnit(seed) * observation.legalCommands.length) % observation.legalCommands.length
+      Math.floor(seededUnit(seed) * observation.legalCommands.length) %
+        observation.legalCommands.length
     ];
   }
 
-  const quiero = findCommand(observation, 'ANSWER_CALL', (command) => command.answer === 'quiero');
-  const noQuiero = findCommand(observation, 'ANSWER_CALL', (command) => command.answer === 'no-quiero');
+  const quiero = findCommand(
+    observation,
+    'ANSWER_CALL',
+    (command) => command.answer === 'quiero',
+  );
+  const noQuiero = findCommand(
+    observation,
+    'ANSWER_CALL',
+    (command) => command.answer === 'no-quiero',
+  );
   const raiseTruco = findCommand(observation, 'RAISE_TRUCO');
 
-  if (difficulty === 'maestro' && raiseTruco && (reservada || (strongest >= 96 && second >= 89))) {
+  if (
+    difficulty === 'maestro' &&
+    raiseTruco &&
+    (reservada || (strongest >= 96 && second >= 89))
+  ) {
     return raiseTruco;
   }
   if (quiero || noQuiero) {
@@ -239,10 +288,15 @@ export function choosePracticeAiCommand(
     'CALL_ENVIDO',
     (command) => command.amount === 2,
   );
-  if (difficulty === 'maestro' && falta && (envido >= 34 || (nearMatch && envido >= 31))) {
+  if (
+    difficulty === 'maestro' &&
+    falta &&
+    (envido >= 34 || (nearMatch && envido >= 31))
+  ) {
     return falta;
   }
-  if (baseEnvido && envido >= (difficulty === 'maestro' ? 28 : 31)) return baseEnvido;
+  if (baseEnvido && envido >= (difficulty === 'maestro' ? 28 : 31))
+    return baseEnvido;
 
   const florEnvida = findCommand(observation, 'CALL_FLOR_ENVIDA');
   if (florEnvida && (reservada || envido >= 34)) return florEnvida;
@@ -258,7 +312,11 @@ export function choosePracticeAiCommand(
 
   const cards = byStrength(observation, difficulty === 'criollo');
   if (cards.length) {
-    if (difficulty === 'maestro' && observation.played.length === 0 && cards.length > 1) {
+    if (
+      difficulty === 'maestro' &&
+      observation.played.length === 0 &&
+      cards.length > 1
+    ) {
       return cards[1];
     }
     return cards[0];
@@ -267,7 +325,10 @@ export function choosePracticeAiCommand(
   return observation.legalCommands[0];
 }
 
-export function explainAiChoice(observation: AiObservation, command: EngineCommand) {
+export function explainAiChoice(
+  observation: AiObservation,
+  command: EngineCommand,
+) {
   if (command.type === 'PLAY_CARD') {
     const card = cardForCommand(observation, command);
     return card
