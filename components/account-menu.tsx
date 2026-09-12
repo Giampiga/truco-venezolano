@@ -7,7 +7,11 @@ import {
   type SyntheticEvent,
 } from 'react';
 import { UserRound } from 'lucide-react';
-import { browserAuth, authConfigured } from '@/lib/auth/browser';
+import {
+  browserAuth,
+  authConfigured,
+  authErrorMessage,
+} from '@/lib/auth/browser';
 import { authReturnPath } from '@/lib/auth/return-path';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,6 +49,10 @@ export function AccountMenu({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
+  const [confirmation, setConfirmation] = useState<{
+    email: string;
+    type: 'signup' | 'email_change';
+  } | null>(null);
   const currentAccount = useRef<Account | null | undefined>(undefined);
   const notify = useEffectEvent((value: Account | null) => {
     onSession(!!value?.registered);
@@ -66,7 +74,7 @@ export function AccountMenu({
         if (!response.ok && response.status !== 401) throw new Error();
         const value = response.ok ? ((await response.json()) as Account) : null;
         if (!alive || controller.signal.aborted) return;
-        if (currentAccount.current === undefined && value && !value.registered)
+        if (!currentAccount.current && value && !value.registered)
           setMode('signup');
         currentAccount.current = value;
         setAccount(value);
@@ -147,18 +155,7 @@ export function AccountMenu({
     try {
       await action();
     } catch (cause) {
-      const code =
-        cause && typeof cause === 'object' && 'code' in cause ? cause.code : '';
-      setError(
-        code === 'email_not_confirmed'
-          ? 'Confirma tu correo antes de iniciar sesión. Revisa también la carpeta de correo no deseado.'
-          : code === 'invalid_credentials'
-            ? 'El correo o la contraseña no son correctos.'
-            : code === 'over_request_rate_limit' ||
-                code === 'over_email_send_rate_limit'
-              ? 'Has hecho varios intentos seguidos. Espera un momento antes de volver a intentarlo.'
-              : 'No se pudo completar la solicitud. Revisa tus datos o inténtalo de nuevo.',
-      );
+      setError(authErrorMessage(cause));
     } finally {
       setBusy(false);
     }
@@ -167,6 +164,7 @@ export function AccountMenu({
     event.preventDefault();
     if (busy || loading || playing || !authConfigured) return;
     const data = new FormData(event.currentTarget);
+    setConfirmation(null);
     await perform(async () => {
       const auth = browserAuth().auth;
       const email = (data.get('email') as string).trim();
@@ -193,7 +191,16 @@ export function AccountMenu({
                     data: { display_name: name.trim() },
                   },
                 });
-      if (result.error) throw result.error;
+      if (result.error) {
+        if (result.error.code === 'email_not_confirmed')
+          setConfirmation({ email, type: 'signup' });
+        throw result.error;
+      }
+      if (mode === 'signup')
+        setConfirmation({
+          email,
+          type: account ? 'email_change' : 'signup',
+        });
       setMessage(
         mode === 'login'
           ? 'Sesión iniciada.'
@@ -298,6 +305,11 @@ export function AccountMenu({
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (busy || loading) return;
+                  if (name.trim().length < 2) {
+                    setError('Elige un alias de al menos 2 caracteres.');
+                    return;
+                  }
+                  onName(name.trim());
                   if (account) {
                     onOpenChange(false);
                     return;
@@ -321,6 +333,7 @@ export function AccountMenu({
                     minLength={2}
                     maxLength={24}
                     required
+                    disabled={busy}
                     autoComplete="off"
                   />
                 </label>
@@ -329,22 +342,34 @@ export function AccountMenu({
                   variant="outline"
                   disabled={busy || (!account && !authConfigured)}
                 >
-                  {account ? 'Listo, a jugar' : 'Entrar como invitado'}
+                  {busy
+                    ? 'Un momento…'
+                    : account
+                      ? 'Seguir como invitado'
+                      : 'Jugar como invitado'}
                 </Button>
               </form>
               <details className="inline-help">
                 <summary>¿Qué se guarda?</summary>
                 <p>
-                  Una cuenta guarda tus partidas, Elo y amigos. Como invitado,
-                  dependes de la sesión de este navegador. Crear una cuenta por
-                  correo desde aquí conserva esa identidad.
+                  Como invitado puedes jugar partidas casuales. Tu acceso
+                  depende de este navegador: si borras sus datos, puedes
+                  perderlo. Crea una cuenta para conservar tus partidas, añadir
+                  amigos y entrar al competitivo con el correo confirmado.
                 </p>
               </details>
               {mode === 'signup' && account && (
                 <p>
-                  Primero confirma tu correo. Después podrás elegir una
+                  Convierte tu invitado en una cuenta y conserva tus partidas.
+                  Si eliges correo, primero lo confirmarás y después crearás una
                   contraseña.
                 </p>
+              )}
+              {mode === 'login' && account && (
+                <small>
+                  Las partidas de invitado no se transfieren a una cuenta
+                  existente. Para conservarlas, elige «Crear una cuenta».
+                </small>
               )}
               <div className="account-divider">
                 {mode === 'signup'
@@ -359,40 +384,47 @@ export function AccountMenu({
                   servicio de cuentas.
                 </output>
               )}
-              <div className="social-signin">
-                {(['google', 'facebook', 'apple'] as const).map((provider) => (
-                  <Button
-                    key={provider}
-                    variant="outline"
-                    disabled={!authConfigured || busy || playing}
-                    onClick={() =>
-                      void perform(async () => {
-                        const options = {
-                          redirectTo: callbackUrl(),
-                        };
-                        const { error } =
-                          account && mode === 'signup'
-                            ? await browserAuth().auth.linkIdentity({
-                                provider,
-                                options,
-                              })
-                            : await browserAuth().auth.signInWithOAuth({
-                                provider,
-                                options,
-                              });
-                        if (error) throw error;
-                      })
-                    }
-                  >
-                    Continuar con{' '}
-                    {provider === 'google'
-                      ? 'Google'
-                      : provider === 'apple'
-                        ? 'Apple'
-                        : 'Facebook'}
-                  </Button>
-                ))}
-              </div>
+              {playing && (
+                <small>Sal de la mesa antes de cambiar de cuenta.</small>
+              )}
+              {mode !== 'reset' && (
+                <div className="social-signin">
+                  {(['google', 'facebook', 'apple'] as const).map(
+                    (provider) => (
+                      <Button
+                        key={provider}
+                        variant="outline"
+                        disabled={!authConfigured || busy || playing}
+                        onClick={() =>
+                          void perform(async () => {
+                            const options = {
+                              redirectTo: callbackUrl(),
+                            };
+                            const { error } =
+                              account && mode === 'signup'
+                                ? await browserAuth().auth.linkIdentity({
+                                    provider,
+                                    options,
+                                  })
+                                : await browserAuth().auth.signInWithOAuth({
+                                    provider,
+                                    options,
+                                  });
+                            if (error) throw error;
+                          })
+                        }
+                      >
+                        Continuar con{' '}
+                        {provider === 'google'
+                          ? 'Google'
+                          : provider === 'apple'
+                            ? 'Apple'
+                            : 'Facebook'}
+                      </Button>
+                    ),
+                  )}
+                </div>
+              )}
               <form className="account-form" onSubmit={email}>
                 <label>
                   Correo electrónico
@@ -410,7 +442,7 @@ export function AccountMenu({
                     <input
                       name="password"
                       type="password"
-                      minLength={8}
+                      minLength={mode === 'signup' ? 8 : undefined}
                       autoComplete={
                         mode === 'signup' ? 'new-password' : 'current-password'
                       }
@@ -431,6 +463,28 @@ export function AccountMenu({
                         : 'Iniciar sesión'}
                 </Button>
               </form>
+              {confirmation && (
+                <Button
+                  variant="outline"
+                  disabled={busy || playing || !authConfigured}
+                  onClick={() =>
+                    void perform(async () => {
+                      const { error } = await browserAuth().auth.resend({
+                        ...confirmation,
+                        options: {
+                          emailRedirectTo: callbackUrl(
+                            confirmation.type === 'email_change',
+                          ),
+                        },
+                      });
+                      if (error) throw error;
+                      setMessage('Revisa tu correo para continuar.');
+                    })
+                  }
+                >
+                  Reenviar correo de confirmación
+                </Button>
+              )}
               <div className="account-links">
                 <button
                   disabled={busy}
@@ -438,6 +492,7 @@ export function AccountMenu({
                     setMode(mode === 'signup' ? 'login' : 'signup');
                     setMessage('');
                     setError('');
+                    setConfirmation(null);
                   }}
                 >
                   {mode === 'signup'
@@ -450,6 +505,7 @@ export function AccountMenu({
                     setMode(mode === 'reset' ? 'login' : 'reset');
                     setMessage('');
                     setError('');
+                    setConfirmation(null);
                   }}
                 >
                   {mode === 'reset'

@@ -27,7 +27,6 @@ import {
   VolumeX,
   Wifi,
   WifiOff,
-  X,
 } from 'lucide-react';
 
 import { EnvidoRaises } from '@/components/envido-raises';
@@ -36,10 +35,20 @@ import {
   CantoNotice,
   PlayedStacks,
   CantoBranch,
+  TableVira,
 } from '@/components/table-context';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { manoAnnouncement, gameEventText, actionLabels } from '@/lib/game-copy';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -342,6 +351,7 @@ export function GameTable({
   const [pendingCommand, setPendingCommand] = useState<EngineCommand | null>(
     null,
   );
+  const cantoDock = useRef<HTMLElement>(null);
   const [paused, setPaused] = useState(false);
   const [aiExplanation, setAiExplanation] = useState('');
   const [status, setStatus] = useState(
@@ -727,6 +737,7 @@ export function GameTable({
         </div>
 
         <div className="flex items-center justify-end gap-1">
+          <ThemeToggle />
           <button
             className="connection-chip"
             onClick={() =>
@@ -863,28 +874,9 @@ export function GameTable({
                 name={(id) => playerName(id, config)}
                 renderCard={(card) => <FaceCard card={card} compact />}
               />
-            </div>
-
-            <div
-              className="vira-deck"
-              aria-label={`Vira visible: ${snapshot.vira.rank} de ${snapshot.vira.suit}`}
-            >
-              <div className="deck-stack" aria-hidden="true">
-                <span />
-                <span />
-                <strong>MAZO</strong>
-              </div>
-              <div className="vira-card-wrap">
-                <span className="vira-label">VIRA</span>
+              <TableVira card={snapshot.vira}>
                 <FaceCard card={snapshot.vira} vira />
-              </div>
-              <div className="vira-copy">
-                <strong>
-                  {snapshot.vira.rank} de {snapshot.vira.suit}
-                </strong>
-                <span>{viraDescription.text}</span>
-                <em>{viraDescription.substitution}</em>
-              </div>
+              </TableVira>
             </div>
 
             <div className="seat-position seat-bottom">
@@ -1016,36 +1008,44 @@ export function GameTable({
                 </Button>
               )}
             </section>
-            {prompt && pendingCommand && (
-              <section className="call-confirm" aria-label="Confirmar acción">
-                <button
-                  onClick={() => setPendingCommand(null)}
-                  className="call-confirm-close"
-                  aria-label="Cancelar acción"
-                >
-                  <X className="size-4" />
-                </button>
-                <p>{prompt.eyebrow}</p>
-                <h2>{prompt.title}</h2>
-                <span>{prompt.copy}</span>
-                <div>
+            <Dialog
+              open={!!pendingCommand}
+              onOpenChange={(open) => {
+                if (!open) setPendingCommand(null);
+              }}
+            >
+              <DialogContent finalFocus={cantoDock}>
+                <DialogHeader>
+                  <p className="text-xs text-muted-foreground">
+                    {prompt?.eyebrow}
+                  </p>
+                  <DialogTitle>{prompt?.title}</DialogTitle>
+                  <DialogDescription>{prompt?.copy}</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
                   <Button
                     onClick={() => setPendingCommand(null)}
                     variant="outline"
-                    className="h-11 rounded-xl"
                   >
                     Todavía no
                   </Button>
                   <Button
-                    onClick={() => humanCommand(pendingCommand)}
-                    className="h-11 rounded-xl"
+                    disabled={paused}
+                    onClick={() =>
+                      pendingCommand && humanCommand(pendingCommand)
+                    }
                   >
-                    {prompt.confirm}
+                    {prompt?.confirm}
                   </Button>
-                </div>
-              </section>
-            )}
-            <section className="call-dock">
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <section
+              className="call-dock"
+              ref={cantoDock}
+              tabIndex={-1}
+              aria-label="Cantos y acciones"
+            >
               <CantoNotice
                 state={snapshot}
                 you="human"
@@ -1246,11 +1246,14 @@ export function GameTable({
                     </p>
                   )}
               </fieldset>
-              <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                Los cantos cambian según el turno y tu mano. Retruco, Vale nueve
-                y Vale juego aparecen al avanzar la apuesta; Flor, cuando tienes
-                flor.
-              </p>
+              <details className="canto-help">
+                <summary>¿Qué puedo cantar?</summary>
+                <p>
+                  Los cantos cambian según el turno y tu mano. Retruco, Vale
+                  nueve y Vale juego aparecen al avanzar la apuesta; Flor,
+                  cuando tienes flor.
+                </p>
+              </details>
             </section>
           </div>
         </div>

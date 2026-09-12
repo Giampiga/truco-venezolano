@@ -6,9 +6,43 @@ import {
   PopoverTitle,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import type { EngineSnapshot } from '@/lib/truco-engine';
+import { Info } from 'lucide-react';
+import { describeVira, type EngineSnapshot } from '@/lib/truco-engine';
 import type { TrucoCard } from '@/lib/truco-rules';
 import { pendingCanto } from '@/lib/game-copy';
+
+export function TableVira({
+  card,
+  children,
+}: {
+  card: TrucoCard;
+  children: ReactNode;
+}) {
+  const details = describeVira(card);
+  return (
+    <Popover>
+      <PopoverTrigger
+        className="table-vira"
+        openOnHover
+        delay={200}
+        closeDelay={150}
+        aria-label={`Vira: ${card.rank} de ${card.suit}. Ver piezas y detalles`}
+      >
+        <span className="table-vira-label">
+          Vira <Info size={12} aria-hidden="true" />
+        </span>
+        <span aria-hidden="true">{children}</span>
+      </PopoverTrigger>
+      <PopoverContent className="vira-details" side="right" sideOffset={12}>
+        <PopoverTitle>
+          {card.rank} de {card.suit}
+        </PopoverTitle>
+        <p>{details.text}</p>
+        <p className="text-muted-foreground">{details.substitution}</p>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export function CantoNotice({
   state,
@@ -110,7 +144,7 @@ export function PlayedStacks({
               }}
             >
               <span>{name(seat.id)}</span>
-              {seat.id === you && onPlayCard && (
+              {seat.id === you && onPlayCard && !cards.length && (
                 <small>Suelta tu carta aquí</small>
               )}
               <span className="stack-preview" aria-hidden="true">
@@ -130,16 +164,13 @@ export function PlayedStacks({
                   <span className="stack-empty">Sin jugar</span>
                 )}
               </span>
-              <small>
-                {cards.length}{' '}
-                {cards.length === 1 ? 'carta jugada' : 'cartas jugadas'}
-                {cards.length > 0 && (
-                  <>
-                    <span className="stack-show"> · Ver cartas</span>
-                    <span className="stack-hide"> · Apilar</span>
-                  </>
-                )}
-              </small>
+              {cards.length > 0 && (
+                <small>
+                  <span className="stack-show">Ver </span>
+                  <span className="stack-hide">Apilar </span>
+                  {cards.length} {cards.length === 1 ? 'carta' : 'cartas'}
+                </small>
+              )}
             </summary>
             <ol>
               {cards.map((play, index) => (

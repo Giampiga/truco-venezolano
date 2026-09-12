@@ -1,7 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { browserAuth, authConfigured } from '@/lib/auth/browser';
+import {
+  browserAuth,
+  authConfigured,
+  authErrorMessage,
+} from '@/lib/auth/browser';
 import { authReturnPath } from '@/lib/auth/return-path';
 import { Button } from '@/components/ui/button';
 export default function ResetPassword() {
@@ -77,10 +81,8 @@ export default function ResetPassword() {
               form.reset();
               setSaved(true);
               setMessage('Contraseña actualizada. Ya puedes volver al salón.');
-            } catch {
-              setError(
-                'No pudimos cambiar la contraseña. Solicita un enlace nuevo e inténtalo otra vez.',
-              );
+            } catch (cause) {
+              setError(authErrorMessage(cause));
             } finally {
               setBusy(false);
             }

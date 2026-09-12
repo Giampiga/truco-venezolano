@@ -1,6 +1,6 @@
 # Truco: new Vercel + Supabase projects
 
-The `codex/vercel-launch` branch runs on standard Next.js, with Supabase Auth and Postgres. The current Sites deployment is a separate environment; do not deploy this branch through Sites.
+The `codex/vercel-launch` branch runs on standard Next.js, with Supabase Auth and Postgres. The [Sites version](https://truco.gga.chatgpt.site) is a separate, compatible build that retains ChatGPT sign-in and D1 data. It remains owner-only. Do not deploy this Next.js branch directly through Sites; Google, Facebook, Apple, and email sign-in require the Supabase setup below.
 
 ## 1. Create Supabase
 

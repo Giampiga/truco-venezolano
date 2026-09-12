@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AccountMenu } from '@/components/account-menu';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Matchmaking } from '@/components/matchmaking';
 import { LobbyView } from '@/components/lobby-view';
 import { RoomView } from '@/components/room-view';
@@ -70,6 +71,7 @@ export function TrucoApp() {
   const [actionError, setActionError] = useState('');
   const [invitation, setInvitation] = useState('');
   const [install, setInstall] = useState<InstallPrompt | null>(null);
+  const roomId = online.room?.id ?? null;
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
@@ -116,6 +118,14 @@ export function TrucoApp() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [online.room?.id, practice]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setLeaveOpen(false);
+      if (!roomId)
+        setOnlineResume(localStorage.getItem('truco-online-room') ?? '');
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [roomId]);
   useEffect(() => {
     if (!online.room && !practice) {
       const timer = setInterval(() => {
@@ -258,16 +268,24 @@ export function TrucoApp() {
       setToast(`Código de la mesa: ${online.room.code}`);
     }
   }
+  function openLeave() {
+    if (online.room?.closed) {
+      online.detach();
+      setOnlineResume('');
+      setLeaveOpen(false);
+      void refresh();
+    } else if (online.room) setLeaveOpen(true);
+  }
   const activeConfig = online.room?.config ?? practice?.config ?? config;
   return (
-    <main className="truco-club">
+    <main className={`truco-club ${online.room?.game ? 'in-match' : ''}`}>
       {!practice && (
         <header className="club-header">
           <div className="club-header-inner">
             <button
               className="club-brand"
               aria-label="Truco, volver al salón"
-              onClick={() => (online.room ? setLeaveOpen(true) : undefined)}
+              onClick={openLeave}
             >
               <span className="club-logo">T</span>
               <span>
@@ -284,6 +302,7 @@ export function TrucoApp() {
               </button>
             </nav>
             <div className="header-profile">
+              <ThemeToggle />
               {install && (
                 <Button
                   variant="ghost"
@@ -314,7 +333,9 @@ export function TrucoApp() {
       )}
       {needsSignin && !practice && (
         <div className="invitation-strip">
-          <span>Inicia sesión para jugar con tus panas.</span>
+          <span>
+            Entra como invitado o inicia sesión para jugar con tus panas.
+          </span>
           <Button onClick={() => setAccountOpen(true)}>
             Entrar o crear cuenta
           </Button>
@@ -403,9 +424,11 @@ export function TrucoApp() {
         </>
       )}
       {online.room && (
-        <div className="club-layout room-layout">
+        <div
+          className={`club-layout room-layout ${online.room.game ? 'playing-room' : ''}`}
+        >
           <div className="room-breadcrumb">
-            <Button variant="ghost" onClick={() => setLeaveOpen(true)}>
+            <Button variant="ghost" onClick={openLeave}>
               <ArrowLeft size={16} />
               El salón
             </Button>
@@ -448,15 +471,7 @@ export function TrucoApp() {
           {online.room.closed ? (
             <section className="lobby-empty">
               <h2>La mesa está cerrada.</h2>
-              <Button
-                onClick={() => {
-                  online.detach();
-                  setOnlineResume('');
-                  void refresh();
-                }}
-              >
-                Volver al salón
-              </Button>
+              <Button onClick={openLeave}>Volver al salón</Button>
             </section>
           ) : (
             <div className="room-columns">
@@ -561,7 +576,10 @@ export function TrucoApp() {
         onOpenChange={setRulesOpen}
         config={activeConfig}
       />
-      <Dialog open={leaveOpen} onOpenChange={setLeaveOpen}>
+      <Dialog
+        open={leaveOpen && !!online.room && !online.room.closed}
+        onOpenChange={setLeaveOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>¿Sales de la mesa?</DialogTitle>
@@ -579,7 +597,8 @@ export function TrucoApp() {
             <Button variant="outline" onClick={() => setLeaveOpen(false)}>
               Me quedo
             </Button>
-            {online.room?.host === online.room?.you &&
+            {online.room &&
+              online.room.host === online.room.you &&
               !(
                 online.room?.config.ranked &&
                 online.room.game &&

@@ -328,6 +328,9 @@ export function LobbyView(props: Props) {
       <footer className="club-footer">
         <span>TRUCO / VENEZUELA</span>
         <span>40 cartas. Mil maneras de cantarlo.</span>
+        <span>
+          Hecho por <strong>giampiga</strong>
+        </span>
       </footer>
     </div>
   );

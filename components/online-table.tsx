@@ -5,6 +5,7 @@ import {
   CantoNotice,
   PlayedStacks,
   CantoBranch,
+  TableVira,
 } from '@/components/table-context';
 import { useState } from 'react';
 import { ChevronRight, Flag, Layers, Sparkles } from 'lucide-react';
@@ -18,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { describeVira, type EngineCommand } from '@/lib/truco-engine';
+import type { EngineCommand } from '@/lib/truco-engine';
 import {
   envidoScore,
   hasFlor,
@@ -91,7 +92,6 @@ export function OnlineTable({
     pending || !connected || !everyonePresent || state.handComplete;
   const name = (id: string) =>
     room.members.find((member) => member.seatId === id)?.name ?? 'Jugador';
-  const vira = describeVira(state.vira);
   const selected = game.private.hand.filter((card) =>
     selection.includes(cardId(card)),
   );
@@ -211,15 +211,9 @@ export function OnlineTable({
           ))}
         </div>
         <div className="felt-center">
-          <div className="vira-display">
-            <span className="eyebrow">VIRA</span>
+          <TableVira card={state.vira}>
             <PlayingCard card={state.vira} small />
-            <p>
-              Perico {vira.perico.rank}
-              <br />
-              Perica {vira.perica.rank}
-            </p>
-          </div>
+          </TableVira>
           <div className="trick-zone">
             <div className="trick-progress">
               {[0, 1, 2].map((index) => (
@@ -297,12 +291,6 @@ export function OnlineTable({
       ) : (
         <>
           <section className="player-console" aria-label="Tu mano y cantos">
-            <CantoNotice
-              state={state}
-              you={room.you}
-              name={(id) => (id === room.you ? 'Tú' : name(id))}
-              canAnswer={legal.includes('answer-quiero')}
-            />
             <div className="your-hand">
               <div className="hand-label">
                 <p className="eyebrow">TU MANO</p>
@@ -355,6 +343,13 @@ export function OnlineTable({
               </Button>
             </div>
             <div className="call-tray" aria-label="Cantos y acciones">
+              <CantoNotice
+                state={state}
+                you={room.you}
+                name={(id) => (id === room.you ? 'Tú' : name(id))}
+                canAnswer={legal.includes('answer-quiero')}
+              />
+
               <div>
                 <span className="eyebrow">CANTOS Y ACCIONES</span>
                 <small>Elige un canto o juega una carta.</small>
@@ -540,11 +535,14 @@ export function OnlineTable({
                   </Button>
                 )}
               </div>
-              <p className="canto-help">
-                Los cantos cambian según el turno y tu mano. Retruco, Vale nueve
-                y Vale juego aparecen al avanzar la apuesta; Flor, cuando tienes
-                flor.
-              </p>
+              <details className="canto-help">
+                <summary>¿Qué puedo cantar?</summary>
+                <p>
+                  Los cantos cambian según el turno y tu mano. Retruco, Vale
+                  nueve y Vale juego aparecen al avanzar la apuesta; Flor,
+                  cuando tienes flor.
+                </p>
+              </details>
             </div>
           </section>
         </>

@@ -2,7 +2,7 @@
 
 A browser game for Venezuelan Truco, with Spanish interface copy, private or public tables, 1v1 duels and 2v2 teams. Players can practice against Truquito, invite friends, compete for Elo, and opt into room voice and camera.
 
-This repository is migrating from Sites to **Next.js on Vercel, Supabase Auth/Postgres, and optional LiveKit media**. The migration branch is `codex/vercel-launch`; the existing Sites deployment is separate. The intended address is [truco-ve.vercel.app](https://truco-ve.vercel.app), but the hosted migration is **not ready for public play**. See [launch status](#launch-status) before deploying.
+This repository is migrating from Sites to **Next.js on Vercel, Supabase Auth/Postgres, and optional LiveKit media**. The migration branch is `codex/vercel-launch`. The separate [Sites version](https://truco.gga.chatgpt.site) keeps its ChatGPT sign-in, D1 data, and current owner-only audience; it uses a Sites-compatible build, not this Next.js deployment. The intended address is [truco-ve.vercel.app](https://truco-ve.vercel.app), but the hosted migration is **not ready for public play**. See [launch status](#launch-status) before deploying.
 
 ## What is implemented
 
@@ -10,9 +10,10 @@ This repository is migrating from Sites to **Next.js on Vercel, Supabase Auth/Po
 - **Competitive:** confirmed accounts, fixed rules, separate 1v1/2v2 Elo, automatic matchmaking, forfeits, peak rating, and durable results. The 2v2 queue balances four solo entrants; premade party queues are not implemented.
 - **Accounts:** Supabase flows for Google, Facebook, Apple, and email/password; guest access; email confirmation and password recovery. Providers need external configuration before these flows work live.
 - **Profiles:** display name, unique username, biography, friend requests, current/peak Elo, and finished online match history with opponents and results. Account labels in play and chat come from the server.
-- **Table interaction:** branched canto menus, clear pending-canto notices, click or drag to play, and a separate stack of played cards for each player. Ordinary visual stacking does not change turn order; the special first-parda rule has its own engine action.
+- **Table interaction:** branched canto menus beside the hand on desktop, clear pending-canto notices, click or drag to play, and a separate stack of played cards for each player. The vira sits on the table; hover, tap, or keyboard activation opens its piece details. Ordinary visual stacking does not change turn order; the special first-parda rule has its own engine action.
 - **Communication:** floating global chat, room chat, optional voice, and separately optional cameras. Microphone/camera start off; there is no recording or transcription.
 - **Practice:** three local AI difficulties and optional explanations. Truquito is a rule-based bot, not an LLM, and receives only its legal player view.
+- **Appearance:** light/dark toggle in the lobby and practice headers, with a saved browser preference and system-theme default. Help text is tucked into disclosures where it does not need to stay visible.
 - **Installation:** a web app manifest and service worker. It caches the icon and manifest only; it does not make online matches available offline.
 
 [Game rules](docs/RULES.md) · [Competitive rules](docs/COMPETITIVE.md) · [Voice setup](docs/VOICE_SETUP.md) · [Vercel and Supabase setup](docs/VERCEL_SETUP.md)
@@ -78,11 +79,12 @@ Secrets must stay in `.env.local` or the hosting provider's environment settings
 ```text
 app/
   page.tsx, layout.tsx       Entry page, metadata, fonts, global styles
-  globals.css               Design tokens, lobby/table/account layouts
+  globals.css, theme.css    Responsive layouts, theme tokens and dark surfaces
   api/                      Server-authoritative HTTP endpoints
   auth/                     OAuth/email callbacks and password recovery
 components/
   truco-app.tsx             Screen orchestration, invitations, dialogs
+  theme-toggle.tsx          Theme choice; lib/theme.ts sets it before first paint
   lobby-view.tsx            Casual/competitive tabs and room discovery
   room-view.tsx             Waiting room, seats, ready/start controls
   online-table.tsx          Table driven by a server-projected game state
@@ -198,7 +200,7 @@ With the local test server above running, execute all HTTP scenarios sequentiall
 npm run test:online
 ```
 
-Individual suites are available as `test:integration`, `test:ranked`, `test:matchmaking`, `test:profile`, `test:chat`, `test:access`, and `test:boundaries`. They check complete 1v1/2v2 games, hidden hands, concurrent writes, settlement, capped opponents, guest restrictions, profile trust, chat delivery, and room/friend limits. Unit checks cover rules, engine transitions, bot information boundaries, dragging, auth return paths, and media-token signatures/grants.
+Individual suites are available as `test:integration`, `test:ranked`, `test:matchmaking`, `test:profile`, `test:chat`, `test:access`, and `test:boundaries`. They check complete 1v1/2v2 games, hidden hands, concurrent writes, settlement, capped opponents, guest restrictions, profile trust, chat delivery, and room/friend limits. Unit checks cover rules, engine transitions, bot information boundaries, dragging, auth return paths and readable errors, theme preferences, and media-token signatures/grants.
 
 For the separate production-auth check, first build, then run a production server **without cloud credentials** on port 3014:
 
@@ -225,3 +227,7 @@ The code is prepared for the new services, with these external steps still outst
 Follow [the deployment guide](docs/VERCEL_SETUP.md) for provider callbacks, email templates, and the cutover checklist.
 
 Before a broad public launch, also plan actual user reporting/blocking and moderation, account-abuse controls, database backup/retention, and load testing. These are not implemented by the current chat limits. There is no billing, paid entitlement system, prize payout, or monetization integration in this repository.
+
+## Credits
+
+Created by **giampiga**.
