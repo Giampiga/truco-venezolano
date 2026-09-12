@@ -4089,6 +4089,109 @@ button[draggable='true']:active {
 .table-stage[data-format='1v1'] .table-vira {
   left: clamp(24px, 8%, 64px);
 }
+.played-stacks.partnership-piles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    'northwest top northeast'
+    'left . right'
+    'southwest bottom southeast';
+  align-items: center;
+  justify-items: center;
+  gap: 6px;
+  padding: 0;
+}
+.played-stacks.partnership-piles > .player-stack {
+  width: 100%;
+  max-width: 120px;
+  min-width: 0;
+}
+.partnership-piles > [data-position='top'] {
+  grid-area: top;
+}
+.partnership-piles > [data-position='right'] {
+  grid-area: right;
+}
+.partnership-piles > [data-position='bottom'] {
+  grid-area: bottom;
+}
+.partnership-piles > [data-position='left'] {
+  grid-area: left;
+}
+.played-stacks.partnership-piles > .player-stack[open] {
+  grid-area: auto / 1 / auto / -1;
+  max-width: none;
+}
+.played-stacks.partnership-piles .player-stack summary {
+  gap: 2px;
+  font-size: 11px;
+  line-height: 1.3;
+}
+.partnership-piles .player-stack summary > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.partnership-piles .table-vira {
+  position: static;
+  transform: none;
+}
+/* The deck/vira sits between the dealer and the next mano. */
+.table-vira-slot[data-mano='right'] {
+  grid-area: southeast;
+}
+.table-vira-slot[data-mano='top'] {
+  grid-area: northeast;
+}
+.table-vira-slot[data-mano='left'] {
+  grid-area: northwest;
+}
+.table-vira-slot[data-mano='bottom'] {
+  grid-area: southwest;
+}
+.player-play-area .table-stage[data-format='2v2'] {
+  min-height: 500px;
+}
+.player-play-area .table-stage[data-format='2v2'] .seat-bottom {
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.player-play-area .table-stage[data-format='2v2'] .felt > .partnership-piles {
+  inset: 44px 16px 12px;
+}
+.player-play-area .partnership-piles .stack-preview,
+.online-game .partnership-piles .stack-preview {
+  height: 72px;
+}
+.player-play-area .partnership-piles .stack-preview .game-card,
+.online-game .partnership-piles .stack-preview .playing-card {
+  width: 40px;
+  height: 56px;
+}
+.partnership-piles .stack-empty {
+  width: 64px;
+}
+.online-game[data-format='2v2'] .felt-center {
+  padding-left: 8px;
+}
+.online-game[data-format='2v2'] .opponent-line [data-position='left'] {
+  order: 0;
+}
+.online-game[data-format='2v2'] .opponent-line [data-position='top'] {
+  order: 1;
+}
+.online-game[data-format='2v2'] .opponent-line [data-position='right'] {
+  order: 2;
+}
+@media (max-width: 1023px) {
+  .player-play-area .table-stage[data-format='2v2'] {
+    min-height: 550px;
+  }
+  .player-play-area .table-stage[data-format='2v2'] .felt {
+    top: 112px;
+  }
+}
 .table-vira-label {
   display: flex;
   align-items: center;

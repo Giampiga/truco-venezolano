@@ -31,6 +31,7 @@ import {
 
 import { EnvidoRaises } from '@/components/envido-raises';
 import { cardDrag } from '@/lib/card-drag';
+import { tablePosition } from '@/lib/table-seats';
 import {
   CantoNotice,
   PlayedStacks,
@@ -825,14 +826,7 @@ export function GameTable({
             {seats
               .filter((seat) => seat.id !== 'human')
               .map((seat) => {
-                const position =
-                  config.format === '1v1'
-                    ? 'top'
-                    : seat.id === 'mariale'
-                      ? 'top'
-                      : seat.id === 'rafael'
-                        ? 'left'
-                        : 'right';
+                const position = tablePosition(seats, seat.id, 'human');
                 return (
                   <div
                     key={seat.id}
@@ -861,6 +855,8 @@ export function GameTable({
               <PlayedStacks
                 key={snapshot.handNumber}
                 you="human"
+                manoSeatId={snapshot.manoSeatId}
+                vira={snapshot.vira}
                 onPlayCard={
                   !paused && humanLegal.includes('play-card')
                     ? (id) => {
@@ -874,9 +870,11 @@ export function GameTable({
                 name={(id) => playerName(id, config)}
                 renderCard={(card) => <FaceCard card={card} compact />}
               />
-              <TableVira card={snapshot.vira}>
-                <FaceCard card={snapshot.vira} vira />
-              </TableVira>
+              {seats.length === 2 && (
+                <TableVira card={snapshot.vira}>
+                  <FaceCard card={snapshot.vira} vira />
+                </TableVira>
+              )}
             </div>
 
             <div className="seat-position seat-bottom">

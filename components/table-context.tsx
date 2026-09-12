@@ -10,6 +10,7 @@ import { Info } from 'lucide-react';
 import { describeVira, type EngineSnapshot } from '@/lib/truco-engine';
 import type { TrucoCard } from '@/lib/truco-rules';
 import { pendingCanto } from '@/lib/game-copy';
+import { tablePosition } from '@/lib/table-seats';
 
 export function TableVira({
   card,
@@ -96,8 +97,12 @@ export function PlayedStacks({
   renderCard,
   you,
   onPlayCard,
+  manoSeatId,
+  vira,
 }: {
   you: string;
+  manoSeatId: string;
+  vira: TrucoCard;
   onPlayCard?: (id: string) => void;
   played: EngineSnapshot['played'];
   seats: EngineSnapshot['seats'];
@@ -106,7 +111,7 @@ export function PlayedStacks({
 }) {
   return (
     <div
-      className={`played-stacks ${seats.length === 2 ? 'duel-piles' : ''}`}
+      className={`played-stacks ${seats.length === 2 ? 'duel-piles' : 'partnership-piles'}`}
       aria-label="Cartas jugadas en esta base"
     >
       {[
@@ -118,6 +123,7 @@ export function PlayedStacks({
           <details
             className={`player-stack ${seat.id === you ? 'your-play-pile' : ''}`}
             key={seat.id}
+            data-position={tablePosition(seats, seat.id, you)}
           >
             <summary
               ref={(node) => {
@@ -143,7 +149,7 @@ export function PlayedStacks({
                 }
               }}
             >
-              <span>{name(seat.id)}</span>
+              <span title={name(seat.id)}>{name(seat.id)}</span>
               {seat.id === you && onPlayCard && !cards.length && (
                 <small>Suelta tu carta aquí</small>
               )}
@@ -184,6 +190,14 @@ export function PlayedStacks({
           </details>
         );
       })}
+      {seats.length === 4 && (
+        <div
+          className="table-vira-slot"
+          data-mano={tablePosition(seats, manoSeatId, you)}
+        >
+          <TableVira card={vira}>{renderCard(vira)}</TableVira>
+        </div>
+      )}
     </div>
   );
 }
