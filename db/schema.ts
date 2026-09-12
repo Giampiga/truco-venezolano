@@ -72,3 +72,12 @@ export const friendships = sqliteTable('friendships', {
   recipient: text('recipient').notNull(),
   status: text('status').notNull(),
 });
+
+export const globalMessages = sqliteTable('global_messages', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  author: text('author').notNull(),
+  handle: text('handle'),
+  message: text('message').notNull(),
+  at: integer('at').notNull(),
+}, t => [index('global_messages_recent').on(t.at), index('global_messages_sender').on(t.userId, t.at)]);

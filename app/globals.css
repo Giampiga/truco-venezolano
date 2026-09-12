@@ -2188,3 +2188,6 @@ button[draggable="true"]:active { cursor: grabbing; }
 .canto-branch[open] summary { border-bottom: 1px solid var(--border); }
 .canto-branch[open] summary span { transform: rotate(90deg); }
 .canto-options { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; }
+.global-chat { margin-top: 24px; }
+.global-chat .chat-scroll { height: 300px; max-height: 40vh; overflow-y: auto; }
+.global-chat article p { overflow-wrap: anywhere; }

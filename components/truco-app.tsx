@@ -343,6 +343,7 @@ export function TrucoApp() {
           )}
           {!needsSignin && <div className="club-layout"><Matchmaking name={nickname} onMatched={(room) => { online.enter(room); setOnlineResume(room.id); setInvitation(''); }} /></div>}
           <LobbyView
+            nickname={nickname}
             rooms={rooms}
             loading={loading}
             error={lobbyError}

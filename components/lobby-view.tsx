@@ -13,11 +13,13 @@ import {
   Video,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { GlobalChat } from '@/components/global-chat';
 import { RankingPanel } from '@/components/ranking-panel';
 import { Input } from '@/components/ui/input';
 import type { GameFormat, RoomSummary } from '@/lib/product-types';
 
 type Props = {
+  nickname: string;
   rooms: RoomSummary[];
   loading: boolean;
   error: string;
@@ -223,6 +225,7 @@ export function LobbyView(props: Props) {
             </button>
           </div>
 
+          <GlobalChat name={props.nickname} />
         </section>
         <aside className="lobby-sidebar">
           <RankingPanel onPlay={(format) => props.onCreate(true, format)} />
