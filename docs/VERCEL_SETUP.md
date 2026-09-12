@@ -8,7 +8,7 @@ Create a new project in your Supabase organization. Save its database password i
 
 All game tables have RLS enabled with **no client policies**. The Next.js server accesses them with the server-side Postgres connection. Never expose `DATABASE_URL` or database credentials in browser variables. Clients cannot read opponents' hands or other users' histories directly.
 
-In **Connect**, copy the Transaction pooler connection string (port 6543) to `DATABASE_URL`. The app disables prepared statements for that pooler. Copy the project URL and publishable key into `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+In **Connect**, copy the Transaction pooler connection string (port 6543) to `DATABASE_URL`. The app disables prepared statements for that pooler and requires certificate-verified TLS. Copy the project URL and publishable key into `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 
 ## 2. Create Vercel
 
