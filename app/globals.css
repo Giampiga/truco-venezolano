@@ -2174,3 +2174,17 @@ fieldset:disabled { opacity:.65; }
 .player-stack[open] ol { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
 .player-stack li { width: 88px; text-align: center; }
 .felt .player-stack summary { color: #f5f1e7; }
+.duel-piles { flex-direction: column; align-items: center; flex-wrap: nowrap; }
+.felt > .duel-piles { inset: 52px 12px 8px; justify-content: space-between; gap: 6px; padding: 0; }
+.duel-piles .stack-preview { height: 105px; }
+.duel-piles .player-stack { width: 140px; }
+.duel-piles .player-stack[open] { width: 100%; }
+.your-play-pile[data-card-drop] { outline: 1px dashed currentColor; outline-offset: 4px; border-radius: 4px; }
+button[draggable="true"] { touch-action: none; cursor: grab; position: relative; }
+button[draggable="true"]:active { cursor: grabbing; }
+.canto-branch { min-width: 130px; border: 1px solid var(--border); border-radius: 4px; background: var(--card); }
+.canto-branch summary { cursor: pointer; min-height: 44px; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 10px 14px; font-weight: 600; }
+.canto-branch summary::-webkit-details-marker { display: none; }
+.canto-branch[open] summary { border-bottom: 1px solid var(--border); }
+.canto-branch[open] summary span { transform: rotate(90deg); }
+.canto-options { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; }

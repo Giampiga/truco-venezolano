@@ -31,7 +31,8 @@ import {
 } from 'lucide-react';
 
 import { EnvidoRaises } from '@/components/envido-raises';
-import { CantoNotice, PlayedStacks } from '@/components/table-context';
+import { cardDrag } from '@/lib/card-drag';
+import { CantoNotice, PlayedStacks, CantoBranch } from '@/components/table-context';
 import { manoAnnouncement, gameEventText, actionLabels } from '@/lib/game-copy';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -770,7 +771,7 @@ export function GameTable({
               <p aria-live="polite">{paused ? 'Práctica en pausa.' : status}</p>
             </div>
 
-            <PlayedStacks key={snapshot.handNumber} played={snapshot.played} seats={seats} name={(id) => playerName(id, config)} renderCard={(card) => <FaceCard card={card} compact />} />
+            <PlayedStacks key={snapshot.handNumber} you="human" onPlayCard={!paused && humanLegal.includes('play-card') ? (id) => { if (humanHand.some(card => cardId(card) === id)) humanCommand({ type: 'PLAY_CARD', cardId: id }); } : undefined} played={snapshot.played} seats={seats} name={(id) => playerName(id, config)} renderCard={(card) => <FaceCard card={card} compact />} />
 
 
           </div>
@@ -850,6 +851,7 @@ export function GameTable({
                 return (
                   <button
                     key={id}
+                    {...cardDrag(id, !paused && humanLegal.includes('play-card'))}
                     onClick={() => setSelected(id)}
                     disabled={
                       (!humanLegal.includes('play-card') &&
@@ -993,6 +995,7 @@ export function GameTable({
                     Quiero y {callLabels[nextCall]}
                   </Button>
                 )}
+              <CantoBranch title="Envido" available={['call-envido', 'call-falta', 'raise-envido'].some(action => humanLegal.includes(action as typeof humanLegal[number]))}>
               {humanLegal.includes('raise-envido') && <EnvidoRaises disabled={paused} onSelect={(amount) => setPendingCommand({ type: 'RAISE_ENVIDO', amount })} />}
               {humanLegal.includes('call-envido') && (
                 <Button
@@ -1021,6 +1024,8 @@ export function GameTable({
                   )}
                 </Button>
               )}
+              </CantoBranch>
+              <CantoBranch title="Flor" available={humanLegal.includes('declare-flor') || humanLegal.includes('call-flor-envida')}>
               {humanLegal.includes('declare-flor') && (
                 <Button
                   onClick={() =>
@@ -1042,6 +1047,7 @@ export function GameTable({
                   Mi Flor envida
                 </Button>
               )}
+              </CantoBranch>
               {humanLegal.includes('call-truco') &&
                 nextCall &&
                 nextCall !== 'none' && (

@@ -22,18 +22,31 @@ export function CantoNotice({ state, you, name, canAnswer }: {
   </div>;
 }
 
-export function PlayedStacks({ played, seats, name, renderCard }: {
+export function PlayedStacks({ played, seats, name, renderCard, you, onPlayCard }: {
+  you: string;
+  onPlayCard?: (id: string) => void;
   played: EngineSnapshot['played'];
   seats: EngineSnapshot['seats'];
   name: (id: string) => string;
   renderCard: (card: TrucoCard) => ReactNode;
 }) {
-  return <div className="played-stacks" aria-label="Cartas jugadas en esta base">
-    {seats.map(seat => {
+  return <div className={`played-stacks ${seats.length === 2 ? 'duel-piles' : ''}`} aria-label="Cartas jugadas en esta base">
+    {[...seats.filter(seat => seat.id !== you), ...seats.filter(seat => seat.id === you)].map(seat => {
       const cards = played.filter(play => play.seatId === seat.id);
-      return <details className="player-stack" key={seat.id}>
+      return <details className={`player-stack ${seat.id === you ? 'your-play-pile' : ''}`} key={seat.id}
+        ref={node => {
+          if (!node || seat.id !== you || !onPlayCard) return;
+          const drop = (event: Event) => onPlayCard((event as CustomEvent<string>).detail);
+          node.addEventListener('card-drop', drop);
+          return () => node.removeEventListener('card-drop', drop);
+        }}
+        data-card-drop={seat.id === you && onPlayCard ? 'true' : undefined}
+        onDragOver={event => { if (seat.id === you && onPlayCard) { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; } }}
+        onDrop={event => { if (seat.id === you && onPlayCard) { event.preventDefault(); onPlayCard(event.dataTransfer.getData('text/truco-card')); } }}>
+
         <summary>
           <span>{name(seat.id)}</span>
+          {seat.id === you && onPlayCard && <small>Suelta tu carta aquí</small>}
           <span className="stack-preview" aria-hidden="true">
             {cards.map((play, index) => <span key={index} style={{ marginLeft: index * 12, marginTop: index * 8, zIndex: index + 1 }}>{renderCard(play.card)}</span>)}
             {!cards.length && <span className="stack-empty">Sin jugar</span>}
@@ -44,4 +57,9 @@ export function PlayedStacks({ played, seats, name, renderCard }: {
       </details>;
     })}
   </div>;
+}
+
+export function CantoBranch({ title, available, children }: { title: string; available: boolean; children: ReactNode }) {
+  if (!available) return null;
+  return <details className="canto-branch" name="canto-menu"><summary>{title} <span aria-hidden="true">▸</span></summary><div className="canto-options">{children}</div></details>;
 }

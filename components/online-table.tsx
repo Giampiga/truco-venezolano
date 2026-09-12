@@ -1,6 +1,7 @@
 'use client';
 import { AccountLabel } from '@/components/account-label';
-import { CantoNotice, PlayedStacks } from '@/components/table-context';
+import { cardDrag } from '@/lib/card-drag';
+import { CantoNotice, PlayedStacks, CantoBranch } from '@/components/table-context';
 import { useState } from 'react';
 import { ChevronRight, Flag, Layers, Sparkles } from 'lucide-react';
 import { EnvidoRaises } from '@/components/envido-raises';
@@ -214,7 +215,7 @@ export function OnlineTable({
                 </span>
               ))}
             </div>
-            <PlayedStacks key={state.handNumber} played={state.played} seats={state.seats} name={(id) => id === room.you ? 'Tú' : name(id)} renderCard={(card) => <PlayingCard card={card} small />} />
+            <PlayedStacks key={state.handNumber} you={room.you} onPlayCard={!disabled && legal.includes('play-card') ? (id) => { if (game.private.hand.some(card => cardId(card) === id)) void command({ type: 'PLAY_CARD', cardId: id }); } : undefined} played={state.played} seats={state.seats} name={(id) => id === room.you ? 'Tú' : name(id)} renderCard={(card) => <PlayingCard card={card} small />} />
           </div>
         </div>
         <output className="turn-line">
@@ -278,6 +279,7 @@ export function OnlineTable({
               {game.private.hand.map((card, index) => (
                 <button
                   key={cardId(card)}
+                  {...cardDrag(cardId(card), !disabled && legal.includes('play-card'))}
                   className={`select-card ${selection.includes(cardId(card)) ? 'selected-card' : ''}`}
                   aria-label={`Seleccionar ${card.rank} de ${card.suit}`}
                   aria-pressed={selection.includes(cardId(card))}
@@ -353,6 +355,7 @@ export function OnlineTable({
                     {callName[nextCall]}
                   </Button>
                 )}
+              <CantoBranch title="Envido" available={['call-envido', 'call-falta', 'raise-envido'].some(action => legal.includes(action as typeof legal[number]))}>
               {legal.includes('call-envido') && (
                 <Button
                   variant="outline"
@@ -382,6 +385,8 @@ export function OnlineTable({
                 </Button>
               )}
               {legal.includes('raise-envido') && <EnvidoRaises disabled={disabled} onSelect={(amount) => setConfirmation({ title: amount === 'falta' ? 'Quiero y la Falta' : amount === 2 ? 'Quiero y Envido' : `Quiero y ${amount} más`, command: { type: 'RAISE_ENVIDO', amount } })} />}
+              </CantoBranch>
+              <CantoBranch title="Flor" available={legal.includes('declare-flor') || legal.includes('call-flor-envida')}>
               {legal.includes('declare-flor') && (
                 <Button
                   variant="outline"
@@ -411,6 +416,7 @@ export function OnlineTable({
                   Mi flor envida
                 </Button>
               )}
+              </CantoBranch>
               {legal.includes('pass-card') && (
                 <Button
                   variant="ghost"
