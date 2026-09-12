@@ -30,6 +30,7 @@ import {
   X,
 } from 'lucide-react';
 
+import { EnvidoRaises } from '@/components/envido-raises';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -237,16 +238,16 @@ function commandPrompt(command: EngineCommand) {
   if (command.type === 'RAISE_ENVIDO') {
     return {
       eyebrow: 'Repique de Envite',
-      title: command.amount === 'falta' ? '¿Quiero y la Falta?' : '¿Quiero y Envido?',
+      title: command.amount === 'falta' ? '¿Quiero y la Falta?' : command.amount === 2 ? '¿Quiero y Envido?' : `¿Quiero y ${command.amount} más?`,
       copy:
         'El aumento acepta lo anterior. Si luego no se quiere, se paga la apuesta que ya estaba aceptada.',
-      confirm: command.amount === 'falta' ? 'Quiero y la Falta' : 'Quiero y Envido',
+      confirm: command.amount === 'falta' ? 'Quiero y la Falta' : command.amount === 2 ? 'Quiero y Envido' : `Quiero y ${command.amount} más`,
     };
   }
   if (command.type === 'DECLARE_FLOR' || command.type === 'CALL_FLOR_ENVIDA') {
     return {
       eyebrow: 'Flor venezolana',
-      title: command.type === 'CALL_FLOR_ENVIDA' ? '¿Tu Flor envida?' : 'Flor tengo',
+      title: command.type === 'CALL_FLOR_ENVIDA' ? '¿Tu Flor envida?' : command.mode === 'a-ley' ? 'A ley' : 'Flor tengo',
       copy:
         'La Flor se acredita antes del Truco y anula el Envite normal. La Reservada siempre gana la comparación.',
       confirm: command.type === 'CALL_FLOR_ENVIDA' ? 'Mi Flor envida' : 'Declarar Flor',
@@ -735,6 +736,7 @@ export function GameTable({
       )}
 
       <div className="table-layout">
+        <div className="player-play-area">
         <section
           className="table-stage"
           data-format={config.format}
@@ -793,35 +795,7 @@ export function GameTable({
               })}
             </div>
 
-            {prompt && pendingCommand && (
-              <section className="call-confirm" aria-label="Confirmar acción">
-                <button
-                  onClick={() => setPendingCommand(null)}
-                  className="call-confirm-close"
-                  aria-label="Cancelar acción"
-                >
-                  <X className="size-4" />
-                </button>
-                <p>{prompt.eyebrow}</p>
-                <h2>{prompt.title}</h2>
-                <span>{prompt.copy}</span>
-                <div>
-                  <Button
-                    onClick={() => setPendingCommand(null)}
-                    variant="outline"
-                    className="h-11 rounded-xl"
-                  >
-                    Todavía no
-                  </Button>
-                  <Button
-                    onClick={() => humanCommand(pendingCommand)}
-                    className="h-11 rounded-xl"
-                  >
-                    {prompt.confirm}
-                  </Button>
-                </div>
-              </section>
-            )}
+
           </div>
 
           <div
@@ -855,6 +829,10 @@ export function GameTable({
             />
           </div>
 
+
+        </section>
+
+          <div className="player-console">
           <section className="hand-zone" aria-label="Tu mano">
             <div className="hand-heading">
               <span>
@@ -956,8 +934,181 @@ export function GameTable({
               </Button>
             )}
           </section>
-        </section>
+            {prompt && pendingCommand && (
+              <section className="call-confirm" aria-label="Confirmar acción">
+                <button
+                  onClick={() => setPendingCommand(null)}
+                  className="call-confirm-close"
+                  aria-label="Cancelar acción"
+                >
+                  <X className="size-4" />
+                </button>
+                <p>{prompt.eyebrow}</p>
+                <h2>{prompt.title}</h2>
+                <span>{prompt.copy}</span>
+                <div>
+                  <Button
+                    onClick={() => setPendingCommand(null)}
+                    variant="outline"
+                    className="h-11 rounded-xl"
+                  >
+                    Todavía no
+                  </Button>
+                  <Button
+                    autoFocus
+                    onClick={() => humanCommand(pendingCommand)}
+                    className="h-11 rounded-xl"
+                  >
+                    {prompt.confirm}
+                  </Button>
+                </div>
+              </section>
+            )}
+          <section className="call-dock">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  Cantos y acciones
+                </p>
+                <h2 className="mt-1 text-sm font-semibold">
+                  {snapshot.priority.active === 'play'
+                    ? 'Elige tu canto'
+                    : 'Respuesta pendiente'}
+                </h2>
+              </div>
+              <Badge variant="outline">
+                {humanIsMano ? 'Eres Mano' : 'Eres Pie'}
+              </Badge>
+            </div>
+            <fieldset className="call-buttons" disabled={paused}>
+              {humanLegal.includes('answer-quiero') && (
+                <Button
+                  onClick={() =>
+                    humanCommand({ type: 'ANSWER_CALL', answer: 'quiero' })
+                  }
+                  className="h-11 rounded-xl"
+                >
+                  Quiero
+                </Button>
+              )}
+              {humanLegal.includes('answer-no-quiero') && (
+                <Button
+                  onClick={() =>
+                    humanCommand({ type: 'ANSWER_CALL', answer: 'no-quiero' })
+                  }
+                  variant="outline"
+                  className="h-11 rounded-xl"
+                >
+                  No quiero
+                </Button>
+              )}
+              {humanLegal.includes('raise-truco') &&
+                nextCall &&
+                nextCall !== 'none' && (
+                  <Button
+                    onClick={() =>
+                      setPendingCommand({ type: 'RAISE_TRUCO', call: nextCall })
+                    }
+                    variant="secondary"
+                    className="h-11 rounded-xl"
+                  >
+                    Quiero y {callLabels[nextCall]}
+                  </Button>
+                )}
+              {humanLegal.includes('raise-envido') && <EnvidoRaises disabled={paused} onSelect={(amount) => setPendingCommand({ type: 'RAISE_ENVIDO', amount })} />}
+              {humanLegal.includes('call-envido') && (
+                <Button
+                  onClick={() =>
+                    setPendingCommand({ type: 'CALL_ENVIDO', amount: 2 })
+                  }
+                  variant="outline"
+                  className="h-11 rounded-xl"
+                >
+                  Envido
+                </Button>
+              )}
+              {humanLegal.includes('call-falta') && (
+                <Button
+                  onClick={() =>
+                    setPendingCommand({ type: 'CALL_ENVIDO', amount: 'falta' })
+                  }
+                  variant="outline"
+                  className="h-11 rounded-xl"
+                >
+                  Falta ·{' '}
+                  {Math.max(
+                    1,
+                    snapshot.match.target -
+                      Math.max(snapshot.match.score.A, snapshot.match.score.B),
+                  )}
+                </Button>
+              )}
+              {humanLegal.includes('declare-flor') && (
+                <Button
+                  onClick={() =>
+                    setPendingCommand({ type: 'DECLARE_FLOR', mode: 'flor' })
+                  }
+                  variant="outline"
+                  className="h-11 rounded-xl"
+                >
+                  Flor
+                </Button>
+              )}
+              {humanLegal.includes('declare-flor') && config.flor === 'a-ley' && <Button variant="outline" onClick={() => setPendingCommand({ type: 'DECLARE_FLOR', mode: 'a-ley' })}>A ley</Button>}
+              {humanLegal.includes('call-flor-envida') && (
+                <Button
+                  onClick={() => setPendingCommand({ type: 'CALL_FLOR_ENVIDA' })}
+                  variant="outline"
+                  className="h-11 rounded-xl"
+                >
+                  Mi Flor envida
+                </Button>
+              )}
+              {humanLegal.includes('call-truco') &&
+                nextCall &&
+                nextCall !== 'none' && (
+                  <Button
+                    onClick={() =>
+                      setPendingCommand({ type: 'CALL_TRUCO', call: nextCall })
+                    }
+                    className="h-11 rounded-xl"
+                  >
+                    {callLabels[nextCall]}
+                  </Button>
+                )}
+              {humanLegal.includes('pass-card') && (
+                <Button
+                  onClick={() => setPendingCommand({ type: 'PASS_CARDS' })}
+                  variant="secondary"
+                  className="h-11 rounded-xl"
+                >
+                  Pasar cartas
+                </Button>
+              )}
+              {humanLegal.includes('fold') && (
+                <Button
+                  onClick={() => setPendingCommand({ type: 'FOLD_HAND' })}
+                  variant="ghost"
+                  className="col-span-2 h-11 rounded-xl text-muted-foreground"
+                >
+                  Irme al mazo
+                </Button>
+              )}
+              {humanLegal.length === 0 &&
+                !snapshot.handComplete &&
+                !snapshot.match.complete && (
+                  <p className="col-span-2 py-2 text-xs leading-5 text-muted-foreground">
+                    Esperando una acción confirmada de la otra voz.
+                  </p>
+                )}
+            </fieldset>
+            <p className="mt-3 text-xs leading-5 text-muted-foreground">
+              Los cantos cambian según el turno y tu mano. Retruco, Vale nueve y Vale juego aparecen al avanzar la apuesta; Flor, cuando tienes flor.
+            </p>
+          </section>
 
+          </div>
+        </div>
         <aside className="game-side-panel">
           {isPractice && (
             <section className="practice-toolbar">
@@ -1028,170 +1179,6 @@ export function GameTable({
               </div>
             </section>
           )}
-
-          <section className="call-dock">
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-                  Cantos y acciones
-                </p>
-                <h2 className="mt-1 text-sm font-semibold">
-                  {snapshot.priority.active === 'play'
-                    ? 'Solo aparecen si son legales'
-                    : 'Respuesta pendiente'}
-                </h2>
-              </div>
-              <Badge variant="outline">
-                {humanIsMano ? 'Eres Mano' : 'Eres Pie'}
-              </Badge>
-            </div>
-            <fieldset className="call-buttons" disabled={paused}>
-              {humanLegal.includes('answer-quiero') && (
-                <Button
-                  onClick={() =>
-                    humanCommand({ type: 'ANSWER_CALL', answer: 'quiero' })
-                  }
-                  className="h-11 rounded-xl"
-                >
-                  Quiero
-                </Button>
-              )}
-              {humanLegal.includes('answer-no-quiero') && (
-                <Button
-                  onClick={() =>
-                    humanCommand({ type: 'ANSWER_CALL', answer: 'no-quiero' })
-                  }
-                  variant="outline"
-                  className="h-11 rounded-xl"
-                >
-                  No quiero
-                </Button>
-              )}
-              {humanLegal.includes('raise-truco') &&
-                nextCall &&
-                nextCall !== 'none' && (
-                  <Button
-                    onClick={() =>
-                      setPendingCommand({ type: 'RAISE_TRUCO', call: nextCall })
-                    }
-                    variant="secondary"
-                    className="h-11 rounded-xl"
-                  >
-                    Quiero y {callLabels[nextCall]}
-                  </Button>
-                )}
-              {humanLegal.includes('raise-envido') && (
-                <>
-                  <Button
-                    onClick={() =>
-                      setPendingCommand({ type: 'RAISE_ENVIDO', amount: 2 })
-                    }
-                    variant="secondary"
-                    className="h-11 rounded-xl"
-                  >
-                    Quiero y Envido
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      setPendingCommand({ type: 'RAISE_ENVIDO', amount: 'falta' })
-                    }
-                    variant="outline"
-                    className="h-11 rounded-xl"
-                  >
-                    Quiero y la Falta
-                  </Button>
-                </>
-              )}
-              {humanLegal.includes('call-envido') && (
-                <Button
-                  onClick={() =>
-                    setPendingCommand({ type: 'CALL_ENVIDO', amount: 2 })
-                  }
-                  variant="outline"
-                  className="h-11 rounded-xl"
-                >
-                  Envido
-                </Button>
-              )}
-              {humanLegal.includes('call-falta') && (
-                <Button
-                  onClick={() =>
-                    setPendingCommand({ type: 'CALL_ENVIDO', amount: 'falta' })
-                  }
-                  variant="outline"
-                  className="h-11 rounded-xl"
-                >
-                  Falta ·{' '}
-                  {Math.max(
-                    1,
-                    snapshot.match.target -
-                      Math.max(snapshot.match.score.A, snapshot.match.score.B),
-                  )}
-                </Button>
-              )}
-              {humanLegal.includes('declare-flor') && (
-                <Button
-                  onClick={() =>
-                    setPendingCommand({ type: 'DECLARE_FLOR', mode: 'flor' })
-                  }
-                  variant="outline"
-                  className="h-11 rounded-xl"
-                >
-                  Flor
-                </Button>
-              )}
-              {humanLegal.includes('call-flor-envida') && (
-                <Button
-                  onClick={() => setPendingCommand({ type: 'CALL_FLOR_ENVIDA' })}
-                  variant="outline"
-                  className="h-11 rounded-xl"
-                >
-                  Mi Flor envida
-                </Button>
-              )}
-              {humanLegal.includes('call-truco') &&
-                nextCall &&
-                nextCall !== 'none' && (
-                  <Button
-                    onClick={() =>
-                      setPendingCommand({ type: 'CALL_TRUCO', call: nextCall })
-                    }
-                    className="h-11 rounded-xl"
-                  >
-                    {callLabels[nextCall]}
-                  </Button>
-                )}
-              {humanLegal.includes('pass-card') && (
-                <Button
-                  onClick={() => setPendingCommand({ type: 'PASS_CARDS' })}
-                  variant="secondary"
-                  className="h-11 rounded-xl"
-                >
-                  Pasar cartas
-                </Button>
-              )}
-              {humanLegal.includes('fold') && (
-                <Button
-                  onClick={() => setPendingCommand({ type: 'FOLD_HAND' })}
-                  variant="ghost"
-                  className="col-span-2 h-11 rounded-xl text-muted-foreground"
-                >
-                  Irme al mazo
-                </Button>
-              )}
-              {humanLegal.length === 0 &&
-                !snapshot.handComplete &&
-                !snapshot.match.complete && (
-                  <p className="col-span-2 py-2 text-xs leading-5 text-muted-foreground">
-                    Esperando una acción confirmada de la otra voz.
-                  </p>
-                )}
-            </fieldset>
-            <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              La voz nunca ejecuta jugadas. Cada botón viene de la compuerta legal del
-              estado v{snapshot.gameVersion}.
-            </p>
-          </section>
 
           <section className="table-rules-panel">
             <div className="flex items-center justify-between gap-2">

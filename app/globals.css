@@ -2121,3 +2121,22 @@ fieldset:disabled { opacity:.65; }
 @media(max-width:1000px) { .lobby-columns { grid-template-columns:minmax(0,1fr) 270px; gap:24px; } .lobby-sidebar { padding-left:20px; } .room-columns { grid-template-columns:1fr; } }
 @media(max-width:760px) { .lobby-columns { grid-template-columns:1fr; } .lobby-sidebar { border-left:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:24px; } .voice-lobby-note { grid-column:1/-1; } .play-mode-bar button { padding:18px 14px; gap:10px; } .play-mode-bar b { display:none; } .play-mode-bar strong { font-size:18px; } }
 @media(max-width:480px) { .lobby-sidebar { display:flex; flex-direction:column; } .play-mode-bar button { align-items:flex-start; } .play-mode-bar button>svg { display:none; } .play-mode-bar small { font-size:14px; line-height:1.5; } .quick-invite { gap:8px; } .quick-invite>svg { display:none; } .quick-invite label { width:100%; } .quick-invite input { flex:1; } .lobby-title h1 { font-size:42px; } .live-room-row>button { margin-left:0; width:100%; } }
+
+/* Keep decisions with the player's cards, outside the information sidebar. */
+.player-play-area { min-width:0; }
+.player-play-area .table-stage { height:660px; min-height:660px; }
+.player-play-area .felt { bottom:11.25rem; }
+.player-play-area .vira-deck { bottom:1.6rem; }
+.player-play-area .seat-bottom { bottom:9.5rem; }
+.player-console { background:var(--card); border-top:1px solid var(--border); }
+.player-console .hand-zone { position:static; width:100%; border:0; border-radius:0; box-shadow:none; backdrop-filter:none; padding:16px; }
+.player-console .call-dock { border:0; border-top:1px solid var(--border); border-radius:0; padding:16px; }
+.player-console .call-buttons { display:flex; flex-wrap:wrap; gap:8px; }
+.player-console .call-buttons button { min-height:44px; }
+.envido-raise { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.envido-raise label { display:flex; align-items:center; gap:6px; font-size:14px; }
+.envido-raise input { width:64px; min-height:44px; padding:6px; background:var(--background); border:1px solid var(--input); border-radius:4px; }
+.canto-help { margin-top:12px; font-size:14px; line-height:1.5; color:var(--muted-foreground); }
+@media(max-width:600px) { .player-console .call-buttons>button { flex:1 1 140px; } .envido-raise { width:100%; } .envido-raise>button { flex:1; } }
+
+.player-console .call-confirm { position:static; width:auto; max-width:none; transform:none; margin:12px 16px; }

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { ChevronRight, Flag, Layers, Sparkles } from 'lucide-react';
+import { EnvidoRaises } from '@/components/envido-raises';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -272,6 +273,7 @@ export function OnlineTable({
         </div>
       ) : (
         <>
+          <section className="player-console" aria-label="Tu mano y cantos">
           <div className="your-hand">
             <div className="hand-label">
               <p className="eyebrow">TU MANO</p>
@@ -314,10 +316,10 @@ export function OnlineTable({
               <ChevronRight size={16} />
             </Button>
           </div>
-          <div className="call-tray">
+          <div className="call-tray" aria-label="Cantos y acciones">
             <div>
-              <span className="eyebrow">LOS CANTOS</span>
-              <small>La jugada se confirma con los botones.</small>
+              <span className="eyebrow">CANTOS Y ACCIONES</span>
+              <small>Elige un canto o juega una carta.</small>
             </div>
             <div className="call-buttons">
               {legal.includes('answer-quiero') && (
@@ -392,20 +394,7 @@ export function OnlineTable({
                   La falta
                 </Button>
               )}
-              {legal.includes('raise-envido') && (
-                <Button
-                  variant="outline"
-                  disabled={disabled}
-                  onClick={() =>
-                    setConfirmation({
-                      title: 'Quiero y Envido',
-                      command: { type: 'RAISE_ENVIDO', amount: 2 },
-                    })
-                  }
-                >
-                  Quiero y Envido
-                </Button>
-              )}
+              {legal.includes('raise-envido') && <EnvidoRaises disabled={disabled} onSelect={(amount) => setConfirmation({ title: amount === 'falta' ? 'Quiero y la Falta' : amount === 2 ? 'Quiero y Envido' : `Quiero y ${amount} más`, command: { type: 'RAISE_ENVIDO', amount } })} />}
               {legal.includes('declare-flor') && (
                 <Button
                   variant="outline"
@@ -420,6 +409,7 @@ export function OnlineTable({
                   Flor tengo
                 </Button>
               )}
+              {legal.includes('declare-flor') && room.config.flor === 'a-ley' && <Button variant="outline" disabled={disabled} onClick={() => setConfirmation({ title: 'A ley', command: { type: 'DECLARE_FLOR', mode: 'a-ley' } })}>A ley</Button>}
               {legal.includes('call-flor-envida') && (
                 <Button
                   variant="outline"
@@ -465,7 +455,9 @@ export function OnlineTable({
                 </Button>
               )}
             </div>
+            <p className="canto-help">Los cantos cambian según el turno y tu mano. Retruco, Vale nueve y Vale juego aparecen al avanzar la apuesta; Flor, cuando tienes flor.</p>
           </div>
+          </section>
         </>
       )}
       <details className="hand-log">
