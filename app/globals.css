@@ -4086,6 +4086,9 @@ button[draggable='true']:active {
   transform: translateY(-50%);
   cursor: pointer;
 }
+.table-stage[data-format='1v1'] .table-vira {
+  left: clamp(24px, 8%, 64px);
+}
 .table-vira-label {
   display: flex;
   align-items: center;
