@@ -355,7 +355,7 @@ export function OnlineTable({
                     {callName[nextCall]}
                   </Button>
                 )}
-              <CantoBranch title="Envido" available={['call-envido', 'call-falta', 'raise-envido'].some(action => legal.includes(action as typeof legal[number]))}>
+              <CantoBranch disabled={disabled} title="Envido" available={['call-envido', 'call-falta', 'raise-envido'].some(action => legal.includes(action as typeof legal[number]))}>
               {legal.includes('call-envido') && (
                 <Button
                   variant="outline"
@@ -386,7 +386,7 @@ export function OnlineTable({
               )}
               {legal.includes('raise-envido') && <EnvidoRaises disabled={disabled} onSelect={(amount) => setConfirmation({ title: amount === 'falta' ? 'Quiero y la Falta' : amount === 2 ? 'Quiero y Envido' : `Quiero y ${amount} más`, command: { type: 'RAISE_ENVIDO', amount } })} />}
               </CantoBranch>
-              <CantoBranch title="Flor" available={legal.includes('declare-flor') || legal.includes('call-flor-envida')}>
+              <CantoBranch disabled={disabled} title="Flor" available={legal.includes('declare-flor') || legal.includes('call-flor-envida')}>
               {legal.includes('declare-flor') && (
                 <Button
                   variant="outline"

@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { Popover, PopoverTrigger, PopoverContent, PopoverTitle } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import type { EngineSnapshot } from '@/lib/truco-engine';
 import type { TrucoCard } from '@/lib/truco-rules';
 import { pendingCanto } from '@/lib/game-copy';
@@ -59,7 +61,19 @@ export function PlayedStacks({ played, seats, name, renderCard, you, onPlayCard 
   </div>;
 }
 
-export function CantoBranch({ title, available, children }: { title: string; available: boolean; children: ReactNode }) {
+export function CantoBranch({ title, available, disabled = false, children }: { title: string; available: boolean; disabled?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
   if (!available) return null;
-  return <details className="canto-branch" name="canto-menu"><summary>{title} <span aria-hidden="true">▸</span></summary><div className="canto-options">{children}</div></details>;
+  return <Popover open={open && !disabled} onOpenChange={setOpen}>
+    <PopoverTrigger disabled={disabled} render={<Button variant="outline" className="canto-trigger" />}>
+      {title}<span aria-hidden="true">▾</span>
+    </PopoverTrigger>
+    <PopoverContent align="start" sideOffset={8} className="canto-popover">
+      <PopoverTitle>{title}</PopoverTitle>
+      <fieldset disabled={disabled} className="canto-options" onSubmit={() => setOpen(false)} onClick={event => {
+        const button = (event.target as HTMLElement).closest('button');
+        if (button && !button.disabled && button.type !== 'submit') setOpen(false);
+      }}>{children}</fieldset>
+    </PopoverContent>
+  </Popover>;
 }

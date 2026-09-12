@@ -995,7 +995,7 @@ export function GameTable({
                     Quiero y {callLabels[nextCall]}
                   </Button>
                 )}
-              <CantoBranch title="Envido" available={['call-envido', 'call-falta', 'raise-envido'].some(action => humanLegal.includes(action as typeof humanLegal[number]))}>
+              <CantoBranch disabled={paused} title="Envido" available={['call-envido', 'call-falta', 'raise-envido'].some(action => humanLegal.includes(action as typeof humanLegal[number]))}>
               {humanLegal.includes('raise-envido') && <EnvidoRaises disabled={paused} onSelect={(amount) => setPendingCommand({ type: 'RAISE_ENVIDO', amount })} />}
               {humanLegal.includes('call-envido') && (
                 <Button
@@ -1025,7 +1025,7 @@ export function GameTable({
                 </Button>
               )}
               </CantoBranch>
-              <CantoBranch title="Flor" available={humanLegal.includes('declare-flor') || humanLegal.includes('call-flor-envida')}>
+              <CantoBranch disabled={paused} title="Flor" available={humanLegal.includes('declare-flor') || humanLegal.includes('call-flor-envida')}>
               {humanLegal.includes('declare-flor') && (
                 <Button
                   onClick={() =>

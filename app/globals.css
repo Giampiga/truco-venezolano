@@ -2182,12 +2182,17 @@ fieldset:disabled { opacity:.65; }
 .your-play-pile[data-card-drop] { outline: 1px dashed currentColor; outline-offset: 4px; border-radius: 4px; }
 button[draggable="true"] { touch-action: none; cursor: grab; position: relative; }
 button[draggable="true"]:active { cursor: grabbing; }
-.canto-branch { min-width: 130px; border: 1px solid var(--border); border-radius: 4px; background: var(--card); }
-.canto-branch summary { cursor: pointer; min-height: 44px; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 10px 14px; font-weight: 600; }
-.canto-branch summary::-webkit-details-marker { display: none; }
-.canto-branch[open] summary { border-bottom: 1px solid var(--border); }
-.canto-branch[open] summary span { transform: rotate(90deg); }
-.canto-options { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; }
+.canto-trigger { min-width: 130px; min-height: 44px; justify-content: space-between; gap: 20px; }
+.canto-trigger > span { transition: transform 140ms ease; }
+.canto-trigger[aria-expanded="true"] > span { transform: rotate(180deg); }
+.canto-popover { width: min(340px, calc(100vw - 32px)); padding: 14px; }
+.canto-popover .canto-options { display: grid; gap: 8px; min-width: 0; }
+.canto-popover .canto-options > button { width: 100%; min-height: 44px; justify-content: flex-start; }
+.canto-popover .envido-raise { display: flex; flex-wrap: wrap; }
+.canto-popover[data-open], .canto-popover[data-closed] { animation: none; transition: opacity 140ms ease, transform 140ms ease; }
+.canto-popover[data-starting-style], .canto-popover[data-ending-style] { opacity: 0; transform: translateY(-4px); }
+@media (prefers-reduced-motion: reduce) { .canto-popover, .canto-trigger > span { transition: none; } }
+
 .global-chat { margin-top: 24px; }
 .global-chat .chat-scroll { height: 300px; max-height: 40vh; overflow-y: auto; }
 .global-chat article p { overflow-wrap: anywhere; }
