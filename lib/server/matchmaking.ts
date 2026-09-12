@@ -1,3 +1,4 @@
+import { profileRoom } from '@/lib/server/profiles';
 import { getDb } from './db';
 import {
   cleanName,
@@ -40,7 +41,7 @@ async function assignment(ticket: Ticket) {
     !room.members.some((m) => m.userId === ticket.user_id && !m.left)
   )
     return null;
-  return projectRoom(room, ticket.user_id);
+  return profileRoom(room, ticket.user_id);
 }
 export async function matchmaking(
   userId: string,

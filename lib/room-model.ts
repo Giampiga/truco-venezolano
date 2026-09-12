@@ -54,6 +54,7 @@ export class RoomError extends Error {
   }
 }
 export type Member = {
+  handle?: string;
   userId: string;
   seatId: string;
   name: string;
@@ -64,6 +65,7 @@ export type Member = {
   left: boolean;
 };
 export type ChatMessage = {
+  handle?: string;
   id: string;
   seatId: string;
   author: string;
@@ -441,6 +443,7 @@ export function applyRoomAction(
             id: `${member.seatId}:${action.id}`,
             seatId: member.seatId,
             author: member.name,
+            handle: member.handle,
             text,
             at: now,
           },

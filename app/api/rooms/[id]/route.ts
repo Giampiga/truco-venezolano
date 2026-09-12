@@ -1,3 +1,4 @@
+import { profileRoom } from '@/lib/server/profiles';
 import {
   assertSameOrigin,
   body,
@@ -18,7 +19,7 @@ export async function GET(request: Request, context: Context) {
     projectRoom(room, viewer.id);
     await settleRanking(room);
     return json(
-      projectRoom(await drainVoiceRevocations(room), viewer.id),
+      await profileRoom(await drainVoiceRevocations(room), viewer.id),
       200,
       viewer.cookie,
     );
@@ -37,7 +38,7 @@ export async function POST(request: Request, context: Context) {
     );
     await settleRanking(room);
     return json(
-      action.type === 'leave' ? { left: true } : projectRoom(room, viewer.id),
+      action.type === 'leave' ? { left: true } : await profileRoom(room, viewer.id),
       200,
       viewer.cookie,
     );

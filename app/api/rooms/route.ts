@@ -1,3 +1,4 @@
+import { profileRoom } from '@/lib/server/profiles';
 import { getDb, getVoiceEnv } from '@/lib/server/db';
 import {
   assertSameOrigin,
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
         )
         .run();
       if (result.meta.changes === 1)
-        return json(projectRoom(room, viewer.id), 201, viewer.cookie);
+        return json(await profileRoom(room, viewer.id), 201, viewer.cookie);
     }
     throw new RoomError('No se pudo crear el código. Inténtalo otra vez.', 503);
   } catch (error) {

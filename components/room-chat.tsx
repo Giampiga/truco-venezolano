@@ -1,4 +1,5 @@
 'use client';
+import { AccountLabel } from '@/components/account-label';
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { MessageCircle, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,7 @@ export function RoomChat({
                 <strong>
                   {message.seatId === room.you ? 'Tú' : message.author}
                 </strong>
+                <AccountLabel handle={message.handle} />
                 <time>
                   {new Date(message.at).toLocaleTimeString('es', {
                     hour: '2-digit',

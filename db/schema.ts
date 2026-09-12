@@ -59,3 +59,16 @@ export const matchmakingQueue = sqliteTable(
   },
   (t) => [index('matchmaking_waiting').on(t.format, t.roomId, t.seenAt)],
 );
+
+export const profiles = sqliteTable('profiles', {
+  userId: text('user_id').primaryKey(),
+  handle: text('handle').notNull().unique(),
+  name: text('name').notNull(),
+  bio: text('bio').notNull(),
+});
+export const friendships = sqliteTable('friendships', {
+  pair: text('pair').primaryKey(),
+  sender: text('sender').notNull(),
+  recipient: text('recipient').notNull(),
+  status: text('status').notNull(),
+});

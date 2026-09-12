@@ -2158,3 +2158,10 @@ fieldset:disabled { opacity:.65; }
 .player-stack[open] summary small { font-weight: 700; }
 .player-stack li { display: grid; justify-items: center; gap: 4px; padding: 6px 0; }
 .player-stack li .face-card, .player-stack li .playing-card { width: 64px; height: 88px; }
+.account-label { display: block; font-size: 11px; font-weight: 500; line-height: 1.4; }
+.profile-panel { margin: 12px auto; padding: 16px; max-width: 720px; border: 1px solid var(--border); background: var(--card); }
+.profile-panel summary { cursor: pointer; font-weight: 700; }
+.profile-panel form, .profile-panel label { display: grid; gap: 8px; margin: 12px 0; }
+.profile-panel input, .profile-panel textarea { padding: 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--background); width: 100%; }
+.profile-panel article { padding: 12px 0; border-top: 1px solid var(--border); }
+.profile-panel article button { margin: 8px 8px 0 0; }

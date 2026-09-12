@@ -1,4 +1,5 @@
 'use client';
+import { AccountLabel } from '@/components/account-label';
 import { CantoNotice, PlayedStacks } from '@/components/table-context';
 import { useState } from 'react';
 import { ChevronRight, Flag, Layers, Sparkles } from 'lucide-react';
@@ -177,6 +178,7 @@ export function OnlineTable({
                 {name(seat.id).slice(0, 1)}
               </span>
               <strong>{name(seat.id)}</strong>
+              <AccountLabel handle={room.members.find(m => m.seatId === seat.id)?.handle} />
               <small>
                 {seat.team === team ? 'Tu pareja' : 'Rival'} ·{' '}
                 {state.cardCounts[seat.id]} cartas
@@ -261,6 +263,7 @@ export function OnlineTable({
           <div className="your-hand">
             <div className="hand-label">
               <p className="eyebrow">TU MANO</p>
+              <AccountLabel handle={room.members.find(m => m.seatId === room.you)?.handle} />
               <strong>
                 {envidoScore(game.private.dealtHand, state.vira)} de envite
               </strong>

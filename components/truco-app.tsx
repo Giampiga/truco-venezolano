@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ProfilePanel } from '@/components/profile-panel';
 import { Matchmaking } from '@/components/matchmaking';
 import { LobbyView } from '@/components/lobby-view';
 import { RoomView } from '@/components/room-view';
@@ -303,6 +304,7 @@ export function TrucoApp() {
           </div>
         </header>
       )}
+      {!practice && <ProfilePanel />}
       {needsSignin && !practice && (
         <div className="invitation-strip">
           <span>Inicia sesión para jugar con tus panas.</span>

@@ -1,4 +1,5 @@
 'use client';
+import { AccountLabel } from '@/components/account-label';
 import { Check, Crown, UserRound, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -57,6 +58,7 @@ export function RoomView({
                 <div>
                   <h3>
                     {member?.name ?? 'Puesto libre'}
+                    {member && <AccountLabel handle={member.handle} />}
                     {member?.seatId === room.host && <Crown size={15} />}
                   </h3>
                   <p>
