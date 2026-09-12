@@ -70,7 +70,7 @@ export async function settleRanking(room: StoredRoom) {
       e.rating += e.delta;
     }
     const token = crypto.randomUUID();
-    // D1 batches are atomic. The result claims unchanged ratings before any write;
+    // Database batches are atomic. The result claims unchanged ratings before any write;
     // a concurrent match either wins this claim or retries from fresh ratings.
     const checks = entries
       .map(() => '(COALESCE((SELECT games FROM ratings WHERE id = ?), 0) = ?)')
@@ -84,13 +84,13 @@ export async function settleRanking(room: StoredRoom) {
       ? opponents
           .map(
             () =>
-              `(SELECT COUNT(*) FROM ranked_results r, json_each(r.data) a, json_each(r.data) b WHERE r.rated = 1 AND r.created_at > ? AND json_extract(a.value, '$.userId') = ? AND json_extract(b.value, '$.userId') = ? AND json_extract(a.value, '$.won') != json_extract(b.value, '$.won')) < 3`,
+              `(SELECT COUNT(*) FROM ranked_results r, jsonb_array_elements(r.data::jsonb) a, jsonb_array_elements(r.data::jsonb) b WHERE r.rated = 1 AND r.created_at > ? AND a.value->>'userId' = ? AND b.value->>'userId' = ? AND a.value->>'won' != b.value->>'won') < 3`,
           )
           .join(' AND ')
-      : '1';
+      : 'TRUE';
     const claim = db
       .prepare(
-        `INSERT OR IGNORE INTO ranked_results (room_id, token, format, created_at, data, rated) SELECT ?, ?, ?, ?, ?, ? WHERE ${checks} AND ${limitChecks}`,
+        `INSERT INTO ranked_results (room_id, token, format, created_at, data, rated) SELECT ?, ?, ?, ?, ?, ? WHERE ${checks} AND ${limitChecks} ON CONFLICT DO NOTHING`,
       )
       .bind(
         room.id,
@@ -111,9 +111,9 @@ export async function settleRanking(room: StoredRoom) {
       claim,
       ...entries.map((e) =>
         db
-          .prepare(`INSERT INTO ratings (id, user_id, format, name, rating, games, wins)
-      SELECT ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM ranked_results WHERE room_id = ? AND token = ?)
-      ON CONFLICT(id) DO UPDATE SET name = excluded.name, rating = excluded.rating, games = excluded.games, wins = excluded.wins`)
+          .prepare(`INSERT INTO ratings (id, user_id, format, name, rating, games, wins, peak)
+      SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM ranked_results WHERE room_id = ? AND token = ?)
+      ON CONFLICT(id) DO UPDATE SET name = excluded.name, rating = excluded.rating, games = excluded.games, wins = excluded.wins, peak = GREATEST(ratings.peak, excluded.rating)`)
           .bind(
             `${room.config.format}:${e.userId}`,
             e.userId,
@@ -122,6 +122,7 @@ export async function settleRanking(room: StoredRoom) {
             e.rating,
             e.games + Number(rated),
             e.wins + Number(rated && e.won),
+            Math.max(INITIAL_RATING, e.rating),
             room.id,
             token,
           ),
@@ -140,9 +141,9 @@ export async function readRanking(
   const db = getDb();
   // Recover a stored result if a previous request ended between the game and rating writes.
   const pending = await db
-    .prepare(`SELECT DISTINCT r.data FROM rooms r, json_each(r.data, '$.members') m
-    WHERE json_extract(r.data, '$.config.ranked') = 1 AND json_extract(r.data, '$.engine.match.complete') = 1
-    AND json_extract(m.value, '$.userId') = ? AND NOT EXISTS (SELECT 1 FROM ranked_results x WHERE x.room_id = r.id) LIMIT 10`)
+    .prepare(`SELECT DISTINCT r.data FROM rooms r, jsonb_array_elements(r.data::jsonb->'members') m
+    WHERE r.data::jsonb#>>'{config,ranked}' = 'true' AND r.data::jsonb#>>'{engine,match,complete}' = 'true'
+    AND m.value->>'userId' = ? AND NOT EXISTS (SELECT 1 FROM ranked_results x WHERE x.room_id = r.id) LIMIT 10`)
     .bind(userId)
     .all<{ data: string }>();
   for (const row of pending.results)
@@ -159,8 +160,8 @@ export async function readRanking(
       .bind(format)
       .all<RatingEntry>(),
     db
-      .prepare(`SELECT r.room_id AS room, r.created_at AS at, r.rated, json_extract(e.value, '$.won') AS won, json_extract(e.value, '$.delta') AS delta, json_extract(e.value, '$.rating') AS rating
-      FROM ranked_results r, json_each(r.data) e WHERE r.format = ? AND json_extract(e.value, '$.userId') = ? ORDER BY r.created_at DESC LIMIT 10`)
+      .prepare(`SELECT r.room_id AS room, r.created_at AS at, r.rated, (e.value->>'won')::boolean AS won, (e.value->>'delta')::int AS delta, (e.value->>'rating')::int AS rating
+      FROM ranked_results r, jsonb_array_elements(r.data::jsonb) e WHERE r.format = ? AND e.value->>'userId' = ? ORDER BY r.created_at DESC LIMIT 10`)
       .bind(format, userId)
       .all<Ranking['history'][number]>(),
   ]);

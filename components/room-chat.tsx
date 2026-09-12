@@ -16,13 +16,22 @@ export function RoomChat({
 }) {
   const [text, setText] = useState('');
   const scroll = useRef<HTMLDivElement>(null);
+  const stick = useRef(true);
+  const latestMessage = room.messages.at(-1)?.id;
   useEffect(() => {
-    if (scroll.current) scroll.current.scrollTop = scroll.current.scrollHeight;
-  }, [room.messages.length]);
+    if (stick.current && scroll.current)
+      scroll.current.scrollTop = scroll.current.scrollHeight;
+  }, [latestMessage]);
   async function send(event: SyntheticEvent) {
     event.preventDefault();
-    if (!text.trim()) return;
-    if (await act({ type: 'chat', text, id: crypto.randomUUID() })) setText('');
+    if (pending || room.closed || !text.trim()) return;
+    const draft = text;
+    if (await act({ type: 'chat', text: draft, id: crypto.randomUUID() })) {
+      setText((current) => (current === draft ? '' : current));
+      stick.current = true;
+      if (scroll.current)
+        scroll.current.scrollTop = scroll.current.scrollHeight;
+    }
   }
   return (
     <section className="room-chat">
@@ -36,6 +45,12 @@ export function RoomChat({
         role="log"
         aria-live="polite"
         aria-label="Mensajes de la mesa"
+        onScroll={() => {
+          const el = scroll.current;
+          if (el)
+            stick.current =
+              el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+        }}
       >
         {room.messages.length ? (
           room.messages.map((message) => (
@@ -48,7 +63,7 @@ export function RoomChat({
                   {message.seatId === room.you ? 'Tú' : message.author}
                 </strong>
                 <AccountLabel handle={message.handle} />
-                <time>
+                <time dateTime={new Date(message.at).toISOString()}>
                   {new Date(message.at).toLocaleTimeString('es', {
                     hour: '2-digit',
                     minute: '2-digit',

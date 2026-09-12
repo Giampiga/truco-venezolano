@@ -216,7 +216,8 @@ export function dealCards(
   }
   assertUniqueDeck([...deck]);
   const dealerIndex = seats.findIndex((seat) => seat.id === dealerSeatId);
-  if (dealerIndex < 0) throw new Error('El Pie debe ocupar un asiento de la mesa.');
+  if (dealerIndex < 0)
+    throw new Error('El Pie debe ocupar un asiento de la mesa.');
 
   const seatOrder = seats.map((seat) => seat.id);
   const recipientOrder = Array.from(
@@ -254,18 +255,33 @@ export function nextDealer(seatOrder: readonly SeatId[], dealerSeatId: SeatId) {
   return seatOrder[(current + 1) % seatOrder.length];
 }
 
-export function manoForDealer(seatOrder: readonly SeatId[], dealerSeatId: SeatId) {
+export function manoForDealer(
+  seatOrder: readonly SeatId[],
+  dealerSeatId: SeatId,
+) {
   return nextDealer(seatOrder, dealerSeatId);
 }
 
-export function resolveTrick(plays: readonly TrickPlay[], vira: TrucoCard): TrickResult {
-  if (plays.length < 2) throw new Error('Una vuelta necesita al menos dos cartas.');
-  const ranked = plays.map((play) => ({ play, rank: trucoRank(play.card, vira) }));
+export function resolveTrick(
+  plays: readonly TrickPlay[],
+  vira: TrucoCard,
+): TrickResult {
+  if (plays.length < 2)
+    throw new Error('Una vuelta necesita al menos dos cartas.');
+  const ranked = plays.map((play) => ({
+    play,
+    rank: trucoRank(play.card, vira),
+  }));
   const bestRank = Math.max(...ranked.map((entry) => entry.rank));
   const best = ranked.filter((entry) => entry.rank === bestRank);
   const teams = new Set(best.map((entry) => entry.play.team));
   if (teams.size > 1) {
-    return { winnerTeam: null, winningSeatId: null, parda: true, rank: bestRank };
+    return {
+      winnerTeam: null,
+      winningSeatId: null,
+      parda: true,
+      rank: bestRank,
+    };
   }
   return {
     winnerTeam: best[0].play.team,
@@ -371,15 +387,21 @@ export function createTrucoState(): TrucoState {
 }
 
 export function canRaiseTruco(state: TrucoState, team: TeamId) {
-  if (state.pending) return state.pending.by !== team && nextTrucoCall(state.pending.call) !== null;
+  if (state.pending)
+    return (
+      state.pending.by !== team && nextTrucoCall(state.pending.call) !== null
+    );
   return nextTrucoCall(state.accepted) !== null && state.lastRaisedBy !== team;
 }
 
 export function callTruco(state: TrucoState, by: TeamId): TrucoState {
-  if (state.pending) throw new Error('Primero hay que responder el canto pendiente.');
-  if (!canRaiseTruco(state, by)) throw new Error('Los aumentos de Truco deben alternar equipos.');
+  if (state.pending)
+    throw new Error('Primero hay que responder el canto pendiente.');
+  if (!canRaiseTruco(state, by))
+    throw new Error('Los aumentos de Truco deben alternar equipos.');
   const call = nextTrucoCall(state.accepted);
-  if (!call || call === 'none') throw new Error('No queda otro aumento de Truco.');
+  if (!call || call === 'none')
+    throw new Error('No queda otro aumento de Truco.');
   return { ...state, pending: { call, by } };
 }
 
@@ -389,11 +411,16 @@ export function answerTruco(
   answer: 'quiero' | 'no-quiero' | 'raise',
 ): { state: TrucoState; award: ScoreAward | null } {
   const pending = state.pending;
-  if (!pending || pending.by === by) throw new Error('Este equipo no puede responder ese canto.');
+  if (!pending || pending.by === by)
+    throw new Error('Este equipo no puede responder ese canto.');
   if (answer === 'no-quiero') {
     return {
       state: { ...state, pending: null },
-      award: { team: pending.by, amount: trucoRejectedValue(pending.call), reason: 'truco' },
+      award: {
+        team: pending.by,
+        amount: trucoRejectedValue(pending.call),
+        reason: 'truco',
+      },
     };
   }
 
@@ -404,15 +431,24 @@ export function answerTruco(
   };
   if (answer === 'quiero') return { state: accepted, award: null };
   const next = nextTrucoCall(pending.call);
-  if (!next || next === 'none') throw new Error('Vale Juego no admite otro aumento.');
+  if (!next || next === 'none')
+    throw new Error('Vale Juego no admite otro aumento.');
   return {
-    state: { accepted: pending.call, lastRaisedBy: pending.by, pending: { call: next, by } },
+    state: {
+      accepted: pending.call,
+      lastRaisedBy: pending.by,
+      pending: { call: next, by },
+    },
     award: null,
   };
 }
 
 export function trucoHandAward(state: TrucoState, winner: TeamId): ScoreAward {
-  return { team: winner, amount: trucoAcceptedValue(state.accepted), reason: 'truco' };
+  return {
+    team: winner,
+    amount: trucoAcceptedValue(state.accepted),
+    reason: 'truco',
+  };
 }
 
 export function createEnvidoState(): EnvidoState {
@@ -430,7 +466,8 @@ export function callEnvido(
   target: number,
   kind: 'envido' | 'falta' = 'envido',
 ): EnvidoState {
-  if (state.status !== 'idle') throw new Error('Ya existe un Envite en esta base.');
+  if (state.status !== 'idle')
+    throw new Error('Ya existe un Envite en esta base.');
   const stake = kind === 'falta' ? faltaValue(score, target) : 2;
   return {
     status: 'pending',
@@ -449,8 +486,10 @@ export function raiseEnvido(
   amount = 0,
 ): EnvidoState {
   const pending = state.pending;
-  if (!pending || pending.by === by) throw new Error('El Envite debe replicarlo el equipo contrario.');
-  if (kind === 'n-mas' && amount < 1) throw new Error('El aumento debe ser positivo.');
+  if (!pending || pending.by === by)
+    throw new Error('El Envite debe replicarlo el equipo contrario.');
+  if (kind === 'n-mas' && amount < 1)
+    throw new Error('El aumento debe ser positivo.');
   const stake =
     kind === 'falta'
       ? faltaValue(score, target)
@@ -469,11 +508,21 @@ export function answerEnvido(
   answer: 'quiero' | 'no-quiero',
 ): { state: EnvidoState; award: ScoreAward | null } {
   const pending = state.pending;
-  if (!pending || pending.by === by) throw new Error('Este equipo no puede responder ese Envite.');
+  if (!pending || pending.by === by)
+    throw new Error('Este equipo no puede responder ese Envite.');
   if (answer === 'no-quiero') {
     return {
-      state: { ...state, status: 'resolved', pending: null, winner: pending.by },
-      award: { team: pending.by, amount: pending.rejectionAward, reason: 'envido' },
+      state: {
+        ...state,
+        status: 'resolved',
+        pending: null,
+        winner: pending.by,
+      },
+      award: {
+        team: pending.by,
+        amount: pending.rejectionAward,
+        reason: 'envido',
+      },
     };
   }
   return {
@@ -488,22 +537,33 @@ export function answerEnvido(
 }
 
 export function resolveEnvido(state: EnvidoState, winner: TeamId) {
-  if (state.status !== 'accepted') throw new Error('El Envite todavía no fue querido.');
+  if (state.status !== 'accepted')
+    throw new Error('El Envite todavía no fue querido.');
   return {
     state: { ...state, status: 'resolved' as const, winner },
-    award: { team: winner, amount: state.acceptedStake, reason: 'envido' as const },
+    award: {
+      team: winner,
+      amount: state.acceptedStake,
+      reason: 'envido' as const,
+    },
   };
 }
 
-export function interruptTrucoWithEnvido(priority: CallPriority, pending: TrucoState['pending']) {
+export function interruptTrucoWithEnvido(
+  priority: CallPriority,
+  pending: TrucoState['pending'],
+) {
   if (priority.active !== 'truco' || !pending) {
-    throw new Error('Solo un Envite legal puede interrumpir una respuesta de Truco.');
+    throw new Error(
+      'Solo un Envite legal puede interrumpir una respuesta de Truco.',
+    );
   }
   return { active: 'envido' as const, suspendedTruco: pending };
 }
 
 export function finishPriorityCall(priority: CallPriority): CallPriority {
-  if (priority.active !== 'envido' && priority.active !== 'flor') return priority;
+  if (priority.active !== 'envido' && priority.active !== 'flor')
+    return priority;
   return priority.suspendedTruco
     ? { active: 'truco', suspendedTruco: priority.suspendedTruco }
     : { active: 'play', suspendedTruco: null };
@@ -523,14 +583,22 @@ export function resolveDeclarationTie(
           ? envidoScore(hand, vira)
           : florScore(hand, vira) === null
             ? null
-            : (isFlorReservada(hand, vira) ? 1_000 : 0) + (florScore(hand, vira) ?? 0),
+            : (isFlorReservada(hand, vira) ? 1_000 : 0) +
+              (florScore(hand, vira) ?? 0),
     }))
-    .filter((entry): entry is { id: SeatId; value: number } => entry.value !== null);
+    .filter(
+      (entry): entry is { id: SeatId; value: number } => entry.value !== null,
+    );
   return declarationWinner(entries, manoOrder);
 }
 
 export function resolveFlor(
-  declarations: Array<{ seatId: SeatId; team: TeamId; hand: TrucoCard[]; declared: boolean }>,
+  declarations: Array<{
+    seatId: SeatId;
+    team: TeamId;
+    hand: TrucoCard[];
+    declared: boolean;
+  }>,
   vira: TrucoCard,
   manoOrder: readonly SeatId[],
   pointsPerFlor = 3,
@@ -550,7 +618,9 @@ export function resolveFlor(
   if (!winnerSeatId) return null;
   const winnerTeam = valid.find((entry) => entry.seatId === winnerSeatId)?.team;
   if (!winnerTeam) return null;
-  const alliedFlowers = valid.filter((entry) => entry.team === winnerTeam).length;
+  const alliedFlowers = valid.filter(
+    (entry) => entry.team === winnerTeam,
+  ).length;
   return {
     winnerSeatId,
     winnerTeam,
@@ -578,7 +648,10 @@ export function canDeclareFlor({
   return cardsPlayed === 0 || (cardsPlayed === 1 && announcedALey);
 }
 
-export function applyAwards(match: MatchState, awards: readonly ScoreAward[]): MatchState {
+export function applyAwards(
+  match: MatchState,
+  awards: readonly ScoreAward[],
+): MatchState {
   const ordered = [...awards].sort((a, b) => {
     const priority = { flor: 0, envido: 0, prive: 0, truco: 1 } as const;
     return priority[a.reason] - priority[b.reason];
@@ -621,8 +694,14 @@ export function resolvePrive(
   vira: TrucoCard,
   manoOrder: readonly SeatId[],
 ) {
-  const winnerSeatId = resolveDeclarationTie(entries, vira, manoOrder, 'envido');
-  const team = entries.find((entry) => entry.seatId === winnerSeatId)?.team ?? null;
+  const winnerSeatId = resolveDeclarationTie(
+    entries,
+    vira,
+    manoOrder,
+    'envido',
+  );
+  const team =
+    entries.find((entry) => entry.seatId === winnerSeatId)?.team ?? null;
   return team ? { team, amount: 1 as const, reason: 'prive' as const } : null;
 }
 
@@ -656,7 +735,8 @@ export function legalActions(context: LegalActionContext): LegalAction[] {
   }
 
   if (
-    (context.priority.active === 'envido' || context.priority.active === 'flor') &&
+    (context.priority.active === 'envido' ||
+      context.priority.active === 'flor') &&
     context.envido.pending
   ) {
     if (context.envido.pending.by === actor.team) return [];
@@ -673,9 +753,7 @@ export function legalActions(context: LegalActionContext): LegalAction[] {
 
   if (!active || context.priority.active !== 'play') return [];
   const actions: LegalAction[] = [
-    context.pardaRevealWindow
-      ? 'play-stack'
-      : 'play-card',
+    context.pardaRevealWindow ? 'play-stack' : 'play-card',
     'fold',
   ];
   if (context.firstTrick && !context.actorHasPlayedFirstCard) {
@@ -756,7 +834,8 @@ export function legalActionsForSnapshot(
     actorDeclaredFlor: snapshot.florDeclarations.includes(actorSeatId),
     opposingFlorDeclared,
     actorPassedFirst:
-      currentHand.length > 0 && currentHand.every((card) => card.passed === true),
+      currentHand.length > 0 &&
+      currentHand.every((card) => card.passed === true),
     truco: snapshot.truco,
     envido: snapshot.envido,
     priority: snapshot.priority,
@@ -780,6 +859,7 @@ function resolvePardaStacks(snapshot: EngineSnapshot) {
       result: topResult,
       usedHidden: false,
       hiddenParda: false,
+      revealed: [],
     };
   }
 
@@ -795,7 +875,9 @@ function resolvePardaStacks(snapshot: EngineSnapshot) {
     rank: trucoRank(snapshot.pardaStacks[play.seatId].hidden, snapshot.vira),
   }));
   const bestHiddenRank = Math.max(...hiddenRanks.map((entry) => entry.rank));
-  const bestHidden = hiddenRanks.filter((entry) => entry.rank === bestHiddenRank);
+  const bestHidden = hiddenRanks.filter(
+    (entry) => entry.rank === bestHiddenRank,
+  );
   const winnerSeatId = order.find((seatId) =>
     bestHidden.some((entry) => entry.seatId === seatId),
   );
@@ -812,6 +894,11 @@ function resolvePardaStacks(snapshot: EngineSnapshot) {
     } satisfies TrickResult,
     usedHidden: true,
     hiddenParda: new Set(bestHidden.map((entry) => entry.team)).size > 1,
+    revealed: contenders.map(({ seatId, team }) => ({
+      seatId,
+      team,
+      card: { ...snapshot.pardaStacks[seatId].hidden },
+    })),
   };
 }
 
@@ -826,11 +913,24 @@ function settleDeclaredFlor(
     hand: dealtHandForSeat(snapshot, seat.id),
     declared: hasFlor(dealtHandForSeat(snapshot, seat.id), snapshot.vira),
   }));
-  const holders = entries.filter((entry) => entry.declared).map((entry) => entry.seatId);
-  snapshot.florDeclarations = [...new Set([...snapshot.florDeclarations, ...holders])];
-  const resolution = resolveFlor(entries, snapshot.vira, manoOrder(snapshot), rules.florPoints);
+  const holders = entries
+    .filter((entry) => entry.declared)
+    .map((entry) => entry.seatId);
+  snapshot.florDeclarations = [
+    ...new Set([...snapshot.florDeclarations, ...holders]),
+  ];
+  const resolution = resolveFlor(
+    entries,
+    snapshot.vira,
+    manoOrder(snapshot),
+    rules.florPoints,
+  );
   if (!resolution) throw new Error('No se pudo resolver la Flor declarada.');
-  snapshot.envido = { ...createEnvidoState(), status: 'resolved', winner: resolution.winnerTeam };
+  snapshot.envido = {
+    ...createEnvidoState(),
+    status: 'resolved',
+    winner: resolution.winnerTeam,
+  };
   snapshot.match = applyAwards(snapshot.match, [
     { team: resolution.winnerTeam, amount: resolution.points, reason: 'flor' },
   ]);
@@ -869,7 +969,9 @@ function requiredAction(command: EngineCommand): LegalAction {
 }
 
 function manoOrder(snapshot: EngineSnapshot) {
-  const start = snapshot.seats.findIndex((seat) => seat.id === snapshot.manoSeatId);
+  const start = snapshot.seats.findIndex(
+    (seat) => seat.id === snapshot.manoSeatId,
+  );
   return Array.from(
     { length: snapshot.seats.length },
     (_, offset) => snapshot.seats[(start + offset) % snapshot.seats.length].id,
@@ -891,16 +993,21 @@ export function transition(
   if (snapshot.appliedCommandIds.includes(commandId)) {
     return { state: snapshot, events: ['Comando duplicado ignorado.'] };
   }
-  if (snapshot.connection !== 'online') throw new Error('La mesa está reconectando.');
-  if (snapshot.match.complete || snapshot.handComplete) throw new Error('La base ya terminó.');
+  if (snapshot.connection !== 'online')
+    throw new Error('La mesa está reconectando.');
+  if (snapshot.match.complete || snapshot.handComplete)
+    throw new Error('La base ya terminó.');
   if (JSON.stringify(snapshot.rules ?? rules) !== JSON.stringify(rules)) {
-    throw new Error('Las reglas firmadas de esta base no pueden cambiar a mitad de juego.');
+    throw new Error(
+      'Las reglas firmadas de esta base no pueden cambiar a mitad de juego.',
+    );
   }
 
   const actorTeam = teamForSeat(snapshot, actorSeatId);
   const actionIds = legalActionsForSnapshot(snapshot, actorSeatId, rules);
   const needed = requiredAction(command);
-  if (!actionIds.includes(needed)) throw new Error(`Acción ilegal ahora: ${needed}.`);
+  if (!actionIds.includes(needed))
+    throw new Error(`Acción ilegal ahora: ${needed}.`);
 
   const next: EngineSnapshot = {
     ...snapshot,
@@ -918,7 +1025,10 @@ export function transition(
       ]),
     ),
     handStartScore: { ...snapshot.handStartScore },
-    played: snapshot.played.map((play) => ({ ...play, card: { ...play.card } })),
+    played: snapshot.played.map((play) => ({
+      ...play,
+      card: { ...play.card },
+    })),
     trickResults: snapshot.trickResults.map((result) => ({ ...result })),
     pardaStacks: Object.fromEntries(
       Object.entries(snapshot.pardaStacks).map(([seatId, stack]) => [
@@ -944,18 +1054,32 @@ export function transition(
 
   if (command.type === 'PLAY_CARD') {
     const hand = next.hands[actorSeatId] ?? [];
-    const cardIndex = hand.findIndex((card) => idForCard(card) === command.cardId);
-    if (cardIndex < 0) throw new Error('La carta no está en la mano del actor.');
+    const cardIndex = hand.findIndex(
+      (card) => idForCard(card) === command.cardId,
+    );
+    if (cardIndex < 0)
+      throw new Error('La carta no está en la mano del actor.');
     const [card] = hand.splice(cardIndex, 1);
     if (command.passed && !card.passed) {
-      throw new Error('Una carta solo queda pasada mediante la acción de pasar.');
+      throw new Error(
+        'Una carta solo queda pasada mediante la acción de pasar.',
+      );
     }
-    next.played.push({ actorSeatId, seatId: actorSeatId, team: actorTeam, card } as TrickPlay);
+    next.played.push({
+      actorSeatId,
+      seatId: actorSeatId,
+      team: actorTeam,
+      card,
+    } as TrickPlay);
     events.push(`${actorSeatId} jugó ${card.rank} de ${card.suit}.`);
 
-    const trickPlays = next.played.slice((next.trickNumber - 1) * next.seats.length);
+    const trickPlays = next.played.slice(
+      (next.trickNumber - 1) * next.seats.length,
+    );
     if (trickPlays.length < next.seats.length) {
-      const actorIndex = next.seats.findIndex((seat) => seat.id === actorSeatId);
+      const actorIndex = next.seats.findIndex(
+        (seat) => seat.id === actorSeatId,
+      );
       next.activeSeatId = next.seats[(actorIndex + 1) % next.seats.length].id;
       return { state: next, events };
     }
@@ -964,14 +1088,21 @@ export function transition(
     next.trickResults.push(result);
     const manoTeam = teamForSeat(next, next.manoSeatId);
     const winner = resolveHandWinner(next.trickResults, manoTeam);
-    events.push(result.parda ? 'La vuelta quedó parda.' : `La vuelta fue para ${result.winnerTeam}.`);
+    events.push(
+      result.parda
+        ? 'La vuelta quedó parda.'
+        : `La vuelta fue para ${result.winnerTeam}.`,
+    );
     if (winner) {
-      next.match = applyAwards(next.match, [trucoHandAward(next.truco, winner)]);
+      next.match = applyAwards(next.match, [
+        trucoHandAward(next.truco, winner),
+      ]);
       next.handComplete = true;
       next.activeSeatId = result.winningSeatId ?? next.manoSeatId;
       events.push(`La base fue para ${winner}.`);
       if (next.match.complete) events.push(`Serie terminada: ganó ${winner}.`);
-      else if (next.match.gameComplete) events.push(`Chico ganado por ${winner}.`);
+      else if (next.match.gameComplete)
+        events.push(`Chico ganado por ${winner}.`);
       return { state: next, events };
     }
     next.trickNumber += 1;
@@ -995,16 +1126,23 @@ export function transition(
       top: { ...top },
       hidden: { ...hidden },
     };
-    next.played.push({ seatId: actorSeatId, team: actorTeam, card: { ...top } });
+    next.played.push({
+      seatId: actorSeatId,
+      team: actorTeam,
+      card: { ...top },
+    });
     events.push(`${actorSeatId} apiló sus dos cartas con la mayor arriba.`);
 
     if (Object.keys(next.pardaStacks).length < next.seats.length) {
-      const actorIndex = next.seats.findIndex((seat) => seat.id === actorSeatId);
+      const actorIndex = next.seats.findIndex(
+        (seat) => seat.id === actorSeatId,
+      );
       next.activeSeatId = next.seats[(actorIndex + 1) % next.seats.length].id;
       return { state: next, events };
     }
 
     const resolution = resolvePardaStacks(next);
+    next.played.push(...resolution.revealed);
     next.trickResults.push(resolution.result);
     next.match = applyAwards(next.match, [
       trucoHandAward(next.truco, resolution.winnerTeam),
@@ -1018,19 +1156,26 @@ export function transition(
           : `Se destapó el desempate: la base fue para ${resolution.winnerTeam}.`
         : `La carta de arriba resolvió la base para ${resolution.winnerTeam}.`,
     );
-    if (next.match.complete) events.push(`Serie terminada: ganó ${resolution.winnerTeam}.`);
-    else if (next.match.gameComplete) events.push(`Chico ganado por ${resolution.winnerTeam}.`);
+    if (next.match.complete)
+      events.push(`Serie terminada: ganó ${resolution.winnerTeam}.`);
+    else if (next.match.gameComplete)
+      events.push(`Chico ganado por ${resolution.winnerTeam}.`);
     return { state: next, events };
   }
 
   if (command.type === 'PASS_CARDS') {
-    next.hands[actorSeatId] = next.hands[actorSeatId].map((card) => ({ ...card, passed: true }));
+    next.hands[actorSeatId] = next.hands[actorSeatId].map((card) => ({
+      ...card,
+      passed: true,
+    }));
     events.push(`${actorSeatId} pasó sus tres cartas.`);
     return { state: next, events };
   }
 
   if (command.type === 'FOLD_HAND') {
-    next.match = applyAwards(next.match, [trucoHandAward(next.truco, opponentOf(actorTeam))]);
+    next.match = applyAwards(next.match, [
+      trucoHandAward(next.truco, opponentOf(actorTeam)),
+    ]);
     next.handComplete = true;
     events.push(`${actorSeatId} se fue al mazo.`);
     return { state: next, events };
@@ -1038,7 +1183,8 @@ export function transition(
 
   if (command.type === 'CALL_TRUCO') {
     const called = callTruco(next.truco, actorTeam);
-    if (called.pending?.call !== command.call) throw new Error('Ese aumento no sigue la escalera.');
+    if (called.pending?.call !== command.call)
+      throw new Error('Ese aumento no sigue la escalera.');
     next.truco = called;
     if (next.truco.pending) next.truco.pending.bySeatId = actorSeatId;
     next.priority = { active: 'truco', suspendedTruco: null };
@@ -1048,7 +1194,8 @@ export function transition(
 
   if (command.type === 'RAISE_TRUCO') {
     const answered = answerTruco(next.truco, actorTeam, 'raise');
-    if (answered.state.pending?.call !== command.call) throw new Error('Ese repique no sigue la escalera.');
+    if (answered.state.pending?.call !== command.call)
+      throw new Error('Ese repique no sigue la escalera.');
     next.truco = answered.state;
     if (next.truco.pending) next.truco.pending.bySeatId = actorSeatId;
     next.priority = { active: 'truco', suspendedTruco: null };
@@ -1079,11 +1226,19 @@ export function transition(
       actorTeam,
       next.match.score,
       next.match.target,
-      command.amount === 'falta' ? 'falta' : command.amount === 2 ? 'envido' : 'n-mas',
+      command.amount === 'falta'
+        ? 'falta'
+        : command.amount === 2
+          ? 'envido'
+          : 'n-mas',
       typeof command.amount === 'number' ? command.amount : 0,
     );
     if (next.envido.pending) next.envido.pending.bySeatId = actorSeatId;
-    events.push(command.amount === 'falta' ? 'Quiero y la falta.' : `Quiero y ${command.amount} más.`);
+    events.push(
+      command.amount === 'falta'
+        ? 'Quiero y la falta.'
+        : `Quiero y ${command.amount} más.`,
+    );
     return { state: next, events };
   }
 
@@ -1091,7 +1246,8 @@ export function transition(
     if (!hasFlor(dealtHandForSeat(next, actorSeatId), next.vira)) {
       throw new Error('La mano no tiene Flor.');
     }
-    if (!next.florDeclarations.includes(actorSeatId)) next.florDeclarations.push(actorSeatId);
+    if (!next.florDeclarations.includes(actorSeatId))
+      next.florDeclarations.push(actorSeatId);
     events.push(command.mode === 'a-ley' ? 'A ley.' : 'Flor tengo.');
     if (next.priority.active === 'truco') {
       next.priority = { active: 'flor', suspendedTruco: next.truco.pending };
@@ -1109,8 +1265,14 @@ export function transition(
     if (!hasFlor(dealtHandForSeat(next, actorSeatId), next.vira)) {
       throw new Error('La mano no tiene Flor.');
     }
-    if (!next.florDeclarations.includes(actorSeatId)) next.florDeclarations.push(actorSeatId);
-    next.envido = callEnvido(next.envido, actorTeam, next.match.score, next.match.target);
+    if (!next.florDeclarations.includes(actorSeatId))
+      next.florDeclarations.push(actorSeatId);
+    next.envido = callEnvido(
+      next.envido,
+      actorTeam,
+      next.match.score,
+      next.match.target,
+    );
     if (next.envido.pending) next.envido.pending.bySeatId = actorSeatId;
     next.priority = { active: 'flor', suspendedTruco: next.truco.pending };
     events.push('Mi Flor envida.');
@@ -1148,19 +1310,29 @@ export function transition(
           manoOrder(next),
           priorityKind === 'flor' ? 'flor' : 'envido',
         );
-        const winnerTeam = entries.find((entry) => entry.seatId === winnerSeat)?.team;
+        const winnerTeam = entries.find(
+          (entry) => entry.seatId === winnerSeat,
+        )?.team;
         if (!winnerTeam) throw new Error('No se pudo resolver el canto.');
         const resolution = resolveEnvido(next.envido, winnerTeam);
         next.envido = resolution.state;
         awards.push(resolution.award);
         if (priorityKind === 'flor') {
           const flor = resolveFlor(
-            entries.map((entry) => ({ ...entry, declared: hasFlor(entry.hand, next.vira) })),
+            entries.map((entry) => ({
+              ...entry,
+              declared: hasFlor(entry.hand, next.vira),
+            })),
             next.vira,
             manoOrder(next),
             rules.florPoints,
           );
-          if (flor) awards.push({ team: flor.winnerTeam, amount: flor.points, reason: 'flor' });
+          if (flor)
+            awards.push({
+              team: flor.winnerTeam,
+              amount: flor.points,
+              reason: 'flor',
+            });
         }
       }
       next.match = applyAwards(next.match, awards);
@@ -1175,7 +1347,11 @@ export function transition(
             : 'El Envite/Flor cerró el chico; el Truco pendiente no suma.',
         );
       }
-      events.push(command.answer === 'quiero' ? 'Canto querido y resuelto.' : 'Canto no querido.');
+      events.push(
+        command.answer === 'quiero'
+          ? 'Canto querido y resuelto.'
+          : 'Canto no querido.',
+      );
       return { state: next, events };
     }
   }
@@ -1190,7 +1366,10 @@ export function beginNextHand(
   if (!snapshot.handComplete || snapshot.match.complete) {
     throw new Error('No corresponde repartir una nueva base.');
   }
-  const dealerSeatId = nextDealer(snapshot.seats.map((seat) => seat.id), snapshot.dealerSeatId);
+  const dealerSeatId = nextDealer(
+    snapshot.seats.map((seat) => seat.id),
+    snapshot.dealerSeatId,
+  );
   const deal = dealCards(deck, snapshot.seats, dealerSeatId);
   const match = snapshot.match.gameComplete
     ? {
@@ -1275,7 +1454,10 @@ export function projectPublic(snapshot: EngineSnapshot) {
     trickNumber: snapshot.trickNumber,
     handComplete: snapshot.handComplete,
     vira: { ...snapshot.vira },
-    played: snapshot.played.map((play) => ({ ...play, card: { ...play.card } })),
+    played: snapshot.played.map((play) => ({
+      ...play,
+      card: { ...play.card },
+    })),
     trickResults: snapshot.trickResults.map((result) => ({ ...result })),
     pardaTops: Object.fromEntries(
       Object.entries(snapshot.pardaStacks).map(([seatId, stack]) => [
@@ -1284,7 +1466,10 @@ export function projectPublic(snapshot: EngineSnapshot) {
       ]),
     ),
     cardCounts: Object.fromEntries(
-      snapshot.seats.map((seat) => [seat.id, snapshot.hands[seat.id]?.length ?? 0]),
+      snapshot.seats.map((seat) => [
+        seat.id,
+        snapshot.hands[seat.id]?.length ?? 0,
+      ]),
     ),
     florDeclarations: [...snapshot.florDeclarations],
     truco: {

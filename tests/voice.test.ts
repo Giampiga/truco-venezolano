@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { voiceToken } from '../lib/voice-token.ts';
+import { voiceConfigured, voiceToken } from '../lib/voice-token.ts';
+import { drainVoiceRevocations } from '../lib/server/voice.ts';
+import { DEFAULT_CONFIG, newRoom } from '../lib/room-model.ts';
 
-test('voice JWT has a valid signature and room-scoped microphone-only grants', async () => {
+void test('voice JWT has a valid signature and room-scoped microphone-only grants', async () => {
   const credentials = {
     LIVEKIT_URL: 'wss://voice.example.test',
     LIVEKIT_API_KEY: 'test-key',
@@ -43,23 +45,27 @@ test('voice JWT has a valid signature and room-scoped microphone-only grants', a
   );
   assert.equal(result.token.includes(credentials.LIVEKIT_API_SECRET), false);
 });
-test('voice cannot claim connection readiness with missing or insecure configuration', async () => {
-  await assert.rejects(voiceToken({}, 'room', 'p0', 'Ana'));
-  await assert.rejects(
-    voiceToken(
-      {
-        LIVEKIT_URL: 'http://voice.test',
-        LIVEKIT_API_KEY: 'k',
-        LIVEKIT_API_SECRET: 's',
-      },
-      'room',
-      'p0',
-      'Ana',
-    ),
+void test('voice cannot claim connection readiness with missing or insecure configuration', async () => {
+  const credentials = {
+    LIVEKIT_URL: 'wss://voice.test',
+    LIVEKIT_API_KEY: 'k',
+    LIVEKIT_API_SECRET: 's',
+  };
+  assert.equal(voiceConfigured(credentials), true);
+  for (const url of ['', 'not a URL', 'http://voice.test', 'ws://voice.test']) {
+    const invalid = { ...credentials, LIVEKIT_URL: url };
+    assert.equal(voiceConfigured(invalid), false);
+    await assert.rejects(voiceToken(invalid, 'room', 'p0', 'Ana'));
+  }
+  assert.equal(
+    voiceConfigured({ ...credentials, LIVEKIT_API_SECRET: '' }),
+    false,
   );
+  assert.equal(voiceConfigured({}), false);
+  await assert.rejects(voiceToken({}, 'room', 'p0', 'Ana'));
 });
 
-test('camera grant is opt-in and never permits screen sharing', async () => {
+void test('camera grant is opt-in and never permits screen sharing', async () => {
   const result = await voiceToken(
     {
       LIVEKIT_URL: 'wss://voice.example.test',
@@ -76,4 +82,34 @@ test('camera grant is opt-in and never permits screen sharing', async () => {
     Buffer.from(result.token.split('.')[1], 'base64url').toString(),
   );
   assert.deepEqual(claims.video.canPublishSources, ['microphone', 'camera']);
+});
+
+void test('unconfigured media preserves revocations without accessing the database', async () => {
+  const keys = [
+    'LIVEKIT_URL',
+    'LIVEKIT_API_KEY',
+    'LIVEKIT_API_SECRET',
+    'DATABASE_URL',
+    'TRUCO_LOCAL_DATABASE',
+  ];
+  const previous = keys.map((key) => process.env[key]);
+  const room = newRoom('room', 'ROOM01', 'user', 'Ana', DEFAULT_CONFIG);
+  room.voiceRevocations = ['departed-member'];
+  try {
+    for (const key of keys) delete process.env[key];
+    assert.equal(await drainVoiceRevocations(room), room);
+    process.env.LIVEKIT_URL = 'wss://voice.test';
+    process.env.LIVEKIT_API_KEY = 'key';
+    assert.equal(await drainVoiceRevocations(room), room);
+    process.env.LIVEKIT_API_SECRET = 'secret';
+    process.env.LIVEKIT_URL = 'invalid endpoint';
+    assert.equal(await drainVoiceRevocations(room), room);
+    assert.deepEqual(room.voiceRevocations, ['departed-member']);
+    assert.equal(room.revision, 0);
+  } finally {
+    keys.forEach((key, index) => {
+      if (previous[index] === undefined) delete process.env[key];
+      else process.env[key] = previous[index];
+    });
+  }
 });

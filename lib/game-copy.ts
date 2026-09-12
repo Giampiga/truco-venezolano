@@ -2,7 +2,11 @@ import { trucoAcceptedValue, trucoRejectedValue } from './truco-rules.ts';
 export const manoAnnouncement = (name: string, isYou: boolean) =>
   isYou ? 'Eres mano.' : `${name} es mano.`;
 
-export function gameEventText(event: string, names: Record<string, string>, you: string) {
+export function gameEventText(
+  event: string,
+  names: Record<string, string>,
+  you: string,
+) {
   const personal: Record<string, string> = {
     'jugó ': 'Jugaste ',
     'apiló sus dos cartas': 'Apilaste tus dos cartas',
@@ -11,30 +15,68 @@ export function gameEventText(event: string, names: Record<string, string>, you:
   };
   for (const [verb, replacement] of Object.entries(personal)) {
     const prefix = `${you} ${verb}`;
-    if (event.startsWith(prefix)) event = replacement + event.slice(prefix.length);
+    if (event.startsWith(prefix))
+      event = replacement + event.slice(prefix.length);
   }
-  for (const [id, name] of Object.entries(names)) event = event.replaceAll(`${id} `, `${name} `);
-  return event.replaceAll('vale-nueve', 'Vale nueve').replaceAll('vale-juego', 'Vale juego');
+  for (const [id, name] of Object.entries(names))
+    event = event.replaceAll(`${id} `, `${name} `);
+  return event
+    .replaceAll('vale-nueve', 'Vale nueve')
+    .replaceAll('vale-juego', 'Vale juego');
 }
 export const actionLabels: Record<string, string> = {
-  'answer-quiero': 'Quiero', 'answer-no-quiero': 'No quiero',
-  'raise-truco': 'Subir el truco', 'call-truco': 'Cantar truco',
-  'raise-envido': 'Subir el envite', 'call-envido': 'Envido',
-  'call-falta': 'La falta', 'declare-flor': 'Cantar flor',
+  'answer-quiero': 'Quiero',
+  'answer-no-quiero': 'No quiero',
+  'raise-truco': 'Subir el truco',
+  'call-truco': 'Cantar truco',
+  'raise-envido': 'Subir el envite',
+  'call-envido': 'Envido',
+  'call-falta': 'La falta',
+  'declare-flor': 'Cantar flor',
   'call-flor-envida': 'Mi flor envida',
 };
 
-export function pendingCanto(state: Pick<import('./truco-engine.ts').EngineSnapshot, 'priority' | 'truco' | 'envido' | 'handComplete'>) {
+export function pendingCanto(
+  state: Pick<
+    import('./truco-engine.ts').EngineSnapshot,
+    'priority' | 'truco' | 'envido' | 'handComplete'
+  >,
+) {
   if (state.handComplete || state.priority.active === 'play') return null;
-  const labels = { truco: 'Truco', retruco: 'Retruco', 'vale-nueve': 'Vale nueve', 'vale-juego': 'Vale juego' };
+  const labels = {
+    truco: 'Truco',
+    retruco: 'Retruco',
+    'vale-nueve': 'Vale nueve',
+    'vale-juego': 'Vale juego',
+  };
   const points = (n: number) => `${n} ${n === 1 ? 'punto' : 'puntos'}`;
-  const pending = state.priority.active === 'truco' ? state.truco.pending : state.envido.pending;
+  const pending =
+    state.priority.active === 'truco'
+      ? state.truco.pending
+      : state.envido.pending;
   if (!pending) return null;
-  const suspended = state.priority.suspendedTruco ? labels[state.priority.suspendedTruco.call] : null;
+  const suspended = state.priority.suspendedTruco
+    ? labels[state.priority.suspendedTruco.call]
+    : null;
   if ('call' in pending) {
     const accepted = trucoAcceptedValue(pending.call);
     const rejected = trucoRejectedValue(pending.call);
-    return { ...pending, label: labels[pending.call], accept: accepted !== 'game' ? `La base vale ${points(accepted)}.` : 'La base decide el chico.', reject: `El equipo que cantó gana ${points(rejected)} y termina la base.`, suspended };
+    return {
+      ...pending,
+      label: labels[pending.call],
+      accept:
+        accepted !== 'game'
+          ? `La base vale ${points(accepted)}.`
+          : 'La base decide el chico.',
+      reject: `El equipo que cantó gana ${points(rejected)} y termina la base.`,
+      suspended,
+    };
   }
-  return { ...pending, label: `${state.priority.active === 'flor' ? 'Mi flor envida' : pending.kind === 'falta' ? 'La falta' : 'Envido'} · ${points(pending.stake)}`, accept: `Se comparan los tantos por ${points(pending.stake)}.${state.priority.active === 'flor' ? ' Se suman además los puntos de flor.' : ''}`, reject: `El equipo que cantó gana ${points(pending.rejectionAward)}.`, suspended };
+  return {
+    ...pending,
+    label: `${state.priority.active === 'flor' ? 'Mi flor envida' : pending.kind === 'falta' ? 'La falta' : 'Envido'} · ${points(pending.stake)}`,
+    accept: `Se comparan los tantos por ${points(pending.stake)}.${state.priority.active === 'flor' ? ' Se suman además los puntos de flor.' : ''}`,
+    reject: `El equipo que cantó gana ${points(pending.rejectionAward)}.`,
+    suspended,
+  };
 }

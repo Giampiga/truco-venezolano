@@ -134,129 +134,165 @@ export function CreateRoomDialog({
             </div>
 
             <div className="switch-row sm:col-span-2">
-              <span><strong>Partida competitiva</strong><small>Con sesión iniciada. Cuenta para tu Elo; abandonar es perder.</small></span>
-              <Switch aria-label="Partida competitiva" checked={!!config.ranked} onCheckedChange={(ranked) => onConfigChange({ ...config, ranked, ...(ranked ? { preset: 'oriental', target: '24', match: 'un-chico', flor: 'a-ley', florPoints: '3', parda: 'abierta', pardaEngine: 'apilada-clasica' } : {}) })} />
-            </div>
-            {config.ranked && <p className="sm:col-span-2 text-sm">Reglas iguales para todos: oriental, 24 piedras, un chico, flor a ley y parda abierta. Rankings separados para duelo y parejas.</p>}
-            <fieldset disabled={!!config.ranked} className="contents">
-            <div className="field-group sm:col-span-2">
-              <span>Regla base</span>
-              <NativeSelect
-                aria-label="Regla base"
-                value={config.preset}
-                onChange={(event) =>
-                  changePreset(event.target.value as RoomConfig['preset'])
-                }
-                className="w-full [&>select]:h-11 [&>select]:rounded-xl"
-              >
-                <NativeSelectOption value="oriental">
-                  Oriental clásico · 24 piedras
-                </NativeSelectOption>
-                <NativeSelectOption value="rapida">
-                  Mesa rápida · 12 piedras
-                </NativeSelectOption>
-                <NativeSelectOption value="competitiva">
-                  Competitiva larga · 32 · mejor de tres
-                </NativeSelectOption>
-              </NativeSelect>
-            </div>
-
-            <div className="field-group">
-              <span>Piedras para ganar</span>
-              <NativeSelect
-                aria-label="Piedras para ganar"
-                value={config.target}
-                onChange={(event) => {
-                  const target = event.target.value as RoomConfig['target'];
+              <span>
+                <strong>Partida competitiva</strong>
+                <small>
+                  Con sesión iniciada. Cuenta para tu Elo; abandonar es perder.
+                </small>
+              </span>
+              <Switch
+                aria-label="Partida competitiva"
+                checked={!!config.ranked}
+                onCheckedChange={(ranked) =>
                   onConfigChange({
                     ...config,
-                    target,
-                    privando: target === '24' ? config.privando : false,
-                  });
-                }}
-                className="w-full [&>select]:h-11 [&>select]:rounded-xl"
-              >
-                <NativeSelectOption value="24">24 · clásico</NativeSelectOption>
-                <NativeSelectOption value="12">12 · rápida</NativeSelectOption>
-                <NativeSelectOption value="32">32 · larga</NativeSelectOption>
-              </NativeSelect>
-            </div>
-
-            <div className="field-group">
-              <span>Serie</span>
-              <NativeSelect
-                aria-label="Duración de la serie"
-                value={config.match}
-                onChange={(event) =>
-                  update('match', event.target.value as RoomConfig['match'])
+                    ranked,
+                    ...(ranked
+                      ? {
+                          preset: 'oriental',
+                          target: '24',
+                          match: 'un-chico',
+                          flor: 'a-ley',
+                          florPoints: '3',
+                          parda: 'abierta',
+                          pardaEngine: 'apilada-clasica',
+                        }
+                      : {}),
+                  })
                 }
-                className="w-full [&>select]:h-11 [&>select]:rounded-xl"
-              >
-                <NativeSelectOption value="un-chico">
-                  Un chico
-                </NativeSelectOption>
-                <NativeSelectOption value="mejor-de-tres">
-                  Mejor de tres chicos
-                </NativeSelectOption>
-              </NativeSelect>
+              />
             </div>
-
-            <div className="field-group">
-              <span>Modo de Flor</span>
-              <NativeSelect
-                aria-label="Modo de Flor"
-                value={config.flor}
-                onChange={(event) =>
-                  update('flor', event.target.value as RoomConfig['flor'])
-                }
-                className="w-full [&>select]:h-11 [&>select]:rounded-xl"
-              >
-                <NativeSelectOption value="a-ley">
-                  Con flor · A ley
-                </NativeSelectOption>
-                <NativeSelectOption value="off">Sin flor</NativeSelectOption>
-                <NativeSelectOption value="por-derecho">
-                  Flor por derecho · regional
-                </NativeSelectOption>
-              </NativeSelect>
-            </div>
-
-            <div className="field-group">
-              <span>Primera parda</span>
-              <NativeSelect
-                aria-label="Regla de primera parda"
-                value={config.parda}
-                onChange={(event) =>
-                  update('parda', event.target.value as RoomConfig['parda'])
-                }
-                className="w-full [&>select]:h-11 [&>select]:rounded-xl"
-              >
-                <NativeSelectOption value="abierta">
-                  Venezolana abierta
-                </NativeSelectOption>
-                <NativeSelectOption value="cerrada">
-                  Venezolana cerrada
-                </NativeSelectOption>
-              </NativeSelect>
-            </div>
-
-            <p className="text-sm text-muted-foreground">Primera vuelta parda: se juegan las dos cartas restantes juntas, con la mayor arriba y la menor tapada.</p>
-
-            <div className="rule-preview rounded-xl border border-border bg-muted/35 p-4">
-              <p className="text-xs font-semibold">Escalera de canto</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                Truco 3 · Retruco 6 · Vale nueve 9 · Vale juego
+            {config.ranked && (
+              <p className="sm:col-span-2 text-sm">
+                Reglas iguales para todos: oriental, 24 piedras, un chico, flor
+                a ley y parda abierta. Rankings separados para duelo y parejas.
               </p>
-            </div>
+            )}
+            <fieldset disabled={!!config.ranked} className="contents">
+              <div className="field-group sm:col-span-2">
+                <span>Regla base</span>
+                <NativeSelect
+                  aria-label="Regla base"
+                  value={config.preset}
+                  onChange={(event) =>
+                    changePreset(event.target.value as RoomConfig['preset'])
+                  }
+                  className="w-full [&>select]:h-11 [&>select]:rounded-xl"
+                >
+                  <NativeSelectOption value="oriental">
+                    Oriental clásico · 24 piedras
+                  </NativeSelectOption>
+                  <NativeSelectOption value="rapida">
+                    Mesa rápida · 12 piedras
+                  </NativeSelectOption>
+                  <NativeSelectOption value="competitiva">
+                    Competitiva larga · 32 · mejor de tres
+                  </NativeSelectOption>
+                </NativeSelect>
+              </div>
 
-            <div className="rule-preview rounded-xl border border-border bg-muted/35 p-4">
-              <p className="text-xs font-semibold">Flor y Reservada</p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                La Flor vale 3 piedras. Una Reservada gana la comparación de
-                flores.
+              <div className="field-group">
+                <span>Piedras para ganar</span>
+                <NativeSelect
+                  aria-label="Piedras para ganar"
+                  value={config.target}
+                  onChange={(event) => {
+                    const target = event.target.value as RoomConfig['target'];
+                    onConfigChange({
+                      ...config,
+                      target,
+                      privando: target === '24' ? config.privando : false,
+                    });
+                  }}
+                  className="w-full [&>select]:h-11 [&>select]:rounded-xl"
+                >
+                  <NativeSelectOption value="24">
+                    24 · clásico
+                  </NativeSelectOption>
+                  <NativeSelectOption value="12">
+                    12 · rápida
+                  </NativeSelectOption>
+                  <NativeSelectOption value="32">32 · larga</NativeSelectOption>
+                </NativeSelect>
+              </div>
+
+              <div className="field-group">
+                <span>Serie</span>
+                <NativeSelect
+                  aria-label="Duración de la serie"
+                  value={config.match}
+                  onChange={(event) =>
+                    update('match', event.target.value as RoomConfig['match'])
+                  }
+                  className="w-full [&>select]:h-11 [&>select]:rounded-xl"
+                >
+                  <NativeSelectOption value="un-chico">
+                    Un chico
+                  </NativeSelectOption>
+                  <NativeSelectOption value="mejor-de-tres">
+                    Mejor de tres chicos
+                  </NativeSelectOption>
+                </NativeSelect>
+              </div>
+
+              <div className="field-group">
+                <span>Modo de Flor</span>
+                <NativeSelect
+                  aria-label="Modo de Flor"
+                  value={config.flor}
+                  onChange={(event) =>
+                    update('flor', event.target.value as RoomConfig['flor'])
+                  }
+                  className="w-full [&>select]:h-11 [&>select]:rounded-xl"
+                >
+                  <NativeSelectOption value="a-ley">
+                    Con flor · A ley
+                  </NativeSelectOption>
+                  <NativeSelectOption value="off">Sin flor</NativeSelectOption>
+                  <NativeSelectOption value="por-derecho">
+                    Flor por derecho · regional
+                  </NativeSelectOption>
+                </NativeSelect>
+              </div>
+
+              <div className="field-group">
+                <span>Primera parda</span>
+                <NativeSelect
+                  aria-label="Regla de primera parda"
+                  value={config.parda}
+                  onChange={(event) =>
+                    update('parda', event.target.value as RoomConfig['parda'])
+                  }
+                  className="w-full [&>select]:h-11 [&>select]:rounded-xl"
+                >
+                  <NativeSelectOption value="abierta">
+                    Venezolana abierta
+                  </NativeSelectOption>
+                  <NativeSelectOption value="cerrada">
+                    Venezolana cerrada
+                  </NativeSelectOption>
+                </NativeSelect>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Primera vuelta parda: se juegan las dos cartas restantes juntas,
+                con la mayor arriba y la menor tapada.
               </p>
-            </div>
 
+              <div className="rule-preview rounded-xl border border-border bg-muted/35 p-4">
+                <p className="text-xs font-semibold">Escalera de canto</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  Truco 3 · Retruco 6 · Vale nueve 9 · Vale juego
+                </p>
+              </div>
+
+              <div className="rule-preview rounded-xl border border-border bg-muted/35 p-4">
+                <p className="text-xs font-semibold">Flor y Reservada</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  La Flor vale 3 piedras. Una Reservada gana la comparación de
+                  flores.
+                </p>
+              </div>
             </fieldset>
             <div className="switch-row sm:col-span-2">
               <span>
@@ -280,12 +316,28 @@ export function CreateRoomDialog({
               <Switch
                 aria-label="Permitir voz opcional"
                 checked={config.voice}
-                onCheckedChange={(voice) => onConfigChange({ ...config, voice, camera: voice && config.camera })}
+                onCheckedChange={(voice) =>
+                  onConfigChange({
+                    ...config,
+                    voice,
+                    camera: voice && config.camera,
+                  })
+                }
               />
             </div>
             <div className="switch-row sm:col-span-2">
-              <span><strong>Permitir cámaras</strong><small>Opcional para cada jugador. Siempre empiezan apagadas.</small></span>
-              <Switch aria-label="Permitir cámaras" disabled={!config.voice} checked={!!config.camera} onCheckedChange={(value) => update('camera', value)} />
+              <span>
+                <strong>Permitir cámaras</strong>
+                <small>
+                  Opcional para cada jugador. Siempre empiezan apagadas.
+                </small>
+              </span>
+              <Switch
+                aria-label="Permitir cámaras"
+                disabled={!config.voice}
+                checked={!!config.camera}
+                onCheckedChange={(value) => update('camera', value)}
+              />
             </div>
           </div>
           <DialogFooter className="mt-4">
@@ -348,7 +400,9 @@ export function PracticeDialog({
             Juega contra Truquito
           </DialogTitle>
           <DialogDescription>
-            Practica a tu ritmo, sin micrófono ni puntos de clasificación. Truquito sigue las mismas reglas y nunca ve tu mano ni las cartas sin repartir.
+            Practica a tu ritmo, sin micrófono ni puntos de clasificación.
+            Truquito sigue las mismas reglas y nunca ve tu mano ni las cartas
+            sin repartir.
           </DialogDescription>
         </DialogHeader>
 
@@ -383,9 +437,9 @@ export function PracticeDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="field-group">
-              <span>Preset</span>
+              <span>Reglas</span>
               <NativeSelect
-                aria-label="Preset de práctica"
+                aria-label="Reglas de práctica"
                 value={preset}
                 onChange={(event) =>
                   updatePreset(event.target.value as RoomConfig['preset'])
@@ -482,7 +536,7 @@ export function RulesDialog({
             Reglas acordadas
           </DialogTitle>
           <DialogDescription>
-            Preset{' '}
+            Reglas:{' '}
             {config.preset === 'oriental'
               ? 'Oriental clásico'
               : config.preset === 'rapida'
@@ -527,8 +581,8 @@ export function RulesDialog({
             label="Primera parda"
             value={
               config.parda === 'abierta'
-                  ? 'Dos cartas juntas; la mayor arriba; admite repique'
-                  : 'Dos cartas juntas; sin canto entre carta y destape'
+                ? 'Dos cartas juntas; la mayor arriba; admite repique'
+                : 'Dos cartas juntas; sin canto entre carta y destape'
             }
           />
           <RuleDetail

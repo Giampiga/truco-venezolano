@@ -1,25 +1,6 @@
 import assert from 'node:assert/strict';
 import { DEFAULT_CONFIG } from '../lib/room-model.ts';
-const origin = process.env.TRUCO_TEST_URL ?? 'http://localhost:3012';
-assert.ok(['localhost', '127.0.0.1'].includes(new URL(origin).hostname));
-function client() {
-  let cookie = '';
-  return async (path: string, payload?: unknown, status = 200) => {
-    const response = await fetch(origin + path, {
-      method: payload ? 'POST' : 'GET',
-      headers: {
-        Cookie: cookie,
-        Origin: origin,
-        'Content-Type': 'application/json',
-      },
-      body: payload ? JSON.stringify(payload) : undefined,
-    });
-    cookie = response.headers.get('set-cookie')?.split(';')[0] ?? cookie;
-    const data: any = await response.json();
-    assert.equal(response.status, status, JSON.stringify(data));
-    return data;
-  };
-}
+import { client } from './http-client.mts';
 for (const format of ['1v1', '2v2'] as const) {
   const users = Array.from({ length: format === '1v1' ? 2 : 4 }, client);
   for (const user of users) await user('/api/rooms');
@@ -111,7 +92,7 @@ const rb = await b('/api/ranking?format=1v1');
 assert.equal(ra.you.games, 3);
 assert.equal(rb.you.games, 3);
 assert.equal(ra.history.length, 4);
-assert.equal(ra.history.filter((r: any) => !r.rated).length, 1);
+assert.equal(ra.history.filter((r: { rated: boolean }) => !r.rated).length, 1);
 assert.equal(ra.you.rating + rb.you.rating, 2000);
 await a('/api/matchmaking', {
   type: 'join',

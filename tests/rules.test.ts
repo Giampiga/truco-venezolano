@@ -36,7 +36,10 @@ void test('la vira determina Perico y Perica', () => {
 void test('la baraja española tiene 40 cartas únicas', () => {
   const deck = createSpanishDeck();
   assert.equal(deck.length, 40);
-  assert.equal(new Set(deck.map((card) => `${card.rank}-${card.suit}`)).size, 40);
+  assert.equal(
+    new Set(deck.map((card) => `${card.rank}-${card.suit}`)).size,
+    40,
+  );
 });
 
 void test('el Perico mata a las piezas fijas y una carta pasada no mata', () => {

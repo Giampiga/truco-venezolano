@@ -1,3 +1,5 @@
+import { saveHistory } from '@/lib/server/history';
+import { requireRegistered } from '@/lib/server/identity';
 import { profileRoom } from '@/lib/server/profiles';
 import {
   assertSameOrigin,
@@ -17,6 +19,7 @@ export async function GET(request: Request, context: Context) {
     const { id } = await context.params;
     const room = await readRoom(id);
     projectRoom(room, viewer.id);
+    await saveHistory(room);
     await settleRanking(room);
     return json(
       await profileRoom(await drainVoiceRevocations(room), viewer.id),
@@ -33,12 +36,16 @@ export async function POST(request: Request, context: Context) {
     const viewer = await identity(request);
     const { id } = await context.params;
     const action = (await body(request)) as RoomAction;
+    if ((await readRoom(id)).config.ranked) requireRegistered(viewer);
     const room = await drainVoiceRevocations(
       await mutateRoom(id, viewer.id, action),
     );
+    await saveHistory(room);
     await settleRanking(room);
     return json(
-      action.type === 'leave' ? { left: true } : await profileRoom(room, viewer.id),
+      action.type === 'leave'
+        ? { left: true }
+        : await profileRoom(room, viewer.id),
       200,
       viewer.cookie,
     );

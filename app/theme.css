@@ -1,0 +1,194 @@
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  color: inherit;
+}
+
+.theme-toggle:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.theme-dark-icon,
+.dark .theme-light-icon {
+  display: none;
+}
+
+.dark .theme-dark-icon {
+  display: block;
+}
+
+/* The felt and printed card faces deliberately keep their own colors. */
+.dark .room-toolbar,
+.dark .live-room-list,
+.dark .lobby-empty,
+.dark .invite-panel,
+.dark .invite-code,
+.dark .waiting-room,
+.dark .real-seat.empty-seat,
+.dark .voice-room,
+.dark .room-chat,
+.dark .online-game,
+.dark .play-mode-bar,
+.dark .quick-invite input {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+.dark .live-room-row:hover,
+.dark .game-shell,
+.dark .invite-panel .code-input,
+.dark .real-seat,
+.dark .call-tray,
+.dark .account-form input,
+.dark .guest-form input,
+.dark .account-content input,
+.dark .account-content textarea,
+.dark .account-content select {
+  background: var(--background);
+  color: var(--foreground);
+  border-color: var(--input);
+}
+
+.dark .segmented button[aria-pressed='true'],
+.dark .play-mode-bar button[aria-pressed='true'],
+.dark .resume-strip,
+.dark .invitation-strip,
+.dark .real-seat.your-seat,
+.dark .seat-monogram,
+.dark .voice-members > div > span,
+.dark .ranked-result {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border-color: var(--border);
+}
+
+.dark .restored-banner {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+  border-color: var(--border);
+}
+
+.dark .empty-seat .seat-monogram {
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.dark .eyebrow,
+.dark .segmented button,
+.dark .room-search,
+.dark .room-meta,
+.dark .voice-lobby-note,
+.dark .club-footer,
+.dark .invite-code > span,
+.dark .seat-topline,
+.dark .seat-readiness,
+.dark .room-rules-strip,
+.dark .voice-members > div > svg,
+.dark .chat-scroll time,
+.dark .chat-empty,
+.dark .match-score span,
+.dark .match-score strong small,
+.dark .match-round > p,
+.dark .card-index,
+.dark .call-tray small,
+.dark .hand-log,
+.dark .play-mode-bar b,
+.dark .account-tabs button,
+.dark .profile-overview > span,
+.dark .profile-stats small,
+.dark .profile-history small,
+.dark .inline-help,
+.dark .practice-panel .panel-heading,
+.dark .practice-panel .eyebrow,
+.dark .practice-panel > p {
+  color: var(--muted-foreground);
+}
+
+.dark .voice-lobby-note strong,
+.dark .practice-panel {
+  color: var(--foreground);
+}
+
+.dark .room-number,
+.dark .lobby-empty > svg,
+.dark .lobby-footnote button,
+.dark .rule-guide > button,
+.dark .invite-panel > svg,
+.dark .invite-code strong,
+.dark .chat-scroll strong,
+.dark .hand-label strong,
+.dark .invitation-strip a,
+.dark .account-tabs [aria-current] {
+  color: var(--primary);
+}
+
+.dark .room-number,
+.dark .account-tabs,
+.dark .account-divider,
+.dark .profile-history li,
+.dark .account-content article {
+  border-color: var(--border);
+}
+
+.dark .account-tabs [aria-current] {
+  border-color: var(--primary);
+}
+
+.dark .account-form input:focus-visible,
+.dark .guest-form input:focus-visible,
+.dark .account-content input:focus-visible,
+.dark .account-content textarea:focus-visible {
+  outline-color: var(--ring);
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--muted-foreground);
+  opacity: 1;
+}
+
+.dark .global-error {
+  background: color-mix(in srgb, var(--destructive) 15%, var(--card));
+  border-color: color-mix(in srgb, var(--destructive) 55%, var(--border));
+  color: #ffb5a4;
+}
+
+.dark .inline-error {
+  color: #ffb5a4 !important;
+}
+
+.dark .account-dialog [role='alert'],
+.dark .quick-invite > span {
+  color: #ffb5a4;
+}
+
+.dark .connection-banner {
+  background: #403922;
+  color: #ead49a;
+}
+
+.dark .hand-label > span {
+  color: #ead49a;
+}
+
+.dark .header-profile .account-trigger {
+  color: var(--foreground);
+}
+
+.dark [data-slot='dialog-overlay'] {
+  background: rgb(0 0 0 / 55%);
+}

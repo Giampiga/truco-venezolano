@@ -22,11 +22,20 @@ export async function roomRequest<T>(
     cache: 'no-store',
     signal,
   });
-  const data = (await response.json()) as T & { error?: string };
+  const data: unknown = await response.json().catch(() => null);
   if (!response.ok)
     throw new RoomRequestError(
-      data.error ?? 'No se pudo conectar con la mesa.',
+      data &&
+        typeof data === 'object' &&
+        'error' in data &&
+        typeof data.error === 'string'
+        ? data.error
+        : 'No se pudo conectar con la mesa. Vuelve a intentarlo.',
       response.status,
+    );
+  if (data === null)
+    throw new Error(
+      'La mesa envió una respuesta inválida. Vuelve a intentarlo.',
     );
   return data as T;
 }
@@ -36,7 +45,7 @@ export function useRoom() {
   const [pending, setPending] = useState(false);
   const [connected, setConnected] = useState(true);
   const active = useRef<string | null>(null);
-  const acting = useRef(false);
+  const acting = useRef<AbortController | null>(null);
   const accept = useCallback((next: RoomState) => {
     if (active.current !== next.id) return;
     setRoom((previous) =>
@@ -44,7 +53,10 @@ export function useRoom() {
     );
   }, []);
   const enter = useCallback((next: RoomState) => {
+    acting.current?.abort();
+    acting.current = null;
     active.current = next.id;
+    setPending(false);
     setRoom(next);
     setError('');
     setConnected(true);
@@ -52,7 +64,10 @@ export function useRoom() {
     history.replaceState(null, '', `?mesa=${next.code}`);
   }, []);
   const detach = useCallback(() => {
+    acting.current?.abort();
+    acting.current = null;
     active.current = null;
+    setPending(false);
     setRoom(null);
     setError('');
     localStorage.removeItem('truco-online-room');
@@ -62,15 +77,22 @@ export function useRoom() {
     async (action: RoomAction) => {
       const id = active.current;
       if (!id || acting.current) return false;
-      acting.current = true;
+      const abort = new AbortController();
+      acting.current = abort;
       setPending(true);
       setError('');
       try {
-        const next = await roomRequest<RoomState>(`/api/rooms/${id}`, action);
+        const next = await roomRequest<RoomState>(
+          `/api/rooms/${id}`,
+          action,
+          abort.signal,
+        );
+        if (abort.signal.aborted || active.current !== id) return false;
         if (action.type === 'leave') detach();
         else accept(next);
         return true;
       } catch (error) {
+        if (abort.signal.aborted || active.current !== id) return false;
         if (
           error instanceof RoomRequestError &&
           [401, 403, 404, 410].includes(error.status)
@@ -83,8 +105,10 @@ export function useRoom() {
         );
         return false;
       } finally {
-        acting.current = false;
-        setPending(false);
+        if (acting.current === abort) {
+          acting.current = null;
+          setPending(false);
+        }
       }
     },
     [accept, detach],
@@ -105,12 +129,12 @@ export function useRoom() {
           action,
           abort.signal,
         );
-        if (!abort.signal.aborted) {
+        if (!abort.signal.aborted && active.current === id) {
           accept(next);
           setConnected(true);
         }
       } catch (error) {
-        if (!abort.signal.aborted) {
+        if (!abort.signal.aborted && active.current === id) {
           if (
             error instanceof RoomRequestError &&
             [401, 403, 404, 410].includes(error.status)
@@ -131,5 +155,12 @@ export function useRoom() {
       clearTimeout(timer);
     };
   }, [room?.id, accept, detach]);
+  useEffect(
+    () => () => {
+      active.current = null;
+      acting.current?.abort();
+    },
+    [],
+  );
   return { room, enter, detach, act, error, pending, connected };
 }

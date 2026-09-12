@@ -25,7 +25,7 @@ function readyRoom() {
   room = applyRoomAction(room, 'owner', { type: 'ready', ready: true }, clock);
   return applyRoomAction(room, 'rival', { type: 'ready', ready: true }, clock);
 }
-test('private room data requires membership and omits account identifiers', () => {
+void test('private room data requires membership and omits account identifiers', () => {
   const room = create();
   assert.throws(() => projectRoom(room, 'outsider'));
   const view = projectRoom(room, 'owner');
@@ -33,7 +33,7 @@ test('private room data requires membership and omits account identifiers', () =
   assert.equal(JSON.stringify(view).includes('userId'), false);
   assert.equal(JSON.stringify(view).includes('owner'), false);
 });
-test('only host can start; all seats must be ready and present', () => {
+void test('only host can start; all seats must be ready and present', () => {
   assert.throws(() =>
     applyRoomAction(create(), 'owner', { type: 'start' }, clock),
   );
@@ -47,7 +47,7 @@ test('only host can start; all seats must be ready and present', () => {
     applyRoomAction(readyRoom(), 'owner', { type: 'start' }, clock).engine,
   );
 });
-test('full room rejects additional seats and joining is idempotent', () => {
+void test('full room rejects additional seats and joining is idempotent', () => {
   const room = readyRoom();
   assert.throws(() =>
     applyRoomAction(room, 'third', { type: 'join', name: 'Inés' }, clock),
@@ -58,7 +58,7 @@ test('full room rejects additional seats and joining is idempotent', () => {
     2,
   );
 });
-test('both game projections expose only the requesting hand', () => {
+void test('both game projections expose only the requesting hand', () => {
   const room = applyRoomAction(readyRoom(), 'owner', { type: 'start' }, clock);
   for (const user of ['owner', 'rival']) {
     const view = projectRoom(room, user);
@@ -68,7 +68,7 @@ test('both game projections expose only the requesting hand', () => {
     assert.equal(view.game!.private.seatId, view.you);
   }
 });
-test('stale and out-of-turn moves reject; repeated command cannot play twice', () => {
+void test('stale and out-of-turn moves reject; repeated command cannot play twice', () => {
   const room = applyRoomAction(readyRoom(), 'owner', { type: 'start' }, clock);
   const first = room.engine!.activeSeatId;
   const user = room.members.find((m) => m.seatId === first)!.userId;
@@ -92,7 +92,7 @@ test('stale and out-of-turn moves reject; repeated command cannot play twice', (
   assert.equal(applyRoomAction(next, user, action, clock), next);
   assert.equal(next.engine!.hands[first].length, 2);
 });
-test('chat is membership-only, bounded, rate limited and idempotent', () => {
+void test('chat is membership-only, bounded, rate limited and idempotent', () => {
   const room = readyRoom();
   assert.throws(() =>
     applyRoomAction(
@@ -127,13 +127,13 @@ test('chat is membership-only, bounded, rate limited and idempotent', () => {
     ),
   );
 });
-test('leaving a waiting room transfers hosting and reuses vacant seats', () => {
+void test('leaving a waiting room transfers hosting and reuses vacant seats', () => {
   let room = applyRoomAction(readyRoom(), 'owner', { type: 'leave' }, clock);
   assert.equal(room.hostId, 'rival');
   room = applyRoomAction(room, 'new', { type: 'join', name: 'José' }, clock);
   assert.equal(room.members.find((m) => m.userId === 'new')!.seatId, 'p0');
 });
-test('disconnect preserves a played game; rejoin restores the same seat', () => {
+void test('disconnect preserves a played game; rejoin restores the same seat', () => {
   let room = applyRoomAction(readyRoom(), 'owner', { type: 'start' }, clock);
   const version = room.engine!.gameVersion;
   room = applyRoomAction(room, 'rival', { type: 'leave' }, clock);
@@ -142,7 +142,7 @@ test('disconnect preserves a played game; rejoin restores the same seat', () => 
   assert.equal(projectRoom(room, 'rival').you, 'p1');
   assert.equal(room.engine!.gameVersion, version);
 });
-test('closed room propagates through polling and denies further actions', () => {
+void test('closed room propagates through polling and denies further actions', () => {
   const room = applyRoomAction(readyRoom(), 'owner', { type: 'close' }, clock);
   assert.equal(
     applyRoomAction(room, 'rival', { type: 'heartbeat' }, clock).closed,
@@ -152,7 +152,7 @@ test('closed room propagates through polling and denies further actions', () => 
     applyRoomAction(room, 'rival', { type: 'ready', ready: true }, clock),
   );
 });
-test('runtime schema rejects malformed commands and negative wagers', () => {
+void test('runtime schema rejects malformed commands and negative wagers', () => {
   for (const input of [
     null,
     {},
@@ -170,7 +170,7 @@ test('runtime schema rejects malformed commands and negative wagers', () => {
     { type: 'FOLD_HAND' },
   );
 });
-test('server accepts only supported room settings and clears staged options', () => {
+void test('server accepts only supported room settings and clears staged options', () => {
   assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, target: '999' }));
   const config = validateConfig({
     ...DEFAULT_CONFIG,
@@ -183,7 +183,7 @@ test('server accepts only supported room settings and clears staged options', ()
   assert.equal(config.truco, 'cerrado');
 });
 
-test('ranked configuration is standardized and camera requires voice', () => {
+void test('ranked configuration is standardized and camera requires voice', () => {
   const config = validateConfig({
     ...DEFAULT_CONFIG,
     ranked: true,
@@ -200,7 +200,7 @@ test('ranked configuration is standardized and camera requires voice', () => {
   assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, ranked: 'true' }));
 });
 
-test('ranked departure forfeits once; active matches cannot be closed or claimed early', () => {
+void test('ranked departure forfeits once; active matches cannot be closed or claimed early', () => {
   let room = readyRoom();
   room.config.ranked = true;
   room = applyRoomAction(room, 'owner', { type: 'start' }, clock);

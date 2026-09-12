@@ -1,25 +1,6 @@
 import assert from 'node:assert/strict';
 import { DEFAULT_CONFIG } from '../lib/room-model.ts';
-const origin = process.env.TRUCO_TEST_URL ?? 'http://localhost:3012';
-assert.ok(['localhost', '127.0.0.1'].includes(new URL(origin).hostname));
-function client() {
-  let cookie = '';
-  return async (path: string, payload?: unknown, status = 200) => {
-    const response = await fetch(origin + path, {
-      method: payload ? 'POST' : 'GET',
-      headers: {
-        Cookie: cookie,
-        Origin: origin,
-        'Content-Type': 'application/json',
-      },
-      body: payload ? JSON.stringify(payload) : undefined,
-    });
-    cookie = response.headers.get('set-cookie')?.split(';')[0] ?? cookie;
-    const data: any = await response.json();
-    assert.equal(response.status, status, JSON.stringify(data));
-    return data;
-  };
-}
+import { client } from './http-client.mts';
 const [a, b, c, d, outsider] = Array.from({ length: 5 }, client);
 for (const user of [a, b, c, d, outsider]) await user('/api/rooms');
 for (const format of ['1v1', '2v2'] as const) {
@@ -66,6 +47,17 @@ for (const format of ['1v1', '2v2'] as const) {
     assert.equal(results[i].history[0].delta, i % 2 ? 16 : -16);
     assert.equal(JSON.stringify(results[i]).includes('userId'), false);
   }
+  const profile = await b('/api/profile?mode=ranked');
+  assert.equal(
+    profile.ratings.find((r: { format: string }) => r.format === format).peak,
+    1016,
+  );
+  assert.ok(
+    profile.history.matches.some(
+      (m: { room_id: string; won: boolean }) => m.room_id === room.id && m.won,
+    ),
+  );
+  assert.equal((await outsider('/api/profile')).history.matches.length, 0);
   await b(path, { type: 'close' });
   console.log(
     `${format}: authenticated accounts, fixed rules, forfeit, atomic Elo, repeat settlement and private history passed.`,

@@ -3,6 +3,22 @@ export type VoiceCredentials = {
   LIVEKIT_API_KEY?: string;
   LIVEKIT_API_SECRET?: string;
 };
+export function voiceConfigured(
+  credentials: VoiceCredentials,
+): credentials is Required<VoiceCredentials> {
+  const {
+    LIVEKIT_URL: url,
+    LIVEKIT_API_KEY: key,
+    LIVEKIT_API_SECRET: secret,
+  } = credentials;
+  return !!(
+    url &&
+    key &&
+    secret &&
+    URL.canParse(url) &&
+    new URL(url).protocol === 'wss:'
+  );
+}
 function base64url(bytes: Uint8Array) {
   return btoa(Array.from(bytes, (b) => String.fromCharCode(b)).join(''))
     .replace(/\+/g, '-')
@@ -35,17 +51,15 @@ export async function voiceToken(
   now = Math.floor(Date.now() / 1000),
   camera = false,
 ) {
+  if (!voiceConfigured(credentials))
+    throw new Error(
+      'La voz todavía no está disponible en esta mesa. Puedes usar el chat.',
+    );
   const {
     LIVEKIT_URL: serverUrl,
     LIVEKIT_API_KEY: key,
     LIVEKIT_API_SECRET: secret,
   } = credentials;
-  if (!serverUrl || !key || !secret)
-    throw new Error(
-      'La voz todavía no está disponible en esta mesa. Puedes usar el chat.',
-    );
-  if (new URL(serverUrl).protocol !== 'wss:')
-    throw new Error('El servidor de voz requiere una conexión segura.');
   const token = await signLiveKitToken(secret, {
     iss: key,
     sub: seatId,
