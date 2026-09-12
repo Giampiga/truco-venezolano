@@ -8,6 +8,7 @@ import {
 import { mutateRoom, readRoom } from '@/lib/server/rooms';
 import { projectRoom, type RoomAction } from '@/lib/room-model';
 import { drainVoiceRevocations } from '@/lib/server/voice';
+import { settleRanking } from '@/lib/server/ranking';
 type Context = { params: Promise<{ id: string }> };
 export async function GET(request: Request, context: Context) {
   try {
@@ -15,6 +16,7 @@ export async function GET(request: Request, context: Context) {
     const { id } = await context.params;
     const room = await readRoom(id);
     projectRoom(room, viewer.id);
+    await settleRanking(room);
     return json(
       projectRoom(await drainVoiceRevocations(room), viewer.id),
       200,
@@ -33,6 +35,7 @@ export async function POST(request: Request, context: Context) {
     const room = await drainVoiceRevocations(
       await mutateRoom(id, viewer.id, action),
     );
+    await settleRanking(room);
     return json(
       action.type === 'leave' ? { left: true } : projectRoom(room, viewer.id),
       200,

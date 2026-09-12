@@ -26,6 +26,8 @@ export async function POST(
         room.id,
         member.voiceId,
         member.name,
+        undefined,
+        !!room.config.camera,
       );
     } catch (error) {
       throw new RoomError(

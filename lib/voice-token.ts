@@ -33,6 +33,7 @@ export async function voiceToken(
   seatId: string,
   name: string,
   now = Math.floor(Date.now() / 1000),
+  camera = false,
 ) {
   const {
     LIVEKIT_URL: serverUrl,
@@ -55,7 +56,7 @@ export async function voiceToken(
       roomJoin: true,
       room: `truco-${roomId}`,
       canPublish: true,
-      canPublishSources: ['microphone'],
+      canPublishSources: camera ? ['microphone', 'camera'] : ['microphone'],
       canSubscribe: true,
       canPublishData: false,
       canUpdateOwnMetadata: false,

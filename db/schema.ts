@@ -17,3 +17,25 @@ export const rooms = sqliteTable(
     index('rooms_owner').on(table.ownerId, table.status),
   ],
 );
+
+export const ratings = sqliteTable(
+  'ratings',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull(),
+    format: text('format').notNull(),
+    name: text('name').notNull(),
+    rating: integer('rating').notNull(),
+    games: integer('games').notNull(),
+    wins: integer('wins').notNull(),
+  },
+  (t) => [index('ratings_leaderboard').on(t.format, t.rating)],
+);
+
+export const rankedResults = sqliteTable('ranked_results', {
+  roomId: text('room_id').primaryKey(),
+  token: text('token').notNull(),
+  format: text('format').notNull(),
+  createdAt: integer('created_at').notNull(),
+  data: text('data').notNull(),
+});

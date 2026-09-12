@@ -58,3 +58,22 @@ test('voice cannot claim connection readiness with missing or insecure configura
     ),
   );
 });
+
+test('camera grant is opt-in and never permits screen sharing', async () => {
+  const result = await voiceToken(
+    {
+      LIVEKIT_URL: 'wss://voice.example.test',
+      LIVEKIT_API_KEY: 'key',
+      LIVEKIT_API_SECRET: 'secret',
+    },
+    'room',
+    'member',
+    'Ana',
+    100,
+    true,
+  );
+  const claims = JSON.parse(
+    Buffer.from(result.token.split('.')[1], 'base64url').toString(),
+  );
+  assert.deepEqual(claims.video.canPublishSources, ['microphone', 'camera']);
+});

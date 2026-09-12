@@ -164,6 +164,7 @@ export function OnlineTable({
       {!everyonePresent && (
         <output className="connection-banner">
           La partida está en pausa mientras un jugador vuelve a conectarse.
+          {room.config.ranked && <Button variant="outline" disabled={pending || !connected || !room.members.some((m) => room.serverTime - m.lastSeen >= 120_000 && state.seats.find((s) => s.id === m.seatId)?.team !== team)} onClick={() => void act({ type: 'claim-forfeit' })}>Reclamar victoria tras 2 minutos</Button>}
         </output>
       )}
       <div className="online-felt">

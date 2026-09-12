@@ -7,8 +7,10 @@ import {
   PhoneOff,
   Volume2,
   VolumeX,
+  Video,
+  VideoOff,
 } from 'lucide-react';
-import type { Room, RemoteParticipant } from 'livekit-client';
+import type { Room, RemoteParticipant, Track } from 'livekit-client';
 import { Button } from '@/components/ui/button';
 import { roomRequest } from '@/hooks/use-room';
 
@@ -17,13 +19,17 @@ type VoiceMember = {
   name: string;
   speaking: boolean;
   muted: boolean;
+  camera?: Track;
+  local: boolean;
 };
 export function VoiceRoom({
   roomId,
   enabled,
+  cameraAllowed = false,
 }: {
   roomId: string;
   enabled: boolean;
+  cameraAllowed?: boolean;
 }) {
   const roomRef = useRef<Room | null>(null);
   const audioRef = useRef<HTMLDivElement>(null);
@@ -32,6 +38,7 @@ export function VoiceRoom({
   const [status, setStatus] = useState('disconnected');
   const [error, setError] = useState('');
   const [muted, setMuted] = useState(true);
+  const [cameraOn, setCameraOn] = useState(false);
   const [deafened, setDeafened] = useState(false);
   const [members, setMembers] = useState<VoiceMember[]>([]);
   const [needsAudio, setNeedsAudio] = useState(false);
@@ -47,6 +54,7 @@ export function VoiceRoom({
     audioRef.current?.replaceChildren();
     setStatus('disconnected');
     setMuted(true);
+    setCameraOn(false);
     setMembers([]);
     setNeedsAudio(false);
     setBusy(false);
@@ -100,17 +108,24 @@ export function VoiceRoom({
               name: p.name || p.identity,
               speaking: p.isSpeaking,
               muted: !p.isMicrophoneEnabled,
+              camera: p.isCameraEnabled
+                ? p.getTrackPublication(Track.Source.Camera)?.track
+                : undefined,
+              local: p === room.localParticipant,
             }),
           ),
         );
         setMuted(!room.localParticipant.isMicrophoneEnabled);
+        setCameraOn(room.localParticipant.isCameraEnabled);
       };
       const volume = (participant: RemoteParticipant) =>
         participant.setVolume(deafRef.current ? 0 : 1);
       room.on(RoomEvent.TrackSubscribed, (track, _publication, participant) => {
-        if (roomRef.current !== room || track.kind !== Track.Kind.Audio) return;
-        volume(participant);
-        audioRef.current?.appendChild(track.attach());
+        if (roomRef.current !== room) return;
+        if (track.kind === Track.Kind.Audio) {
+          volume(participant);
+          audioRef.current?.appendChild(track.attach());
+        }
         refresh();
       });
       room.on(RoomEvent.TrackUnsubscribed, (track) => {
@@ -143,6 +158,7 @@ export function VoiceRoom({
           setBusy(false);
           setMembers([]);
           setMuted(true);
+          setCameraOn(false);
           setDevice('default');
           setDevices([]);
           audioRef.current?.replaceChildren();
@@ -210,6 +226,27 @@ export function VoiceRoom({
       if (roomRef.current === room) setBusy(false);
     }
   }
+  async function toggleCamera() {
+    const room = roomRef.current;
+    if (!room || busy || !cameraAllowed) return;
+    setBusy(true);
+    setError('');
+    try {
+      await room.localParticipant.setCameraEnabled(!cameraOn);
+      if (roomRef.current !== room) {
+        await room.disconnect(true);
+        return;
+      }
+      setCameraOn(room.localParticipant.isCameraEnabled);
+    } catch {
+      if (roomRef.current === room)
+        setError(
+          'No pudimos abrir la cámara. Revisa el permiso del navegador; puedes seguir por voz.',
+        );
+    } finally {
+      if (roomRef.current === room) setBusy(false);
+    }
+  }
   function toggleDeafen() {
     const next = !deafened;
     deafRef.current = next;
@@ -237,7 +274,7 @@ export function VoiceRoom({
     <section className="voice-room" aria-label="Voz de la mesa">
       <div className="panel-heading">
         <Headphones size={18} />
-        <h2>La voz de la mesa</h2>
+        <h2>{cameraAllowed ? 'Voz y cámara' : 'La voz de la mesa'}</h2>
         <span
           className={`connection-light ${status === 'connected' ? 'online' : ''}`}
         />
@@ -246,7 +283,7 @@ export function VoiceRoom({
         <>
           <p>
             {enabled
-              ? 'Entra a escuchar. Tú decides cuándo abrir el micrófono.'
+              ? 'Entra a escuchar. Micrófono y cámara empiezan apagados.'
               : 'El anfitrión desactivó la voz para esta mesa.'}
           </p>
           <Button
@@ -274,8 +311,15 @@ export function VoiceRoom({
             {members.map((member) => (
               <div
                 key={member.id}
-                className={member.speaking ? 'speaking' : ''}
+                className={`${member.speaking ? 'speaking' : ''} ${member.camera ? 'has-camera' : ''}`}
               >
+                {member.camera && (
+                  <CameraTrack
+                    track={member.camera}
+                    local={member.local}
+                    name={member.name}
+                  />
+                )}
                 <span>{member.name.slice(0, 1)}</span>
                 <b>{member.name}</b>
                 {member.muted ? <MicOff size={14} /> : <Mic size={14} />}
@@ -283,6 +327,17 @@ export function VoiceRoom({
             ))}
           </div>
           <div className="voice-controls">
+            {cameraAllowed && (
+              <Button
+                variant={cameraOn ? 'default' : 'outline'}
+                disabled={busy || status !== 'connected'}
+                onClick={toggleCamera}
+                aria-pressed={cameraOn}
+                aria-label={cameraOn ? 'Apagar cámara' : 'Activar cámara'}
+              >
+                {cameraOn ? <Video /> : <VideoOff />}
+              </Button>
+            )}
             <Button
               variant={muted ? 'outline' : 'default'}
               disabled={busy || status !== 'connected'}
@@ -348,5 +403,35 @@ export function VoiceRoom({
       )}
       <div ref={audioRef} hidden />
     </section>
+  );
+}
+
+function CameraTrack({
+  track,
+  local,
+  name,
+}: {
+  track: Track;
+  local: boolean;
+  name: string;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    track.attach(video);
+    return () => {
+      track.detach(video);
+    };
+  }, [track]);
+  return (
+    <video
+      ref={ref}
+      autoPlay
+      playsInline
+      muted
+      aria-label={`Cámara de ${name}`}
+      className={local ? 'local-camera' : ''}
+    />
   );
 }

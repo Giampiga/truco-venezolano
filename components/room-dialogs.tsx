@@ -133,6 +133,12 @@ export function CreateRoomDialog({
               </div>
             </div>
 
+            <div className="switch-row sm:col-span-2">
+              <span><strong>Partida competitiva</strong><small>Con sesión iniciada. Cuenta para tu Elo; abandonar es perder.</small></span>
+              <Switch aria-label="Partida competitiva" checked={!!config.ranked} onCheckedChange={(ranked) => onConfigChange({ ...config, ranked, ...(ranked ? { preset: 'oriental', target: '24', match: 'un-chico', flor: 'a-ley', florPoints: '3', parda: 'abierta', pardaEngine: 'apilada-clasica' } : {}) })} />
+            </div>
+            {config.ranked && <p className="sm:col-span-2 text-sm">Reglas iguales para todos: oriental, 24 piedras, un chico, flor a ley y parda abierta. Rankings separados para duelo y parejas.</p>}
+            <fieldset disabled={!!config.ranked} className="contents">
             <div className="field-group sm:col-span-2">
               <span>Regla base</span>
               <NativeSelect
@@ -271,6 +277,7 @@ export function CreateRoomDialog({
               </p>
             </div>
 
+            </fieldset>
             <div className="switch-row sm:col-span-2">
               <span>
                 <strong>Mesa privada</strong>
@@ -293,8 +300,12 @@ export function CreateRoomDialog({
               <Switch
                 aria-label="Permitir voz opcional"
                 checked={config.voice}
-                onCheckedChange={(value) => update('voice', value)}
+                onCheckedChange={(voice) => onConfigChange({ ...config, voice, camera: voice && config.camera })}
               />
+            </div>
+            <div className="switch-row sm:col-span-2">
+              <span><strong>Permitir cámaras</strong><small>Opcional para cada jugador. Siempre empiezan apagadas.</small></span>
+              <Switch aria-label="Permitir cámaras" disabled={!config.voice} checked={!!config.camera} onCheckedChange={(value) => update('camera', value)} />
             </div>
           </div>
           <DialogFooter className="mt-4">

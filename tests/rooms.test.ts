@@ -182,3 +182,42 @@ test('server accepts only supported room settings and clears staged options', ()
   assert.equal(config.privando, false);
   assert.equal(config.truco, 'cerrado');
 });
+
+test('ranked configuration is standardized and camera requires voice', () => {
+  const config = validateConfig({
+    ...DEFAULT_CONFIG,
+    ranked: true,
+    target: '12',
+    match: 'mejor-de-tres',
+    flor: 'off',
+    camera: true,
+    voice: false,
+  });
+  assert.equal(config.target, '24');
+  assert.equal(config.match, 'un-chico');
+  assert.equal(config.flor, 'a-ley');
+  assert.equal(config.camera, false);
+  assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, ranked: 'true' }));
+});
+
+test('ranked departure forfeits once; active matches cannot be closed or claimed early', () => {
+  let room = readyRoom();
+  room.config.ranked = true;
+  room = applyRoomAction(room, 'owner', { type: 'start' }, clock);
+  assert.throws(() => applyRoomAction(room, 'owner', { type: 'close' }, clock));
+  assert.throws(() =>
+    applyRoomAction(room, 'owner', { type: 'claim-forfeit' }, clock + 119_999),
+  );
+  const claimed = applyRoomAction(
+    room,
+    'owner',
+    { type: 'claim-forfeit' },
+    clock + 120_000,
+  );
+  assert.equal(claimed.engine!.match.winner, 'A');
+  const left = applyRoomAction(room, 'owner', { type: 'leave' }, clock);
+  assert.equal(left.engine!.match.winner, 'B');
+  assert.equal(left.engine!.match.complete, true);
+  const closed = applyRoomAction(left, 'rival', { type: 'close' }, clock);
+  assert.equal(closed.engine!.match.winner, 'B');
+});

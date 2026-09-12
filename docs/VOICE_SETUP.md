@@ -1,4 +1,4 @@
-# Activar la voz de las mesas
+# Activar voz y cámaras de las mesas
 
 1. Crea o abre un proyecto en [LiveKit Cloud](https://cloud.livekit.io/).
 2. En los ajustes de LiveKit, obtén su URL `wss://…`, API key y API secret.
@@ -15,11 +15,13 @@ Para pruebas locales, copia `.dev.vars.example` a `.dev.vars`, introduce los val
 
 ## Comportamiento de acceso
 
-El token se emite exclusivamente a un miembro activo de una sala abierta con voz habilitada. El servidor deriva la sala, la identidad y el nombre; el cliente no los puede elegir. La firma expira a los cinco minutos para la conexión inicial, limita publicación al micrófono y excluye datos, cámara y administración.
+El token se emite exclusivamente a un miembro activo de una sala abierta con voz habilitada. El servidor deriva la sala, la identidad y el nombre; el cliente no los puede elegir. La firma expira a los cinco minutos para la conexión inicial, limita publicación al micrófono y, solo si la sala permite cámaras, a la cámara. Excluye compartir pantalla, datos y administración.
 
 Cada membresía tiene una identidad de voz aleatoria. Reutilizar un asiento no reutiliza la identidad de voz. Salir de una mesa o cerrarla encola la desconexión del participante mediante la API de LiveKit; si el servicio está temporalmente caído, la cola se reintenta al consultar o actualizar la sala. Las sesiones existentes pueden permanecer hasta que esa revocación termine. LiveKit Cloud revoca el token al eliminar el participante. Un servidor autohospedado tiene semántica distinta: la caducidad limita reutilización, pero no equivale a revocación.
 
-El botón **Salir de la voz** desconecta únicamente el audio local y conserva el asiento. El botón **Salir al salón** abandona la mesa y cierra el audio. No se graba ni transcribe la conversación.
+El botón **Salir de la voz** desconecta micrófono y cámara y conserva el asiento. El botón **Salir al salón** abandona la mesa y cierra el audio. No se graba ni transcribe la conversación.
+
+Para video, activa **Permitir cámaras** al crear la sala. Cada participante entra con su cámara apagada y puede activarla independientemente del micrófono. Prueba permisos denegados, cámara encendida/apagada, previsualización local, video remoto y apagado de dispositivos al salir. Salas sin permiso de cámara reciben tokens que prohíben publicarla.
 
 ## Verificación realizada y pendiente
 

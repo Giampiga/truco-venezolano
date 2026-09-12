@@ -302,7 +302,7 @@ export function TrucoApp() {
           </div>
         </header>
       )}
-      {needsSignin && (
+      {needsSignin && !practice && (
         <div className="invitation-strip">
           <span>Inicia sesión para jugar con tus panas.</span>
           <a
@@ -348,10 +348,12 @@ export function TrucoApp() {
             onlineResume={!!onlineResume}
             onResume={resumePractice}
             onOnlineResume={() => void join(onlineResume)}
-            onCreate={() => {
+            onCreate={(ranked = false, format = '2v2') => {
               if (ensureName()) {
                 setConfig({
                   ...DEFAULT_CONFIG,
+                  ranked,
+                  format,
                   name: `Mesa de ${nickname}`.slice(0, 36),
                 });
                 setCreateOpen(true);
@@ -384,7 +386,7 @@ export function TrucoApp() {
             <div>
               <p className="eyebrow">
                 {online.room.config.isPrivate ? 'MESA PRIVADA' : 'MESA ABIERTA'}{' '}
-                / {online.room.config.format}
+                / {online.room.config.format}{online.room.config.ranked ? ' / COMPETITIVA · ELO' : ''}
               </p>
               <h1>{online.room.config.name}</h1>
               <p>
@@ -438,6 +440,7 @@ export function TrucoApp() {
                     pending={online.pending}
                   />
                 )}
+                {online.room.config.ranked && online.room.game?.public.match.complete && <p className="ranked-result">Partida competitiva finalizada. Consulta tu Elo y el resultado en la clasificación del salón.</p>}
                 <div className="room-rules-strip">
                   <LockKeyhole size={16} />
                   <span>
@@ -460,6 +463,7 @@ export function TrucoApp() {
                   key={online.room.id}
                   roomId={online.room.id}
                   enabled={online.room.config.voice}
+                  cameraAllowed={!!online.room.config.camera}
                 />
                 <RoomChat
                   room={online.room}
@@ -521,16 +525,17 @@ export function TrucoApp() {
           <DialogHeader>
             <DialogTitle>¿Sales de la mesa?</DialogTitle>
             <DialogDescription>
-              {online.room?.game
-                ? 'La partida se pausará hasta que vuelvas. La voz se desconectará.'
-                : 'Tu asiento quedará libre y la voz se desconectará.'}
+              {online.room?.config.ranked && online.room.game && !online.room.game.public.match.complete
+                ? 'Abandonar cuenta como derrota para tu equipo y cambia el Elo. Se apagarán tu cámara y micrófono.'
+                : online.room?.game ? 'La partida se pausará hasta que vuelvas. Cámara y micrófono se desconectarán.'
+                : 'Tu asiento quedará libre. Cámara y micrófono se desconectarán.'}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setLeaveOpen(false)}>
               Me quedo
             </Button>
-            {online.room?.host === online.room?.you && (
+            {online.room?.host === online.room?.you && !(online.room?.config.ranked && online.room.game && !online.room.game.public.match.complete) && (
               <Button
                 variant="outline"
                 disabled={online.pending}
@@ -549,7 +554,7 @@ export function TrucoApp() {
             <Button
               disabled={online.pending}
               onClick={async () => {
-                const saved = online.room?.game ? online.room.id : '';
+                const saved = online.room?.game && !online.room.config.ranked ? online.room.id : '';
                 if (await online.act({ type: 'leave' })) {
                   setOnlineResume(saved);
                   if (saved) localStorage.setItem('truco-online-room', saved);

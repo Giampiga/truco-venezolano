@@ -9,8 +9,11 @@ import {
   RefreshCw,
   Search,
   Users,
+  Trophy,
+  Video,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { RankingPanel } from '@/components/ranking-panel';
 import { Input } from '@/components/ui/input';
 import type { GameFormat, RoomSummary } from '@/lib/product-types';
 
@@ -23,7 +26,7 @@ type Props = {
   onlineResume: boolean;
   onResume: () => void;
   onOnlineResume: () => void;
-  onCreate: () => void;
+  onCreate: (ranked?: boolean, format?: GameFormat) => void;
   onJoin: (room: RoomSummary) => void;
   onJoinCode: (code: string) => void;
   onPractice: () => void;
@@ -35,9 +38,11 @@ export function LobbyView(props: Props) {
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState('');
   const [filter, setFilter] = useState<'all' | GameFormat>('all');
+  const [mode, setMode] = useState<'casual' | 'ranked'>('casual');
   const [search, setSearch] = useState('');
   const rooms = props.rooms.filter(
     (room) =>
+      (!!room.ranked === (mode === 'ranked')) &&
       (filter === 'all' || room.format === filter) &&
       `${room.name} ${room.host}`
         .toLocaleLowerCase()
@@ -56,12 +61,12 @@ export function LobbyView(props: Props) {
     <div className="club-layout">
       <div className="lobby-title">
         <div>
-          <p className="eyebrow">EL SALÓN</p>
-          <h1>Una mesa. Buenos panas.</h1>
-          <p>Busca tu partida o reúne a los tuyos.</p>
+          <p className="eyebrow">TRUCO VENEZOLANO / EN LÍNEA</p>
+          <h1>A la mesa.</h1>
+          <p>Elige cómo quieres jugar.</p>
         </div>
         <Button
-          onClick={props.onCreate}
+          onClick={() => props.onCreate(mode === 'ranked')}
           className="create-button"
           disabled={props.busy}
         >
@@ -90,15 +95,20 @@ export function LobbyView(props: Props) {
           </div>
         </div>
       )}
+      <div className="play-mode-bar" aria-label="Tipo de partida">
+        <button aria-pressed={mode === 'casual'} onClick={() => setMode('casual')}><Users size={24} /><span><strong>Entre panas</strong><small>A tu manera. Sin puntos de ranking.</small></span><b>01</b></button>
+        <button aria-pressed={mode === 'ranked'} onClick={() => setMode('ranked')}><Trophy size={24} /><span><strong>Competitivo</strong><small>Reglas fijas. Cada partida cuenta.</small></span><b>02</b></button>
+      </div>
+      <form className="quick-invite" onSubmit={join}><KeyRound size={18} /><label htmlFor="invite-code-input">¿Tienes un código?</label><Input id="invite-code-input" aria-label="Código de invitación" value={code} onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))} placeholder="ABC123" maxLength={6} autoComplete="off" /><Button variant="outline" disabled={props.busy}>Entrar</Button>{codeError && <span role="alert">{codeError}</span>}</form>
       <div className="lobby-columns">
         <section className="lobby-main">
           <div className="section-top">
             <div>
-              <h2>Mesas abiertas</h2>
+              <h2>{mode === 'ranked' ? 'Mesas competitivas' : 'Mesas abiertas'}</h2>
               <span>
                 {props.loading
                   ? 'Buscando mesas…'
-                  : `${props.rooms.length} disponibles`}
+                  : `${rooms.length} disponibles`}
               </span>
             </div>
             <Button
@@ -165,6 +175,7 @@ export function LobbyView(props: Props) {
                         {room.players}
                       </span>
                       <span>{room.score}</span>
+                      {room.camera && <span><Video size={14} /> Cámara opcional</span>}
                       {room.voice > 0 && (
                         <span>
                           <Headphones size={14} />
@@ -199,7 +210,7 @@ export function LobbyView(props: Props) {
                   ? 'Prueba otra búsqueda o crea tu propia mesa.'
                   : 'Crea una mesa e invita a tus panas. Mientras llegan, practica con Truquito.'}
               </p>
-              <Button variant="outline" onClick={props.onCreate}>
+              <Button variant="outline" onClick={() => props.onCreate(mode === 'ranked')}>
                 Abrir una mesa <Plus size={16} />
               </Button>
             </div>
@@ -211,59 +222,17 @@ export function LobbyView(props: Props) {
               Ver cómo se juega <ArrowUpRight size={14} />
             </button>
           </div>
-          <section className="rule-guide">
-            <p className="eyebrow">EL TRUCO DE AQUÍ</p>
-            <h2>La vira cambia todo.</h2>
-            <p>
-              El Perico y la Perica mandan. Cantamos Truco, Retruco, Vale nueve
-              y Vale juego. Elige las variantes de tu mesa antes de sentarte.
-            </p>
-            <Button variant="ghost" onClick={props.onRules}>
-              Conocer las reglas <ArrowUpRight size={16} />
-            </Button>
-          </section>
+
         </section>
         <aside className="lobby-sidebar">
-          <section className="invite-panel">
-            <KeyRound size={21} />
-            <h2>¿Te guardaron puesto?</h2>
-            <p>Entra con el código de tu mesa.</p>
-            <form onSubmit={join}>
-              <Input
-                aria-label="Código de invitación"
-                value={code}
-                onChange={(event) =>
-                  setCode(
-                    event.target.value
-                      .toUpperCase()
-                      .replace(/[^A-Z0-9]/g, '')
-                      .slice(0, 6),
-                  )
-                }
-                placeholder="ABC123"
-                className="code-input"
-                maxLength={6}
-                autoComplete="off"
-              />
-              <Button type="submit" variant="secondary" disabled={props.busy}>
-                Entrar con código <ArrowUpRight size={16} />
-              </Button>
-            </form>
-            {codeError && (
-              <p className="inline-error" role="alert">
-                {codeError}
-              </p>
-            )}
-          </section>
+          <RankingPanel onPlay={(format) => props.onCreate(true, format)} />
           <section className="practice-panel">
             <div className="panel-heading">
               <Bot size={20} />
               <span className="eyebrow">A TU RITMO</span>
             </div>
             <h2>
-              Afina el canto{' '}
-              <br />
-              con Truquito.
+              Afina el canto con Truquito.
             </h2>
             <p>
               Tres niveles. Sin presión. Aprende a leer la mesa y prueba tus

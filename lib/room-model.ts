@@ -30,6 +30,8 @@ export const DEFAULT_CONFIG: RoomConfig = {
   cardPlay: 'visible',
   privando: false,
   voice: true,
+  camera: false,
+  ranked: false,
   isPrivate: true,
 };
 export const presetName = (preset: RoomConfig['preset']) =>
@@ -107,6 +109,7 @@ export type RoomAction =
   | { type: 'heartbeat' }
   | { type: 'leave' }
   | { type: 'start' }
+  | { type: 'claim-forfeit' }
   | { type: 'close' }
   | { type: 'chat'; text: string; id: string }
   | { type: 'next'; gameVersion: number }
@@ -157,6 +160,22 @@ export function validateConfig(input: unknown): RoomConfig {
   if (typeof source.name !== 'string' || source.name.trim().length < 2)
     throw new RoomError('Escribe un nombre para la mesa.');
   config.name = stripControls(source.name.trim()).slice(0, 36);
+  for (const key of ['camera', 'ranked']) {
+    if (source[key] !== undefined && typeof source[key] !== 'boolean')
+      throw new RoomError('Configuración de sala inválida.');
+  }
+  config.camera = source.camera === true && source.voice;
+  config.ranked = source.ranked === true;
+  if (config.ranked)
+    Object.assign(config, {
+      preset: 'oriental',
+      target: '24',
+      match: 'un-chico',
+      flor: 'a-ley',
+      florPoints: '3',
+      parda: 'abierta',
+      pardaEngine: 'apilada-clasica',
+    });
   config.voice = source.voice;
   config.isPrivate = source.isPrivate;
   return config;
@@ -256,6 +275,8 @@ export function roomSummary(room: StoredRoom): RoomSummary {
     score: `A ${room.config.target} piedras`,
     rule: presetName(room.config.preset),
     voice: room.config.voice ? 1 : 0,
+    camera: !!room.config.camera,
+    ranked: !!room.config.ranked,
     tone: 'green',
     status: room.engine
       ? 'playing'
@@ -313,7 +334,42 @@ export function applyRoomAction(
           throw new RoomError('No puedes cambiar tu estado ahora.');
         member.ready = action.ready;
         break;
+      case 'claim-forfeit': {
+        if (!room.config.ranked || !room.engine || room.engine.match.complete)
+          throw new RoomError('No hay una partida competitiva en curso.');
+        const team = room.engine.seats.find(
+          (s) => s.id === member.seatId,
+        )!.team;
+        const absent = room.members.find(
+          (m) =>
+            now - m.lastSeen >= 120_000 &&
+            room.engine!.seats.find((s) => s.id === m.seatId)?.team !== team,
+        );
+        if (!absent)
+          throw new RoomError(
+            'El rival tiene dos minutos para reconectarse.',
+            409,
+          );
+        room.engine.match.complete = true;
+        room.engine.match.winner = team;
+        room.engine.handComplete = true;
+        room.engine.gameVersion++;
+        room.events.unshift('Partida resuelta por desconexión del rival.');
+        break;
+      }
       case 'leave':
+        if (room.config.ranked && room.engine && !room.engine.match.complete) {
+          const team = room.engine.seats.find(
+            (s) => s.id === member.seatId,
+          )!.team;
+          room.engine.match.complete = true;
+          room.engine.match.winner = team === 'A' ? 'B' : 'A';
+          room.engine.handComplete = true;
+          room.engine.gameVersion++;
+          room.events.unshift(
+            `${member.name} abandonó. Su equipo pierde la partida.`,
+          );
+        }
         room.voiceRevocations = [
           ...(room.voiceRevocations ?? []),
           member.voiceId,
@@ -325,6 +381,10 @@ export function applyRoomAction(
           room.hostId = room.members.find((m) => !m.left)?.userId ?? userId;
         break;
       case 'close':
+        if (room.config.ranked && room.engine && !room.engine.match.complete)
+          throw new RoomError(
+            'Una competitiva en curso no se puede cancelar. Salir cuenta como derrota.',
+          );
         if (room.hostId !== userId)
           throw new RoomError('Solo el anfitrión puede cerrar la mesa.', 403);
         room.voiceRevocations = room.members.map((m) => m.voiceId);

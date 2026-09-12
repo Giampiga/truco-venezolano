@@ -13,6 +13,8 @@ export type RoomSummary = {
   score: string;
   rule: string;
   voice: number;
+  camera?: boolean;
+  ranked?: boolean;
   tone: 'amber' | 'green' | 'blue';
   status: 'open' | 'playing' | 'private';
 };
@@ -34,6 +36,8 @@ export type RoomConfig = {
   cardPlay: 'visible' | 'matar-tapado';
   privando: boolean;
   voice: boolean;
+  camera?: boolean;
+  ranked?: boolean;
   isPrivate: boolean;
 };
 

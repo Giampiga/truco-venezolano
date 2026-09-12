@@ -41,6 +41,7 @@ for (const format of ['1v1', '2v2'] as const) {
         ...DEFAULT_CONFIG,
         format,
         target: '12',
+        ranked: format === '1v1',
         isPrivate: format === '1v1',
       },
       name: 'Ana',
@@ -135,6 +136,14 @@ for (const format of ['1v1', '2v2'] as const) {
       );
   }
   assert.ok(room.game.public.match.complete, 'Match must reach target');
+  if (format === '1v1') {
+    const ra = await a('/api/ranking?format=1v1');
+    const rb = await b('/api/ranking?format=1v1');
+    assert.equal(ra.you.games, 1);
+    assert.equal(rb.you.games, 1);
+    assert.equal(ra.you.rating + rb.you.rating, 2000);
+    assert.equal(ra.history.length, 1);
+  }
   room = await a(path, { type: 'close' });
   assert.equal((await b(path, { type: 'heartbeat' })).closed, true);
   console.log(
