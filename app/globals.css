@@ -2145,19 +2145,19 @@ fieldset:disabled { opacity:.65; }
 .canto-notice strong { display: block; font-size: 17px; }
 .canto-notice p { margin-top: 4px; }
 .played-stacks { display: flex; flex-wrap: wrap; justify-content: center; align-items: start; gap: 12px; padding: 12px 0; }
-.felt > .played-stacks { position: absolute; inset: 65px 12px 12px; overflow: auto; align-content: center; }
+.felt > .played-stacks { position: absolute; inset: 65px 12px 12px; overflow: auto; align-content: start; }
 .player-stack { width: 120px; color: inherit; font-size: 12px; }
 .player-stack summary { cursor: pointer; list-style: none; display: grid; gap: 5px; text-align: center; }
 .player-stack summary:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .player-stack summary > span:first-child { font-weight: 700; overflow-wrap: anywhere; }
-.stack-preview { display: grid; height: 100px; justify-content: start; }
-.stack-preview > span { grid-area: 1 / 1; }
-.stack-preview .face-card, .stack-preview .playing-card { width: 64px; height: 88px; }
+.stack-preview { display: grid; height: 112px; justify-content: center; isolation: isolate; }
+.stack-preview > span { grid-area: 1 / 1; position: relative; align-self: start; }
+.stack-preview .game-card, .stack-preview .playing-card { width: 64px; height: 88px; }
 .stack-empty { display: grid; place-content: center; width: 90px; border: 1px dashed currentColor; border-radius: 4px; opacity: .65; }
 .player-stack ol { padding: 8px; margin-top: 4px; background: var(--card); color: var(--foreground); border: 1px solid var(--border); border-radius: 4px; list-style: none; line-height: 1.6; }
 .player-stack[open] summary small { font-weight: 700; }
 .player-stack li { display: grid; justify-items: center; gap: 4px; padding: 6px 0; }
-.player-stack li .face-card, .player-stack li .playing-card { width: 64px; height: 88px; }
+.player-stack li .game-card, .player-stack li .playing-card { width: 64px; height: 88px; }
 .account-label { display: block; font-size: 11px; font-weight: 500; line-height: 1.4; }
 .profile-panel { margin: 12px auto; padding: 16px; max-width: 720px; border: 1px solid var(--border); background: var(--card); }
 .profile-panel summary { cursor: pointer; font-weight: 700; }
@@ -2165,3 +2165,12 @@ fieldset:disabled { opacity:.65; }
 .profile-panel input, .profile-panel textarea { padding: 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--background); width: 100%; }
 .profile-panel article { padding: 12px 0; border-top: 1px solid var(--border); }
 .profile-panel article button { margin: 8px 8px 0 0; }
+
+.player-stack summary::-webkit-details-marker { display: none; }
+.stack-hide { display: none; }
+.player-stack[open] { width: 100%; }
+.player-stack[open] .stack-preview, .player-stack[open] .stack-show { display: none; }
+.player-stack[open] .stack-hide { display: inline; }
+.player-stack[open] ol { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.player-stack li { width: 88px; text-align: center; }
+.felt .player-stack summary { color: #f5f1e7; }

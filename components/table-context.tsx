@@ -35,10 +35,10 @@ export function PlayedStacks({ played, seats, name, renderCard }: {
         <summary>
           <span>{name(seat.id)}</span>
           <span className="stack-preview" aria-hidden="true">
-            {cards.map((play, index) => <span key={index} style={{ marginLeft: index * 16, marginTop: index * 5 }}>{renderCard(play.card)}</span>)}
+            {cards.map((play, index) => <span key={index} style={{ marginLeft: index * 12, marginTop: index * 8, zIndex: index + 1 }}>{renderCard(play.card)}</span>)}
             {!cards.length && <span className="stack-empty">Sin jugar</span>}
           </span>
-          <small>{cards.length ? `${cards.length} ${cards.length === 1 ? 'carta' : 'cartas'} · Ver` : '0 cartas'}</small>
+          <small>{cards.length} {cards.length === 1 ? 'carta jugada' : 'cartas jugadas'}{cards.length > 0 && <><span className="stack-show"> · Ver cartas</span><span className="stack-hide"> · Apilar</span></>}</small>
         </summary>
         <ol>{cards.map((play, index) => <li key={index}><span aria-hidden="true">{renderCard(play.card)}</span>{index + 1}.ª carta: {play.card.rank} de {play.card.suit}{play.card.passed ? ' (pasada)' : ''}</li>)}</ol>
       </details>;
