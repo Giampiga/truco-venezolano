@@ -35,6 +35,7 @@ import { cardDrag } from '@/lib/card-drag';
 import { tablePosition } from '@/lib/table-seats';
 import {
   CantoNotice,
+  EnvidoResult,
   PlayedStacks,
   CantoBranch,
   TableVira,
@@ -62,6 +63,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   beginNextHand,
+  envidoResult,
   createEngineSnapshot,
   dealtHandForSeat,
   describeVira,
@@ -869,6 +871,10 @@ export function GameTable({
             </div>
           </section>
 
+          <EnvidoResult
+            result={envidoResult(snapshot)}
+            name={(id) => playerName(id, config)}
+          />
           <div className="player-console">
             <section className="hand-zone" aria-label="Tu mano">
               <div className="hand-heading">

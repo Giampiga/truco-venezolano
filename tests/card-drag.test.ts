@@ -28,8 +28,19 @@ void test('card dragging transfers only the selected card and can be disabled', 
 
 void test('touch drag cleans up, ignores other fingers, and never drops on cancellation', () => {
   let captured = false;
+  let previews = 0;
+  const preview = {
+    style: { transform: '' },
+    removeAttribute() {},
+    setAttribute() {},
+    remove() {
+      previews--;
+    },
+  };
   const card = Object.assign(new EventTarget(), {
     style: { transform: '', zIndex: '', pointerEvents: '' },
+    getBoundingClientRect: () => ({ left: 0, top: 0, width: 70, height: 100 }),
+    cloneNode: () => preview,
     setPointerCapture() {
       captured = true;
     },
@@ -43,6 +54,7 @@ void test('touch drag cleans up, ignores other fingers, and never drops on cance
   const pointer = (type: string, pointerId = 1) =>
     Object.assign(new Event(type), { clientX: 40, clientY: 60, pointerId });
   const down = {
+    preventDefault() {},
     pointerType: 'touch',
     isPrimary: true,
     currentTarget: card,
@@ -51,7 +63,10 @@ void test('touch drag cleans up, ignores other fingers, and never drops on cance
     pointerId: 1,
   } as unknown as PointerEvent<HTMLButtonElement>;
   let drops = 0;
-  const pile = new EventTarget();
+  const pile = Object.assign(new EventTarget(), {
+    setAttribute() {},
+    removeAttribute() {},
+  });
   pile.addEventListener('card-drop', (event) => {
     assert.equal((event as CustomEvent).detail, '3-oros');
     drops++;
@@ -59,7 +74,14 @@ void test('touch drag cleans up, ignores other fingers, and never drops on cance
   const old = Object.getOwnPropertyDescriptor(globalThis, 'document');
   Object.defineProperty(globalThis, 'document', {
     configurable: true,
-    value: { elementFromPoint: () => ({ closest: () => pile }) },
+    value: {
+      body: {
+        appendChild() {
+          previews++;
+        },
+      },
+      elementFromPoint: () => ({ closest: () => pile }),
+    },
   });
   try {
     const handlers = cardDrag('3-oros', true);
@@ -68,13 +90,18 @@ void test('touch drag cleans up, ignores other fingers, and never drops on cance
     assert.equal(card.style.transform, '');
     card.dispatchEvent(pointer('pointermove'));
     card.dispatchEvent(pointer('pointerup'));
+    assert.equal(previews, 0);
     assert.equal(drops, 1);
     assert.equal(card.style.transform, '');
     assert.equal(captured, false);
     card.dispatchEvent(pointer('pointerup'));
     assert.equal(drops, 1);
     const click = new Event('click', { cancelable: true });
-    handlers.onClickCapture(click as unknown as MouseEvent<HTMLButtonElement>);
+    Object.defineProperty(click, 'currentTarget', { value: card });
+    // React can render again before the synthesized click arrives.
+    cardDrag('3-oros', true).onClickCapture(
+      click as unknown as MouseEvent<HTMLButtonElement>,
+    );
     assert.equal(click.defaultPrevented, true);
 
     for (const end of ['pointercancel', 'lostpointercapture']) {
@@ -85,12 +112,14 @@ void test('touch drag cleans up, ignores other fingers, and never drops on cance
       assert.equal(card.style.transform, '');
       assert.equal(card.style.zIndex, '');
       assert.equal(captured, false);
+      assert.equal(previews, 0);
       card.dispatchEvent(pointer('pointerup'));
       assert.equal(drops, 1);
     }
     handlers.onPointerDown(down);
     card.dispatchEvent(pointer('pointerup'));
     const tap = new Event('click', { cancelable: true });
+    Object.defineProperty(tap, 'currentTarget', { value: card });
     handlers.onClickCapture(tap as unknown as MouseEvent<HTMLButtonElement>);
     assert.equal(tap.defaultPrevented, false);
   } finally {

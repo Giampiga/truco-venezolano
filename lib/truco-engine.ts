@@ -68,6 +68,7 @@ export type EnvidoState = {
   status: 'idle' | 'pending' | 'accepted' | 'resolved';
   acceptedStake: number;
   awardPending?: boolean;
+  answer?: 'quiero' | 'no-quiero';
   pending: null | {
     by: TeamId;
     bySeatId?: SeatId;
@@ -1305,6 +1306,7 @@ export function transition(
       if (priorityKind === 'envido') {
         // Persist the unpaid award explicitly; legacy resolved Envites were already paid.
         next.envido.awardPending = true;
+        next.envido.answer = command.answer;
         if (answered.award)
           next.envido.acceptedStake = Number(answered.award.amount);
         next.priority = finishPriorityCall(next.priority);
@@ -1450,6 +1452,33 @@ export function restartCurrentHand(snapshot: EngineSnapshot): EngineSnapshot {
   };
 }
 
+/** Reveal only totals, and only once the base has ended. Never expose opponents' hands. */
+export function envidoResult(snapshot: EngineSnapshot) {
+  if (
+    !snapshot.handComplete ||
+    snapshot.florDeclarations.length ||
+    snapshot.envido.status !== 'resolved' ||
+    snapshot.envido.awardPending ||
+    !snapshot.envido.winner
+  )
+    return null;
+  const totals = snapshot.seats.map((seat) => ({
+    ...seat,
+    tantos: envidoScore(dealtHandForSeat(snapshot, seat.id), snapshot.vira),
+  }));
+  const best = Math.max(...totals.map((seat) => seat.tantos));
+  return {
+    totals,
+    winner: snapshot.envido.winner,
+    points: snapshot.envido.acceptedStake,
+    declined: snapshot.envido.answer === 'no-quiero',
+    tied:
+      new Set(
+        totals.filter((seat) => seat.tantos === best).map((seat) => seat.team),
+      ).size > 1,
+  };
+}
+
 export function projectPublic(snapshot: EngineSnapshot) {
   return {
     schema: snapshot.schema,
@@ -1481,6 +1510,7 @@ export function projectPublic(snapshot: EngineSnapshot) {
       ]),
     ),
     florDeclarations: [...snapshot.florDeclarations],
+    envidoResult: envidoResult(snapshot),
     truco: {
       ...snapshot.truco,
       pending: snapshot.truco.pending ? { ...snapshot.truco.pending } : null,

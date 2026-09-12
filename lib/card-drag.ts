@@ -1,5 +1,7 @@
+// Keep click suppression across React renders during a touch gesture.
+const draggedCards = new WeakSet<HTMLButtonElement>();
+
 export function cardDrag(id: string, enabled: boolean) {
-  let dragged = false;
   return {
     draggable: enabled,
     onDragStart: (event: import('react').DragEvent<HTMLButtonElement>) => {
@@ -11,22 +13,56 @@ export function cardDrag(id: string, enabled: boolean) {
       event.dataTransfer.effectAllowed = 'move';
     },
     onPointerDown: (event: import('react').PointerEvent<HTMLButtonElement>) => {
-      if (!enabled || event.pointerType !== 'touch' || !event.isPrimary) return;
       const element = event.currentTarget;
+      draggedCards.delete(element);
+      if (
+        !enabled ||
+        !['touch', 'pen'].includes(event.pointerType) ||
+        !event.isPrimary
+      )
+        return;
+      event.preventDefault();
       const startX = event.clientX,
         startY = event.clientY;
       const pointerId = event.pointerId;
-      const { transform, zIndex, pointerEvents } = element.style;
-      let moved = false;
-      dragged = false;
+      const bounds = element.getBoundingClientRect();
+      let preview: HTMLElement | null = null;
+      let target: Element | null = null;
       element.setPointerCapture(pointerId);
       const move = (e: PointerEvent) => {
         if (e.pointerId !== pointerId) return;
-        moved ||= Math.hypot(e.clientX - startX, e.clientY - startY) > 10;
-        if (moved) {
-          element.style.transform = `translate(${e.clientX - startX}px, ${e.clientY - startY}px)`;
-          element.style.zIndex = '100';
+        if (
+          !preview &&
+          Math.hypot(e.clientX - startX, e.clientY - startY) <= 10
+        )
+          return;
+        if (!preview) {
+          // A viewport overlay avoids clipping and stacking contexts in either table layout.
+          preview = element.cloneNode(true) as HTMLElement;
+          preview.removeAttribute('id');
+          preview.removeAttribute('draggable');
+          preview.setAttribute('aria-hidden', 'true');
+          preview.setAttribute('inert', '');
+          Object.assign(preview.style, {
+            position: 'fixed',
+            left: `${bounds.left}px`,
+            top: `${bounds.top}px`,
+            width: `${bounds.width}px`,
+            height: `${bounds.height}px`,
+            margin: '0',
+            zIndex: '10000',
+            pointerEvents: 'none',
+            transition: 'none',
+          });
+          document.body.appendChild(preview);
         }
+        preview.style.transform = `translate(${e.clientX - startX}px, ${e.clientY - startY}px)`;
+        target?.removeAttribute('data-card-drop-active');
+        target =
+          document
+            .elementFromPoint(e.clientX, e.clientY)
+            ?.closest('[data-card-drop="true"]') ?? null;
+        target?.setAttribute('data-card-drop-active', '');
       };
       const end = (e: PointerEvent) => {
         if (e.pointerId !== pointerId) return;
@@ -34,18 +70,18 @@ export function cardDrag(id: string, enabled: boolean) {
         element.removeEventListener('pointerup', end);
         element.removeEventListener('pointercancel', end);
         element.removeEventListener('lostpointercapture', end);
-        element.style.transform = transform;
-        element.style.zIndex = zIndex;
+        const moved = !!preview;
+        preview?.remove();
+        target?.removeAttribute('data-card-drop-active');
         if (element.hasPointerCapture(pointerId))
           element.releasePointerCapture(pointerId);
-        dragged = moved && e.type === 'pointerup';
-        if (dragged) {
-          element.style.pointerEvents = 'none';
-          const target = document
+        if (!moved) return;
+        draggedCards.add(element);
+        if (e.type === 'pointerup') {
+          document
             .elementFromPoint(e.clientX, e.clientY)
-            ?.closest('[data-card-drop="true"]');
-          element.style.pointerEvents = pointerEvents;
-          target?.dispatchEvent(new CustomEvent('card-drop', { detail: id }));
+            ?.closest('[data-card-drop="true"]')
+            ?.dispatchEvent(new CustomEvent('card-drop', { detail: id }));
         }
       };
       element.addEventListener('pointermove', move);
@@ -54,8 +90,8 @@ export function cardDrag(id: string, enabled: boolean) {
       element.addEventListener('lostpointercapture', end);
     },
     onClickCapture: (event: import('react').MouseEvent<HTMLButtonElement>) => {
-      if (!dragged) return;
-      dragged = false;
+      if (!draggedCards.has(event.currentTarget)) return;
+      draggedCards.delete(event.currentTarget);
       event.preventDefault();
       event.stopPropagation();
     },

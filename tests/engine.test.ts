@@ -780,6 +780,7 @@ void test('Envido usa las tres cartas repartidas aunque Mano ya haya jugado', ()
   ).state;
   assert.deepEqual(snapshot.match.score, { A: 0, B: 0 });
   assert.equal(snapshot.envido.status, 'accepted');
+  assert.equal(projectPublic(snapshot).envidoResult, null);
   assert.equal(
     legalActionsForSnapshot(snapshot, 'bot', envidoRules).includes(
       'call-envido',
@@ -793,6 +794,20 @@ void test('Envido usa las tres cartas repartidas aunque Mano ya haya jugado', ()
     envidoRules,
   ).state;
   assert.deepEqual(snapshot.match.score, { A: 3, B: 0 });
+  assert.deepEqual(projectPublic(snapshot).envidoResult, {
+    totals: [
+      { id: 'human', team: 'A', tantos: 33 },
+      { id: 'bot', team: 'B', tantos: 32 },
+    ],
+    winner: 'A',
+    points: 2,
+    declined: false,
+    tied: false,
+  });
+  assert.equal(
+    projectPublic(beginNextHand(snapshot, createSpanishDeck())).envidoResult,
+    null,
+  );
 });
 
 void test('las proyecciones públicas no exponen manos ni tapadas rivales', () => {
@@ -1088,4 +1103,33 @@ void test('legacy resolved Envite is not paid twice after restoring an older sna
   };
   state = transition(state, 'human', { type: 'FOLD_HAND' }, state.rules).state;
   assert.deepEqual(state.match.score, { A: 2, B: 1 });
+});
+
+void test('rejected Envido reveals both totals only at the end, without awarding the higher hand', () => {
+  let state = dealtSnapshot(
+    { human: noFlor, bot: whiteFlor },
+    { ...rules, florMode: 'off' },
+  );
+  state = transition(
+    state,
+    'human',
+    { type: 'CALL_ENVIDO', amount: 2 },
+    state.rules,
+  ).state;
+  state = transition(
+    state,
+    'bot',
+    { type: 'ANSWER_CALL', answer: 'no-quiero' },
+    state.rules,
+  ).state;
+  assert.equal(projectPublic(state).envidoResult, null);
+  assert.deepEqual(state.match.score, { A: 0, B: 0 });
+  state = transition(state, 'human', { type: 'FOLD_HAND' }, state.rules).state;
+  const result = projectPublic(state).envidoResult!;
+  assert.equal(result.declined, true);
+  assert.equal(result.winner, 'A');
+  assert.equal(result.points, 1);
+  assert.equal(result.totals.length, 2);
+  assert.ok(result.totals[1].tantos > result.totals[0].tantos);
+  assert.deepEqual(state.match.score, { A: 1, B: 1 });
 });

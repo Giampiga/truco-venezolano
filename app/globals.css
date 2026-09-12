@@ -4554,3 +4554,30 @@ button[draggable='true']:active {
 .rules-agreement .rules-detail-grid {
   margin-top: 12px;
 }
+
+.envido-result {
+  padding: 16px 20px;
+  border-block: 1px solid var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+  font-size: 14px;
+}
+.envido-result dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px 20px;
+  margin-block: 10px;
+}
+.envido-result dt {
+  overflow-wrap: anywhere;
+}
+.envido-result dd {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.envido-result p {
+  color: var(--muted-foreground);
+}
+[data-card-drop-active] {
+  background: color-mix(in oklch, var(--primary) 15%, transparent);
+}

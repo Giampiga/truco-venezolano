@@ -90,6 +90,45 @@ export function CantoNotice({
   );
 }
 
+export function EnvidoResult({
+  result,
+  name,
+}: {
+  result: ReturnType<typeof import('@/lib/truco-engine').envidoResult>;
+  name: (id: string) => string;
+}) {
+  if (!result) return null;
+  const winners = result.totals.filter((seat) => seat.team === result.winner);
+  return (
+    <section
+      className="envido-result"
+      aria-label="Resultado del Envido"
+      aria-live="polite"
+    >
+      <strong>
+        Envido · {result.declined ? 'No querido' : 'Resultado de la base'}
+      </strong>
+      <dl>
+        {result.totals.map((seat) => (
+          <div key={seat.id}>
+            <dt>{name(seat.id)}</dt>
+            <dd>{seat.tantos} tantos</dd>
+          </div>
+        ))}
+      </dl>
+      <p>
+        {winners.map((seat) => name(seat.id)).join(' / ')}: +{result.points}{' '}
+        {result.points === 1 ? 'punto' : 'puntos'}.
+        {result.declined
+          ? ' El rival no quiso; los tantos no deciden el resultado.'
+          : result.tied
+            ? ' Empate en tantos: gana la mano.'
+            : ''}
+      </p>
+    </section>
+  );
+}
+
 export function PlayedStacks({
   played,
   seats,

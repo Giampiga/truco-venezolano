@@ -4,6 +4,7 @@ import { cardDrag } from '@/lib/card-drag';
 import { tablePosition } from '@/lib/table-seats';
 import {
   CantoNotice,
+  EnvidoResult,
   PlayedStacks,
   CantoBranch,
   TableVira,
@@ -270,6 +271,10 @@ export function OnlineTable({
                   : `Turno de ${name(state.activeSeatId)}`}
         </output>
       </div>
+      <EnvidoResult
+        result={state.envidoResult}
+        name={(id) => (id === room.you ? 'Tú' : name(id))}
+      />
       {state.handComplete ? (
         <div className="hand-finished">
           <div>
