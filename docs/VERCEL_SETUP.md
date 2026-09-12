@@ -12,7 +12,7 @@ In **Connect**, copy the Transaction pooler connection string (port 6543) to `DA
 
 ## 2. Create Vercel
 
-The project `giampigas-projects/truco-venezolano` has been created. GitHub auto-deployment still needs Vercel access to the private repository. Preview deployment is currently blocked with `TEAM_ACCESS_REQUIRED`: Vercel cannot verify the commit author’s permission, including after switching this repository to the GitHub noreply address. Connect the correct GitHub account in Vercel and grant this project/repository access before retrying. Supabase has not been provisioned yet.
+The project `giampigas-projects/truco-venezolano` has been created. Its short production address is **https://truco-ve.vercel.app**, attached to the project for future deployments; use it for `NEXT_PUBLIC_SITE_URL` and Supabase Site URL/callback settings. GitHub auto-deployment still needs Vercel access to the private repository. Preview deployment is currently blocked with `TEAM_ACCESS_REQUIRED`: Vercel cannot verify the commit author’s permission, including after switching this repository to the GitHub noreply address. Connect the correct GitHub account in Vercel and grant this project/repository access before retrying. Supabase has not been provisioned yet.
 
 Import `Giampiga/truco-venezolano`, select Next.js, and use `codex/vercel-launch` for the migration preview. Set the three variables above and `NEXT_PUBLIC_SITE_URL` to the chosen Vercel domain. Set Node.js 22 or later. Do not set `TRUCO_LOCAL_TEST_AUTH` or `TRUCO_LOCAL_DATABASE` on Vercel.
 
