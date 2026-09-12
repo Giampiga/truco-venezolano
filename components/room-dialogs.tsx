@@ -368,8 +368,7 @@ export function PracticeDialog({
             Juega contra Truquito
           </DialogTitle>
           <DialogDescription>
-            Sin espera, micrófono ni rating. La IA usa el mismo motor legal y
-            nunca ve tu mano ni las cartas sin repartir.
+            Practica a tu ritmo, sin micrófono ni puntos de clasificación. Truquito sigue las mismas reglas y nunca ve tu mano ni las cartas sin repartir.
           </DialogDescription>
         </DialogHeader>
 
@@ -566,7 +565,7 @@ export function RulesDialog({
             label="Tapado"
             value={
               config.cardPlay === 'matar-tapado'
-                ? 'Experimental; no automatizado en mesas con rating'
+                ? 'Experimental; no automatizado en mesas competitivas'
                 : 'Todas las cartas visibles'
             }
           />

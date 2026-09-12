@@ -278,13 +278,13 @@ export function explainAiChoice(observation: AiObservation, command: EngineComma
     return `Calculó ${envidoScore(observation.ownDealtHand, observation.vira)} de Envite usando solo sus tres cartas y la vira.`;
   }
   if (command.type === 'CALL_TRUCO' || command.type === 'RAISE_TRUCO') {
-    return 'Aumentó el Truco por fuerza propia, posición y riesgo del marcador; no inspeccionó cartas ocultas.';
+    return 'Aumentó el Truco por fuerza propia, posición y riesgo del marcador; no conoce las cartas ocultas.';
   }
   if (command.type === 'ANSWER_CALL') {
-    return `Respondió “${command.answer === 'quiero' ? 'Quiero' : 'No quiero'}” según la apuesta y su información legal.`;
+    return `Respondió “${command.answer === 'quiero' ? 'Quiero' : 'No quiero'}” según la apuesta y las cartas que conoce.`;
   }
   if (command.type === 'DECLARE_FLOR' || command.type === 'CALL_FLOR_ENVIDA') {
-    return 'La combinación de sus tres cartas activa una Flor legal para esta mesa.';
+    return 'Tiene flor con las tres cartas de su mano.';
   }
-  return 'Eligió una transición permitida por el mismo motor de la mesa.';
+  return 'Eligió una jugada válida según las reglas de la mesa.';
 }

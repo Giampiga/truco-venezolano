@@ -81,7 +81,7 @@ export function RankingPanel({
             </div>
             <p>
               {current.you
-                ? `${current.you.wins} victorias · ${current.you.games} partidas`
+                ? `${current.you.wins} ${current.you.wins === 1 ? 'victoria' : 'victorias'} · ${current.you.games} ${current.you.games === 1 ? 'partida' : 'partidas'}`
                 : 'Tu primera partida empieza aquí.'}
             </p>
           </div>
@@ -98,7 +98,7 @@ export function RankingPanel({
                   <span>{String(i + 1).padStart(2, '0')}</span>
                   <div>
                     <strong>{player.name}</strong>
-                    <small>{player.games} partidas</small>
+                    <small>{player.games} {player.games === 1 ? 'partida' : 'partidas'}</small>
                   </div>
                   <b>{player.rating}</b>
                 </li>

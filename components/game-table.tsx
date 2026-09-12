@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 
 import { EnvidoRaises } from '@/components/envido-raises';
+import { manoAnnouncement, gameEventText, actionLabels } from '@/lib/game-copy';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -159,10 +160,7 @@ function playerName(id: SeatId, config: RoomConfig) {
 }
 
 function presentEvent(event: string, config: RoomConfig) {
-  return ['opponent', 'human', 'mariale', 'rafael', 'vale'].reduce(
-    (copy, seatId) => copy.replaceAll(seatId, playerName(seatId, config)),
-    event,
-  );
+  return gameEventText(event, Object.fromEntries(['opponent', 'human', 'mariale', 'rafael', 'vale'].map((id) => [id, playerName(id, config)])), 'human');
 }
 
 function presetLabel(preset: RoomConfig['preset']) {
@@ -304,12 +302,12 @@ export function GameTable({
   const [aiExplanation, setAiExplanation] = useState('');
   const [status, setStatus] = useState(
     config.opponent === 'ai'
-      ? 'Truquito es Mano. La IA solo ve sus cartas y la mesa.'
+      ? `${manoAnnouncement(playerName(snapshot.manoSeatId, config), snapshot.manoSeatId === 'human')} Truquito solo ve sus cartas y las que están sobre la mesa.`
       : 'La base está sincronizada. Mano abre la primera vuelta.',
   );
   const [history, setHistory] = useState<string[]>([
     `Vira: ${snapshot.vira.rank} de ${snapshot.vira.suit}.`,
-    `${playerName(snapshot.manoSeatId, config)} es Mano.`,
+    `${manoAnnouncement(playerName(snapshot.manoSeatId, config), snapshot.manoSeatId === 'human')}`,
   ]);
   const commandCounter = useRef(0);
   const aiTimer = useRef<number | null>(null);
@@ -541,7 +539,7 @@ export function GameTable({
     setPaused(false);
     setSelected(null);
     setPendingCommand(null);
-    setStatus(`Nuevo reparto. ${playerName(fresh.manoSeatId, config)} es Mano.`);
+    setStatus(`Nuevo reparto. ${manoAnnouncement(playerName(fresh.manoSeatId, config), fresh.manoSeatId === 'human')}`);
     setHistory((current) => [
       `Nueva base ${fresh.handNumber}.`,
       ...current,
@@ -560,7 +558,7 @@ export function GameTable({
       setPaused(false);
       setSelected(null);
       setStatus(
-        `Base ${next.handNumber}. ${playerName(next.manoSeatId, config)} es Mano.`,
+        `Base ${next.handNumber}. ${manoAnnouncement(playerName(next.manoSeatId, config), next.manoSeatId === 'human')}`,
       );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'No se pudo repartir.');
@@ -596,7 +594,7 @@ export function GameTable({
       (action) =>
         !['play-card', 'play-stack', 'fold', 'pass-card'].includes(action),
     )
-    .map((action) => action.replaceAll('-', ' '));
+    .map((action) => actionLabels[action] ?? action);
   const formatLabel = config.format === '1v1' ? '1 contra 1' : '2 contra 2';
   const humanIsMano = snapshot.manoSeatId === 'human';
   const aiThinking = Boolean(
@@ -977,7 +975,7 @@ export function GameTable({
                 </h2>
               </div>
               <Badge variant="outline">
-                {humanIsMano ? 'Eres Mano' : 'Eres Pie'}
+                {humanIsMano ? 'Eres mano' : 'Eres pie'}
               </Badge>
             </div>
             <fieldset className="call-buttons" disabled={paused}>
@@ -1098,7 +1096,7 @@ export function GameTable({
                 !snapshot.handComplete &&
                 !snapshot.match.complete && (
                   <p className="col-span-2 py-2 text-xs leading-5 text-muted-foreground">
-                    Esperando una acción confirmada de la otra voz.
+                    Esperando la jugada del rival.
                   </p>
                 )}
             </fieldset>
@@ -1123,7 +1121,7 @@ export function GameTable({
                     {practiceDifficulty[0].toUpperCase() + practiceDifficulty.slice(1)}
                   </h2>
                 </div>
-                <Badge variant="outline">Sin rating</Badge>
+                <Badge variant="outline">Sin puntos de clasificación</Badge>
               </div>
               <div className="practice-controls mt-3">
                 <Button
@@ -1211,7 +1209,7 @@ export function GameTable({
                 </dd>
               </div>
               <div>
-                <dt>Legal ahora</dt>
+                <dt>Cantos disponibles</dt>
                 <dd>
                   {legalCallLabels.length
                     ? legalCallLabels.join(' · ')
@@ -1262,7 +1260,7 @@ export function GameTable({
                 </strong>
                 .{' '}
                 {hasFlor(humanDeal, snapshot.vira)
-                  ? 'Tu combinación también es Flor.'
+                  ? 'Tienes flor.'
                   : 'No tienes Flor en este reparto.'}
               </p>
               {snapshot.trickResults.at(-1) && (
