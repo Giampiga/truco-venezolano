@@ -74,8 +74,8 @@ export function pendingCanto(
   }
   return {
     ...pending,
-    label: `${state.priority.active === 'flor' ? 'Mi flor envida' : pending.kind === 'falta' ? 'La falta' : 'Envido'} · ${points(pending.stake)}`,
-    accept: `Se comparan los tantos por ${points(pending.stake)}.${state.priority.active === 'flor' ? ' Se suman además los puntos de flor.' : ''}`,
+    label: `${state.priority.active === 'flor' ? (pending.kind === 'flor' ? 'Flor' : 'Con flor envido') : pending.kind === 'falta' ? 'La falta' : 'Envido'} · ${points(pending.stake)}`,
+    accept: `Se comparan los tantos por ${points(pending.stake)}.${state.priority.active === 'flor' ? ' Incluye la flor; cada flor aliada adicional suma sus puntos.' : ' Se acredita al terminar la base, antes del Truco.'}`,
     reject: `El equipo que cantó gana ${points(pending.rejectionAward)}.`,
     suspended,
   };

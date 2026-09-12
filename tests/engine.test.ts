@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  DEFAULT_EXECUTABLE_RULES,
   answerEnvido,
   answerTruco,
   applyAwards,
@@ -20,8 +21,6 @@ import {
   legalActionsForSnapshot,
   manoForDealer,
   nextDealer,
-  pardaContinuation,
-  privandoTeams,
   projectPrivate,
   projectPublic,
   raiseEnvido,
@@ -29,7 +28,6 @@ import {
   resolveDeclarationTie,
   resolveFlor,
   resolveHandWinner,
-  resolvePrive,
   resolveTrick,
   resumeSnapshot,
   serializeSnapshot,
@@ -149,11 +147,6 @@ void test('resuelve todos los caminos de parda y prioridad de primera', () => {
   assert.equal(
     resolveHandWinner([result(null), result(null), result('B')], 'A'),
     'B',
-  );
-  assert.equal(pardaContinuation('abierta', 1)?.allowsRaiseBetweenReveal, true);
-  assert.equal(
-    pardaContinuation('cerrada', 1)?.allowsRaiseBetweenReveal,
-    false,
   );
 });
 
@@ -376,36 +369,6 @@ void test('la compuerta legal bloquea Envido tras jugar y obliga a responder can
   assert.equal(response.includes('play-card'), false);
 });
 
-void test('Privando se activa exactamente en target menos uno y gana por Mano en empate', () => {
-  assert.deepEqual(privandoTeams({ A: 23, B: 17 }, 24), ['A']);
-  assert.deepEqual(privandoTeams({ A: 23, B: 23 }, 24), ['A', 'B']);
-  const award = resolvePrive(
-    [
-      {
-        seatId: 'human',
-        team: 'A',
-        hand: [
-          { rank: 7, suit: 'oros' },
-          { rank: 4, suit: 'oros' },
-          { rank: 12, suit: 'bastos' },
-        ],
-      },
-      {
-        seatId: 'bot',
-        team: 'B',
-        hand: [
-          { rank: 7, suit: 'bastos' },
-          { rank: 4, suit: 'bastos' },
-          { rank: 12, suit: 'oros' },
-        ],
-      },
-    ],
-    vira,
-    ['human', 'bot'],
-  );
-  assert.deepEqual(award, { team: 'A', amount: 1, reason: 'prive' });
-});
-
 void test('aplica Flor/Envido antes de Truco y corta al completar el partido', () => {
   const match = {
     target: 24,
@@ -493,6 +456,10 @@ void test('disconnect/resume conserva formato, vira, mano, canto, turno y versi�
 });
 
 void test('transition valida turno, resuelve vuelta e ignora comando duplicado', () => {
+  const rules: ExecutableRules = {
+    ...DEFAULT_EXECUTABLE_RULES,
+    florMode: 'off',
+  };
   const snapshot = createEngineSnapshot({
     deck: createSpanishDeck(),
     seats: seats1v1,
@@ -746,7 +713,12 @@ void test('Flor se declara una vez, puntúa y cancela el Envite normal', () => {
     { rank: 6, suit: 'oros' },
     { rank: 5, suit: 'oros' },
   ];
-  snapshot.dealtHands.human = structuredClone(snapshot.hands.human);
+  snapshot.hands.bot = [
+    { rank: 4, suit: 'bastos' },
+    { rank: 2, suit: 'copas' },
+    { rank: 1, suit: 'oros' },
+  ];
+  snapshot.dealtHands = structuredClone(snapshot.hands);
   snapshot = transition(
     snapshot,
     'human',
@@ -806,13 +778,21 @@ void test('Envido usa las tres cartas repartidas aunque Mano ya haya jugado', ()
     envidoRules,
     'env-answer',
   ).state;
-  assert.deepEqual(snapshot.match.score, { A: 2, B: 0 });
+  assert.deepEqual(snapshot.match.score, { A: 0, B: 0 });
+  assert.equal(snapshot.envido.status, 'accepted');
   assert.equal(
     legalActionsForSnapshot(snapshot, 'bot', envidoRules).includes(
       'call-envido',
     ),
     false,
   );
+  snapshot = transition(
+    snapshot,
+    'bot',
+    { type: 'FOLD_HAND' },
+    envidoRules,
+  ).state;
+  assert.deepEqual(snapshot.match.score, { A: 3, B: 0 });
 });
 
 void test('las proyecciones públicas no exponen manos ni tapadas rivales', () => {
@@ -834,4 +814,278 @@ void test('las proyecciones públicas no exponen manos ni tapadas rivales', () =
     rank: 1,
     suit: 'espadas',
   });
+});
+
+function dealtSnapshot(hands: Record<string, TrucoCard[]>, tableRules = rules) {
+  const seats = Object.keys(hands).map((id, index) => ({
+    id,
+    team: index % 2 ? ('B' as const) : ('A' as const),
+  }));
+  const deck = [0, 1, 2].flatMap((index) =>
+    seats.map((seat) => hands[seat.id][index]),
+  );
+  return createEngineSnapshot({
+    deck: [...deck, vira],
+    seats,
+    dealerSeatId: seats.at(-1)!.id,
+    target: 24,
+    rules: tableRules,
+  });
+}
+const whiteFlor: TrucoCard[] = [
+  { rank: 7, suit: 'oros' },
+  { rank: 6, suit: 'oros' },
+  { rank: 5, suit: 'oros' },
+];
+const lesserFlor: TrucoCard[] = [
+  { rank: 7, suit: 'bastos' },
+  { rank: 5, suit: 'bastos' },
+  { rank: 4, suit: 'bastos' },
+];
+const noFlor: TrucoCard[] = [
+  { rank: 1, suit: 'espadas' },
+  { rank: 3, suit: 'bastos' },
+  { rank: 2, suit: 'copas' },
+];
+
+void test('Flor is compulsory before playing, and opponents can compare or envidar it', () => {
+  const initial = dealtSnapshot({ human: whiteFlor, bot: lesserFlor });
+  assert.deepEqual(legalActionsForSnapshot(initial, 'human'), ['declare-flor']);
+  assert.throws(() =>
+    transition(
+      initial,
+      'human',
+      { type: 'PLAY_CARD', cardId: '7-oros' },
+      rules,
+    ),
+  );
+  const announced = transition(
+    initial,
+    'human',
+    { type: 'DECLARE_FLOR', mode: 'flor' },
+    rules,
+  ).state;
+  assert.deepEqual(announced.match.score, { A: 0, B: 0 });
+  assert.equal(announced.priority.active, 'flor');
+  assert.ok(
+    legalActionsForSnapshot(announced, 'bot').includes('call-flor-envida'),
+  );
+  for (const answer of ['quiero', 'no-quiero'] as const) {
+    const done = transition(
+      announced,
+      'bot',
+      { type: 'ANSWER_CALL', answer },
+      rules,
+    ).state;
+    assert.deepEqual(done.match.score, { A: 3, B: 0 });
+    assert.equal(done.priority.active, 'play');
+    assert.ok(!legalActionsForSnapshot(done, 'human').includes('declare-flor'));
+  }
+  const raised = transition(
+    announced,
+    'bot',
+    { type: 'CALL_FLOR_ENVIDA' },
+    rules,
+  ).state;
+  assert.equal(raised.envido.pending?.stake, 5);
+  assert.equal(raised.envido.pending?.rejectionAward, 3);
+  const accepted = transition(
+    raised,
+    'human',
+    { type: 'ANSWER_CALL', answer: 'quiero' },
+    rules,
+  ).state;
+  assert.deepEqual(accepted.match.score, { A: 5, B: 0 });
+  const rejected = transition(
+    raised,
+    'human',
+    { type: 'ANSWER_CALL', answer: 'no-quiero' },
+    rules,
+  ).state;
+  assert.deepEqual(rejected.match.score, { A: 0, B: 3 });
+});
+
+void test('a later Flor cancels accepted and rejected Envite before either is paid', () => {
+  for (const answer of ['quiero', 'no-quiero'] as const) {
+    let state = dealtSnapshot({
+      p1: noFlor,
+      p2: [
+        { rank: 4, suit: 'oros' },
+        { rank: 2, suit: 'bastos' },
+        { rank: 1, suit: 'copas' },
+      ],
+      p3: whiteFlor,
+      p4: [
+        { rank: 3, suit: 'oros' },
+        { rank: 5, suit: 'espadas' },
+        { rank: 12, suit: 'copas' },
+      ],
+    });
+    state = transition(
+      state,
+      'p1',
+      { type: 'CALL_ENVIDO', amount: 2 },
+      rules,
+    ).state;
+    state = transition(
+      state,
+      'p2',
+      { type: 'ANSWER_CALL', answer },
+      rules,
+    ).state;
+    assert.deepEqual(state.match.score, { A: 0, B: 0 });
+    state = transition(
+      state,
+      'p1',
+      { type: 'PLAY_CARD', cardId: '1-espadas' },
+      rules,
+    ).state;
+    state = transition(
+      state,
+      'p2',
+      { type: 'PLAY_CARD', cardId: '4-oros' },
+      rules,
+    ).state;
+    state = transition(
+      state,
+      'p3',
+      { type: 'DECLARE_FLOR', mode: 'flor' },
+      rules,
+    ).state;
+    assert.deepEqual(state.match.score, { A: 3, B: 0 });
+    state = transition(state, 'p3', { type: 'FOLD_HAND' }, rules).state;
+    assert.deepEqual(state.match.score, { A: 3, B: 1 });
+  }
+});
+
+void test('accepted Envite closes the game before a rejected Truco can score', () => {
+  let state = dealtSnapshot(
+    { human: whiteFlor, bot: noFlor },
+    { ...rules, florMode: 'off' },
+  );
+  const tableRules = state.rules;
+  state.match.score = { A: 22, B: 23 };
+  state = transition(
+    state,
+    'human',
+    { type: 'CALL_ENVIDO', amount: 2 },
+    tableRules,
+  ).state;
+  state = transition(
+    state,
+    'bot',
+    { type: 'ANSWER_CALL', answer: 'quiero' },
+    tableRules,
+  ).state;
+  state = transition(
+    state,
+    'human',
+    { type: 'PLAY_CARD', cardId: '7-oros' },
+    tableRules,
+  ).state;
+  state = transition(
+    state,
+    'bot',
+    { type: 'CALL_TRUCO', call: 'truco' },
+    tableRules,
+  ).state;
+  state = transition(
+    state,
+    'human',
+    { type: 'ANSWER_CALL', answer: 'no-quiero' },
+    tableRules,
+  ).state;
+  assert.deepEqual(state.match.score, { A: 24, B: 23 });
+  assert.equal(state.match.winner, 'A');
+});
+
+void test('resolved Envite cannot be called again while answering Truco', () => {
+  let state = dealtSnapshot(
+    { human: noFlor, bot: whiteFlor },
+    { ...rules, florMode: 'off' },
+  );
+  state = transition(
+    state,
+    'human',
+    { type: 'CALL_ENVIDO', amount: 2 },
+    state.rules,
+  ).state;
+  state = transition(
+    state,
+    'bot',
+    { type: 'ANSWER_CALL', answer: 'no-quiero' },
+    state.rules,
+  ).state;
+  state = transition(
+    state,
+    'human',
+    { type: 'CALL_TRUCO', call: 'truco' },
+    state.rules,
+  ).state;
+  assert.ok(!legalActionsForSnapshot(state, 'bot').includes('call-envido'));
+});
+
+void test('only floral opponents answer Flor and a suspended Truco resumes', () => {
+  let state = dealtSnapshot({
+    p1: noFlor,
+    p2: whiteFlor,
+    p3: lesserFlor,
+    p4: [
+      { rank: 4, suit: 'oros' },
+      { rank: 5, suit: 'espadas' },
+      { rank: 1, suit: 'copas' },
+    ],
+  });
+  state = transition(
+    state,
+    'p1',
+    { type: 'CALL_TRUCO', call: 'truco' },
+    rules,
+  ).state;
+  const pending = state.truco.pending;
+  state = transition(
+    state,
+    'p2',
+    { type: 'DECLARE_FLOR', mode: 'flor' },
+    rules,
+  ).state;
+  assert.deepEqual(legalActionsForSnapshot(state, 'p1'), []);
+  assert.ok(legalActionsForSnapshot(state, 'p3').includes('call-flor-envida'));
+  state = transition(
+    state,
+    'p3',
+    { type: 'DECLARE_FLOR', mode: 'flor' },
+    rules,
+  ).state;
+  assert.deepEqual(state.match.score, { A: 0, B: 3 });
+  assert.equal(state.priority.active, 'truco');
+  assert.deepEqual(state.truco.pending, pending);
+});
+
+void test('Falta cannot lower an existing wager and fractional raises are rejected', () => {
+  const called = callEnvido(createEnvidoState(), 'A', { A: 23, B: 0 }, 24);
+  assert.throws(
+    () => raiseEnvido(called, 'B', { A: 23, B: 0 }, 24, 'falta'),
+    /aumentar/,
+  );
+  for (const amount of [0, -1, 1.5, Infinity, NaN, 33])
+    assert.throws(() =>
+      raiseEnvido(called, 'B', { A: 0, B: 0 }, 24, 'n-mas', amount),
+    );
+});
+
+void test('legacy resolved Envite is not paid twice after restoring an older snapshot', () => {
+  let state = dealtSnapshot(
+    { human: noFlor, bot: whiteFlor },
+    { ...rules, florMode: 'off' },
+  );
+  state.match.score.A = 2;
+  state.envido = {
+    status: 'resolved',
+    winner: 'A',
+    acceptedStake: 2,
+    pending: null,
+  };
+  state = transition(state, 'human', { type: 'FOLD_HAND' }, state.rules).state;
+  assert.deepEqual(state.match.score, { A: 2, B: 1 });
 });

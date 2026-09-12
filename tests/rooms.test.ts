@@ -221,3 +221,8 @@ void test('ranked departure forfeits once; active matches cannot be closed or cl
   const closed = applyRoomAction(left, 'rival', { type: 'close' }, clock);
   assert.equal(closed.engine!.match.winner, 'B');
 });
+
+void test('room settings reject unimplemented four- and five-point Flor', () => {
+  for (const florPoints of ['4', '5'])
+    assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, florPoints }));
+});

@@ -20,8 +20,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import type { EngineCommand } from '@/lib/truco-engine';
+import { faltaValue, type EngineCommand } from '@/lib/truco-engine';
 import {
+  cardId,
   envidoScore,
   hasFlor,
   nextTrucoCall,
@@ -36,7 +37,6 @@ const callName = {
   'vale-nueve': 'Vale nueve',
   'vale-juego': 'Vale juego',
 };
-const cardId = (card: TrucoCard) => `${card.rank}-${card.suit}`;
 function PlayingCard({
   card,
   small = false,
@@ -446,6 +446,10 @@ export function OnlineTable({
                   )}
                   {legal.includes('raise-envido') && (
                     <EnvidoRaises
+                      faltaAvailable={
+                        faltaValue(state.match.score, state.match.target) >
+                        (state.envido.pending?.stake ?? 0)
+                      }
                       disabled={disabled}
                       onSelect={(amount) =>
                         setConfirmation({

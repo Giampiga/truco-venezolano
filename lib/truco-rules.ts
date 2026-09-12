@@ -19,64 +19,14 @@ export type TrucoStake = 1 | 3 | 6 | 9 | 'game';
 export const SPANISH_SUITS: Suit[] = ['espadas', 'bastos', 'oros', 'copas'];
 export const SPANISH_RANKS: Rank[] = [1, 2, 3, 4, 5, 6, 7, 10, 11, 12];
 
-export const RULE_PRESETS = {
-  oriental: {
-    id: 'oriental',
-    label: 'Oriental clásico',
-    players: [2, 4],
-    teams: '1 contra 1 o parejas fijas',
-    targetStones: 24,
-    flor: 'A ley',
-    parda: 'Venezolana abierta',
-    reservedFlor: 'Condicionada',
-    passedCards: true,
-    endgame: 'Cantando y prive',
-    signals: 'Públicas',
-    truco: 'Abierto',
-    envido: 'Clásico flexible',
-    cardPlay: 'Matar tapado permitido',
-    match: 'Un chico',
-  },
-  rapida: {
-    id: 'rapida',
-    label: 'Mesa rápida',
-    players: [2, 4],
-    teams: '1 contra 1 o parejas fijas',
-    targetStones: 12,
-    flor: 'Sin flor',
-    parda: 'Venezolana cerrada',
-    reservedFlor: 'No aplica',
-    passedCards: true,
-    endgame: 'Primero a 12',
-    signals: 'Públicas',
-    truco: 'Cerrado',
-    envido: 'Escalera online',
-    cardPlay: 'Visible',
-    match: 'Un chico',
-  },
-  competitiva: {
-    id: 'competitiva',
-    label: 'Competitiva larga',
-    players: [2, 4],
-    teams: '1 contra 1 o parejas fijas',
-    targetStones: 32,
-    flor: 'A ley',
-    parda: 'Venezolana cerrada',
-    reservedFlor: 'Condicionada',
-    passedCards: true,
-    endgame: 'Privando a 31',
-    signals: 'Públicas',
-    truco: 'Cerrado',
-    envido: 'Clásico flexible',
-    cardPlay: 'Matar tapado permitido',
-    match: 'Mejor de tres chicos',
-  },
-} as const;
-
 export function createSpanishDeck(): TrucoCard[] {
   return SPANISH_SUITS.flatMap((suit) =>
     SPANISH_RANKS.map((rank) => ({ rank, suit })),
   );
+}
+
+export function cardId(card: TrucoCard) {
+  return `${card.rank}-${card.suit}`;
 }
 
 export function sameCard(a: TrucoCard, b: TrucoCard) {
@@ -113,6 +63,39 @@ export function trucoRank(card: TrucoCard, vira: TrucoCard) {
   if (card.rank === 6) return 76;
   if (card.rank === 5) return 75;
   return 74;
+}
+
+/** The guide uses the same ranking as gameplay; cards in one row tie. */
+export function cardHierarchy(vira: TrucoCard) {
+  const names: Record<number, string> = {
+    100: 'Perico',
+    99: 'Perica',
+    98: 'As de espadas',
+    97: 'As de bastos',
+    96: 'Siete de espadas',
+    95: 'Siete de oros',
+    90: 'Treses',
+    89: 'Doses',
+    88: 'Ases de oros y copas',
+    80: 'Reyes',
+    79: 'Caballos',
+    78: 'Sotas',
+    77: 'Sietes de bastos y copas',
+    76: 'Seises',
+    75: 'Cincos',
+    74: 'Cuatros',
+  };
+  const groups = new Map<number, TrucoCard[]>();
+  for (const card of createSpanishDeck()) {
+    if (sameCard(card, vira)) continue;
+    const rank = trucoRank(card, vira);
+    const group = groups.get(rank) ?? [];
+    group.push(card);
+    groups.set(rank, group);
+  }
+  return [...groups]
+    .sort(([a], [b]) => b - a)
+    .map(([strength, cards]) => ({ strength, label: names[strength], cards }));
 }
 
 function numericValue(card: TrucoCard) {

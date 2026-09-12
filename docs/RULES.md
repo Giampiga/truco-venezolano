@@ -1,70 +1,96 @@
-# Base ejecutable de reglas
+# Reglas que aplica esta mesa
 
-## Preset “Oriental clásico”
+La aplicación usa una configuración explícita de Truco venezolano. Las reglas
+regionales difieren; no se presenta como certificación de un reglamento nacional.
 
-- Baraja española de 40, tres cartas y vira.
-- Dos jugadores (Mano/Pie) o cuatro jugadores con parejas alternadas;
-  reparto antihorario de a una carta y rotación después de cada base.
-- A 24 piedras.
-- Perico y Perica definidos por la pinta de la vira. Si la Vira es 11, el 12
-  de esa pinta sustituye al Perico; si es 10, sustituye a la Perica.
-- Truco 3 → Retruco 6 → Vale nueve 9 → Vale juego.
-- Flor a ley y Reservada como resultado dominante, sin depender de su cuenta
-  numérica disputada.
-- Primera parda venezolana apilada, mayor arriba, con modo abierto/cerrado;
-  también existe la adaptación secuencial de tres vueltas para mesas rápidas.
-- Cartas pasadas activas.
-- Cantando/Privando se presenta solo para el chico tradicional de 24, en 23.
-- Señas públicas para que toda la mesa pueda verlas.
+## Cartas y vueltas
 
-Este nombre identifica un preset del producto; no afirma que exista un único
-reglamento nacional ni un reglamento oficial FEVETRU ya publicado. “Flor por
-derecho”, “Pardas cerradas”, el chico a 12, la variante a 32 y la resolución
-secuencial se exponen con nombre propio.
+Baraja española de 40 cartas, tres por jugador, reparto antihorario y vira visible.
+Se admiten dos jugadores o cuatro en parejas alternadas. El mano inicia; quien
+gana una vuelta inicia la siguiente. El reparto y el mano rotan en cada base.
 
-## Orden de resolución
+La jerarquía, de mayor a menor, es:
 
-1. Flor/Reservada anula el Envite normal y se acredita primero.
-2. Envite, repiques y Falta se comparan con la mano completa repartida, aunque
-   una carta ya esté sobre la mesa; el empate es para el asiento más Mano.
-3. Un Envite legal puede suspender un Truco pendiente y luego reanudarlo.
-4. Truco, Retruco, Vale nueve y Vale juego alternan equipos; los rehúses pagan
-   1, 3, 6 y 9 respectivamente.
-5. Un Vale juego querido continúa la base: quien la gana se lleva el chico.
-6. Si Flor/Envite completa el chico primero, el Truco suspendido ya no suma.
+1. Perico: 11 de la pinta de la vira.
+2. Perica: 10 de la pinta de la vira.
+3. As de espadas.
+4. As de bastos.
+5. Siete de espadas.
+6. Siete de oros.
+7. Treses.
+8. Doses.
+9. Ases de oros y copas.
+10. Reyes, salvo el que sustituya una pieza.
+11. Caballos, salvo el Perico.
+12. Sotas, salvo la Perica.
+13. Sietes de bastos y copas.
+14. Seises.
+15. Cincos.
+16. Cuatros.
 
-## Práctica contra IA
+Si la vira es 11 o 10, el 12 de su pinta sustituye esa pieza. La vira no se juega.
+Las cartas del mismo nivel empatan. «Cómo jugar» permite cambiar la vira y genera
+la escalera con `trucoRank()`, la misma función utilizada por el motor.
 
-La IA consume una proyección deliberadamente limitada: su reparto original,
-cartas propias restantes, Vira, cartas públicas, conteos rivales, marcador,
-cantos y comandos legales. No recibe manos rivales, cartas tapadas ajenas ni
-el resto del mazo. Las tres dificultades cambian estrategia, no información.
-Las pruebas recorren un partido completo a 12, múltiples bases, rotación y
-repartos nuevos usando exactamente `transition()`.
+Dos vueltas ganadas resuelven la base. Si la segunda o tercera empata, manda la
+primera ganada. Si la primera empata entre rivales, cada jugador apila las dos
+restantes con la mayor arriba. Solo quienes empatan arriba destapan la otra;
+si persiste, gana el primero entre los empatados en orden de mano. La parda
+abierta admite cantos durante la presentación; la cerrada no. Dos cartas iguales
+de compañeros no generan parda. Las cartas pasadas pierden contra cualquier carta
+sin pasar y conservan su valor para contar el Envite.
 
-## Límites explícitos
+## Cantos y puntuación
 
-- `Muerte segura / Muerte falsa`, Flor que paga 4/5 y Reservada condicionada
-  permanecen señaladas como experimentales o desactivadas: FEVETRU las nombra,
-  pero todavía no publica transiciones ejecutables completas.
-- `Matar tapado` conserva su descripción documentada en la configuración,
-  pero no se presenta como automatización competitiva verificada mientras no
-  exista cobertura completa de compromiso, revelado y penalización.
-- Privando cuenta con activación/comparación determinista a 23; las ramas
-  analógicas completas de declaración, prueba y penalización requieren una
-  especificación de torneo antes de habilitarse en juego con rating.
+- Truco: 3 → Retruco: 6 → Vale nueve: 9 → Vale juego: el chico.
+  Los aumentos alternan equipos; el rechazo paga 1, 3, 6 o 9.
+- Envido: empieza en 2; los repiques suman piedras. La falta equivale a lo que
+  falta al equipo que va ganando y no puede reducir una apuesta ya pendiente.
+  Se canta antes de jugar la primera carta, también al responder un Truco.
+- El Envido se cuenta con las tres cartas originales. Dos de la misma pinta
+  suman 20 más sus números; las figuras valen cero. Una pieza aporta 30 o 29
+  más la mejor otra carta. Sin pareja ni pieza, vale la carta numérica mayor.
+  Los empates se resuelven por orden de mano.
+- La Flor anula el Envido normal, incluso si ya fue querido. Por eso el Envite
+  querido o rechazado se acredita al terminar la base, antes del Truco. Si
+  completa el chico, el Truco ya no suma.
+- Flor: tres cartas de la misma pinta, una pieza y otras dos de la misma pinta,
+  o ambas piezas (Reservada). La Reservada gana la comparación de flores.
+- En esta mesa digital se exige anunciar la Flor antes de jugar. «A ley» usa
+  esa misma declaración; no implementa el anuncio diferido de algunas mesas.
+  Si hay Flor rival, se puede comparar, rechazar o decir «Mi flor envida».
+  La apuesta inicial incluye 3 de Flor; envidarla suma 2. Si se rechaza un
+  aumento, se paga lo ya apostado. Cada Flor aliada adicional suma 3 al equipo
+  ganador. Un jugador sin Flor no responde a una disputa de flores.
+- Flor y Envido suspenden un Truco pendiente; después se retoma su respuesta.
+  La Flor se acredita al resolverse. Si cierra el chico, termina la base.
 
-## Fuentes consultadas
+La meta puede ser 12, 24 o 32 piedras; se juega un chico o al mejor de tres.
+Competitivo fija 24 piedras, un chico, Flor de 3 y primera parda abierta.
+No se cambia el reglamento en medio de una base.
 
-- Francisco A. Solé, El Juego de Truco, Ediciones SIDOR:
-  https://es.scribd.com/doc/215351099/El-Libro-El-Juego-de-Truco-de-Francisco-A-Sole
-- Manual competitivo CODENACOPU/FCCPV:
-  https://es.slideshare.net/slideshow/el-juego-de-truco-fccpv-mayo-2015/53283996
-- Implementación activa de Ludoteka:
-  https://www.ludoteka.com/juegos/truco-venezolano/reglas
-- Estado y variantes documentadas por FEVETRU:
-  https://fevetru.com/reglamento
-  https://fevetru.com/pdf/eBook-fevetru-modalidades.pdf
-  https://fevetru.com/pdf/eBook-fevetru-jugadas-para-recrear.pdf
-- Implementación en línea de Conecta Games:
-  https://www.conectagames.com/rules/truco_ve
+## Variantes no implementadas
+
+Privando/Cantando, matar tapado, Muerte segura/falsa, Flor de 4/5, Reservada
+«cobra todo» y el anuncio diferido de A ley no están habilitados. Las opciones
+antiguas de parda secuencial se normalizan a la parda apilada. El servidor
+rechaza la configuración de Flor de 4/5. Las manos siempre son privadas.
+
+## Comprobación
+
+Las pruebas cubren reparto, jerarquía con las 40 viras posibles, empates,
+parda apilada, repiques/rechazos, interrupción de Truco, Flor disputada,
+cancelación del Envite, prioridad al cerrar el chico y reinicio de la serie.
+También completan 36 series sembradas en ambos formatos, los tres niveles de IA
+y todas las combinaciones admitidas de Flor/parda. La IA solo recibe su mano,
+cartas públicas, marcador y acciones legales. Las pruebas HTTP juegan partidas
+completas usando las rutas reales y verifican historia y ranking persistidos.
+
+## Referencias consultadas
+
+- [Ludoteka: cartas, apuestas y prioridad de Envite/Flor](https://www.ludoteka.com/juegos/truco-venezolano/reglas).
+- [Manual CODENACOPU/FCCPV: primera parda apilada, reparto y cantos](https://es.slideshare.net/slideshow/el-juego-de-truco-fccpv-mayo-2015/53283996).
+- [FEVETRU: modalidades y contexto regional](https://fevetru.com/reglamento).
+
+Consulta de referencias: 12 de septiembre de 2026. Los detalles digitales
+anteriores son decisiones explícitas de esta mesa donde las fuentes difieren.

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  cardHierarchy,
+  sameCard,
   createSpanishDeck,
   envidoScore,
   florScore,
@@ -115,4 +117,54 @@ void test('usa la escalera venezolana y sus valores de rechazo', () => {
   assert.equal(nextTrucoCall('retruco'), 'vale-nueve');
   assert.equal(nextTrucoCall('vale-nueve'), 'vale-juego');
   assert.equal(trucoRejectedValue('vale-nueve'), 6);
+});
+
+void test('the guide covers every playable card for all 40 viras, with correct ties and substitutions', () => {
+  for (const vira of createSpanishDeck()) {
+    const groups = cardHierarchy(vira);
+    assert.equal(groups.flatMap((group) => group.cards).length, 39);
+    assert.equal(
+      new Set(
+        groups.flatMap((group) =>
+          group.cards.map((card) => `${card.rank}-${card.suit}`),
+        ),
+      ).size,
+      39,
+    );
+    assert.deepEqual(groups[0].cards, [getPieces(vira).perico]);
+    assert.deepEqual(groups[1].cards, [getPieces(vira).perica]);
+    groups.forEach((group, index) => {
+      assert.ok(group.label);
+      for (const card of group.cards) {
+        assert.ok(!sameCard(card, vira));
+        assert.equal(trucoRank(card, vira), group.strength);
+        if (index)
+          assert.ok(trucoRank(card, vira) < groups[index - 1].strength);
+      }
+    });
+  }
+});
+void test('all ordinary card tiers follow the Venezuelan ladder', () => {
+  const groups = cardHierarchy(vira);
+  assert.deepEqual(
+    groups.map((group) => group.cards[0]),
+    [
+      { rank: 11, suit: 'copas' },
+      { rank: 10, suit: 'copas' },
+      { rank: 1, suit: 'espadas' },
+      { rank: 1, suit: 'bastos' },
+      { rank: 7, suit: 'espadas' },
+      { rank: 7, suit: 'oros' },
+      { rank: 3, suit: 'espadas' },
+      { rank: 2, suit: 'espadas' },
+      { rank: 1, suit: 'oros' },
+      { rank: 12, suit: 'espadas' },
+      { rank: 11, suit: 'espadas' },
+      { rank: 10, suit: 'espadas' },
+      { rank: 7, suit: 'bastos' },
+      { rank: 6, suit: 'espadas' },
+      { rank: 5, suit: 'espadas' },
+      { rank: 4, suit: 'espadas' },
+    ],
+  );
 });

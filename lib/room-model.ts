@@ -145,7 +145,7 @@ export function validateConfig(input: unknown): RoomConfig {
     target: ['12', '24', '32'],
     match: ['un-chico', 'mejor-de-tres'],
     flor: ['off', 'a-ley', 'por-derecho'],
-    florPoints: ['3', '4', '5'],
+    florPoints: ['3'],
     parda: ['abierta', 'cerrada'],
     pardaEngine: ['apilada-clasica', 'secuencial-online'],
   };

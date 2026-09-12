@@ -185,3 +185,98 @@ void test('la proyección solo expone cartas ya públicas del rival', () => {
   assert.deepEqual(observation.played[0].card, publicCard);
   assert.equal(JSON.stringify(observation).includes('5-espadas'), false);
 });
+
+void test('complete seeded games progress in both formats with Flor and both parda modes', () => {
+  let completed = 0;
+  for (const size of [2, 4])
+    for (const florMode of ['off', 'a-ley', 'por-derecho'] as const)
+      for (const pardaMode of ['abierta', 'cerrada'] as const)
+        for (const difficulty of ['aprendiz', 'criollo', 'maestro'] as const) {
+          let seed = 3109 + completed;
+          const deck = () => {
+            const cards = createSpanishDeck();
+            for (let index = cards.length - 1; index; index--) {
+              seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+              const other = seed % (index + 1);
+              [cards[index], cards[other]] = [cards[other], cards[index]];
+            }
+            return cards;
+          };
+          const players = Array.from({ length: size }, (_, index) => ({
+            id: `p${index}`,
+            team: index % 2 ? ('B' as const) : ('A' as const),
+          }));
+          const tableRules = { ...rules, florMode, pardaMode };
+          let state = createEngineSnapshot({
+            deck: deck(),
+            seats: players,
+            dealerSeatId: 'p0',
+            target: 24,
+            gamesToWin: 2,
+            rules: tableRules,
+          });
+          let turns = 0;
+          while (!state.match.complete && turns++ < 2000) {
+            if (state.handComplete) {
+              state = beginNextHand(state, deck());
+              continue;
+            }
+            const observations = players.map((player) =>
+              observeForAi(state, player.id),
+            );
+            const actor = observations.find(
+              (observation) => observation.legalCommands.length,
+            );
+            assert.ok(
+              actor,
+              `No legal actor: ${size}/${florMode}/${pardaMode}/${difficulty}`,
+            );
+            const command = choosePracticeAiCommand(
+              actor,
+              difficulty,
+              seed + turns,
+            );
+            const before = JSON.stringify(state);
+            const next = transition(
+              state,
+              actor.aiSeatId,
+              command,
+              tableRules,
+            ).state;
+            assert.equal(
+              JSON.stringify(state),
+              before,
+              'transition must not mutate its input',
+            );
+            assert.equal(next.gameVersion, state.gameVersion + 1);
+            state = next;
+          }
+          assert.ok(
+            state.match.complete,
+            `Game stalled: ${size}/${florMode}/${pardaMode}/${difficulty}`,
+          );
+          assert.equal(state.match.gameWins[state.match.winner!], 2);
+          completed++;
+        }
+  assert.equal(completed, 36);
+});
+void test('the AI answers Envido using its tantos, not its strongest Truco card', () => {
+  const state = practiceSnapshot();
+  state.hands.bot = [
+    { rank: 7, suit: 'copas' },
+    { rank: 6, suit: 'copas' },
+    { rank: 4, suit: 'oros' },
+  ];
+  state.dealtHands.bot = structuredClone(state.hands.bot);
+  state.activeSeatId = 'human';
+  const called = transition(
+    state,
+    'human',
+    { type: 'CALL_ENVIDO', amount: 2 },
+    rules,
+  ).state;
+  assert.deepEqual(
+    choosePracticeAiCommand(observeForAi(called, 'bot'), 'criollo', 1),
+    { type: 'ANSWER_CALL', answer: 'quiero' },
+  );
+});

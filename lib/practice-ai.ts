@@ -1,5 +1,7 @@
 import {
+  cardId,
   envidoScore,
+  florScore,
   hasFlor,
   isFlorReservada,
   nextTrucoCall,
@@ -9,6 +11,7 @@ import {
 import {
   dealtHandForSeat,
   legalActionsForSnapshot,
+  faltaValue,
   type EngineCommand,
   type EngineSnapshot,
   type ExecutableRules,
@@ -41,10 +44,6 @@ export type AiObservation = {
   priority: EngineSnapshot['priority'];
   legalCommands: EngineCommand[];
 };
-
-export function cardId(card: TrucoCard) {
-  return `${card.rank}-${card.suit}`;
-}
 
 export function observeForAi(
   snapshot: EngineSnapshot,
@@ -93,10 +92,12 @@ export function observeForAi(
     } else if (action === 'call-falta') {
       legalCommands.push({ type: 'CALL_ENVIDO', amount: 'falta' });
     } else if (action === 'raise-envido') {
-      legalCommands.push(
-        { type: 'RAISE_ENVIDO', amount: 2 },
-        { type: 'RAISE_ENVIDO', amount: 'falta' },
-      );
+      legalCommands.push({ type: 'RAISE_ENVIDO', amount: 2 });
+      if (
+        faltaValue(snapshot.match.score, snapshot.match.target) >
+        (snapshot.envido.pending?.stake ?? 0)
+      )
+        legalCommands.push({ type: 'RAISE_ENVIDO', amount: 'falta' });
     } else if (action === 'declare-flor') {
       legalCommands.push({ type: 'DECLARE_FLOR', mode: 'flor' });
     } else if (action === 'call-flor-envida') {
@@ -231,8 +232,24 @@ export function choosePracticeAiCommand(
   const nearMatch =
     observation.score[observation.aiTeam] >= observation.target - 3;
 
+  const florEnvida = findCommand(observation, 'CALL_FLOR_ENVIDA');
+  if (
+    difficulty === 'maestro' &&
+    florEnvida &&
+    (reservada ||
+      (florScore(observation.ownDealtHand, observation.vira) ?? 0) >= 40)
+  )
+    return florEnvida;
+
   const declare = findCommand(observation, 'DECLARE_FLOR');
   if (declare && flor) return declare;
+
+  const responseStrength =
+    observation.priority.active === 'envido'
+      ? envido >= (difficulty === 'maestro' ? 28 : 31)
+      : observation.priority.active === 'flor'
+        ? (florScore(observation.ownDealtHand, observation.vira) ?? 0) >= 35
+        : strongest >= (difficulty === 'maestro' ? 90 : 95);
 
   if (difficulty === 'aprendiz') {
     const noQuiero = findCommand(
@@ -240,7 +257,7 @@ export function choosePracticeAiCommand(
       'ANSWER_CALL',
       (command) => command.answer === 'no-quiero',
     );
-    if (noQuiero && strongest < 95) return noQuiero;
+    if (noQuiero && !responseStrength && !reservada) return noQuiero;
     const lowCards = byStrength(observation, false);
     if (lowCards.length) {
       return lowCards[
@@ -273,7 +290,7 @@ export function choosePracticeAiCommand(
     return raiseTruco;
   }
   if (quiero || noQuiero) {
-    return strongest >= (difficulty === 'maestro' ? 90 : 95) || reservada
+    return responseStrength || reservada
       ? (quiero ?? raiseTruco ?? observation.legalCommands[0])
       : (noQuiero ?? quiero ?? observation.legalCommands[0]);
   }
@@ -297,9 +314,6 @@ export function choosePracticeAiCommand(
   }
   if (baseEnvido && envido >= (difficulty === 'maestro' ? 28 : 31))
     return baseEnvido;
-
-  const florEnvida = findCommand(observation, 'CALL_FLOR_ENVIDA');
-  if (florEnvida && (reservada || envido >= 34)) return florEnvida;
 
   const callTruco = findCommand(observation, 'CALL_TRUCO');
   if (

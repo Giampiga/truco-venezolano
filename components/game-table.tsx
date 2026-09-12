@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 
 import { EnvidoRaises } from '@/components/envido-raises';
+import { roomRules, presetName } from '@/lib/room-model';
 import { cardDrag } from '@/lib/card-drag';
 import { tablePosition } from '@/lib/table-seats';
 import {
@@ -70,6 +71,7 @@ import {
   restartCurrentHand,
   resumeSnapshot,
   transition,
+  faltaValue,
   type EngineCommand,
   type EngineSnapshot,
   type ExecutableRules,
@@ -89,6 +91,7 @@ import type {
 } from '@/lib/product-types';
 import {
   createSpanishDeck,
+  cardId,
   envidoScore,
   getPieces,
   hasFlor,
@@ -136,10 +139,6 @@ const callLabels: Record<Exclude<TrucoCall, 'none'>, string> = {
 };
 
 const roleLabels = ['Mano', 'Trasmano', 'Antepie', 'Pie'];
-
-function cardId(card: TrucoCard) {
-  return `${card.rank}-${card.suit}`;
-}
 
 function seededDeck(seed: number) {
   const deck = createSpanishDeck();
@@ -194,23 +193,6 @@ function presentEvent(event: string, config: RoomConfig) {
   );
 }
 
-function presetLabel(preset: RoomConfig['preset']) {
-  return preset === 'oriental'
-    ? 'Oriental clásico'
-    : preset === 'rapida'
-      ? 'Mesa rápida'
-      : 'Competitiva larga';
-}
-
-function rulesForConfig(config: RoomConfig): ExecutableRules {
-  return {
-    florMode: config.flor,
-    pardaMode: config.parda,
-    pardaEngine: 'apilada-clasica',
-    florPoints: Number(config.florPoints),
-  };
-}
-
 function initialSnapshot(config: RoomConfig, resumeFromStorage: boolean) {
   if (resumeFromStorage && typeof window !== 'undefined') {
     try {
@@ -232,7 +214,7 @@ function initialSnapshot(config: RoomConfig, resumeFromStorage: boolean) {
     dealerSeatId: 'human',
     target: Number(config.target),
     gamesToWin: config.match === 'mejor-de-tres' ? 2 : 1,
-    rules: rulesForConfig(config),
+    rules: roomRules(config),
   });
   return snapshot;
 }
@@ -339,10 +321,7 @@ export function GameTable({
   onLeave,
   onToast,
 }: GameTableProps) {
-  const rules = useMemo<ExecutableRules>(
-    () => rulesForConfig(config),
-    [config],
-  );
+  const rules = useMemo<ExecutableRules>(() => roomRules(config), [config]);
   const [snapshot, setSnapshot] = useState(() =>
     initialSnapshot(config, resumeFromStorage),
   );
@@ -474,10 +453,13 @@ export function GameTable({
         : state.envido.pending?.by;
     if (!pendingTeam) return null;
     const respondingTeam = pendingTeam === 'A' ? 'B' : 'A';
-    if (respondingTeam === 'A') return null;
+    if (legalActionsForSnapshot(state, 'human').length) return null;
     return (
       state.seats.find(
-        (seat) => seat.team === respondingTeam && seat.id !== 'human',
+        (seat) =>
+          seat.team === respondingTeam &&
+          seat.id !== 'human' &&
+          legalActionsForSnapshot(state, seat.id).length > 0,
       )?.id ?? null
     );
   }, []);
@@ -705,7 +687,7 @@ export function GameTable({
             </div>
             <p className="mt-0.5 text-[11px] text-muted-foreground">
               Base {snapshot.handNumber} · Chico {snapshot.match.gameNumber} ·{' '}
-              {formatLabel} · {presetLabel(config.preset)}
+              {formatLabel} · {presetName(config.preset)}
             </p>
           </div>
         </div>
@@ -1115,6 +1097,12 @@ export function GameTable({
                 >
                   {humanLegal.includes('raise-envido') && (
                     <EnvidoRaises
+                      faltaAvailable={
+                        faltaValue(
+                          snapshot.match.score,
+                          snapshot.match.target,
+                        ) > (snapshot.envido.pending?.stake ?? 0)
+                      }
                       disabled={paused}
                       onSelect={(amount) =>
                         setPendingCommand({ type: 'RAISE_ENVIDO', amount })
@@ -1336,7 +1324,7 @@ export function GameTable({
                   Reglas de esta mesa
                 </p>
                 <h2 className="mt-1 text-sm font-semibold">
-                  {presetLabel(config.preset)} · {formatLabel}
+                  {presetName(config.preset)} · {formatLabel}
                 </h2>
               </div>
               <Button
@@ -1369,7 +1357,7 @@ export function GameTable({
               </div>
               <div>
                 <dt>Prioridad</dt>
-                <dd>Flor / Envite / Prive → Truco</dd>
+                <dd>Flor / Envite → Truco</dd>
               </div>
               <div>
                 <dt>Parda</dt>

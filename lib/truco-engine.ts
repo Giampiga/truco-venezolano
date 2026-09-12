@@ -1,6 +1,7 @@
 import type { GameFormat } from './product-types.ts';
 import {
   declarationWinner,
+  cardId,
   envidoScore,
   florScore,
   getPieces,
@@ -66,12 +67,13 @@ export type TrucoState = {
 export type EnvidoState = {
   status: 'idle' | 'pending' | 'accepted' | 'resolved';
   acceptedStake: number;
+  awardPending?: boolean;
   pending: null | {
     by: TeamId;
     bySeatId?: SeatId;
     stake: number;
     rejectionAward: number;
-    kind: 'envido' | 'n-mas' | 'falta';
+    kind: 'envido' | 'n-mas' | 'falta' | 'flor';
   };
   winner: TeamId | null;
 };
@@ -139,7 +141,6 @@ export type LegalActionContext = {
   pardaEngine: PardaEngine;
   pardaRevealWindow?: boolean;
   actorDeclaredFlor?: boolean;
-  opposingFlorDeclared?: boolean;
   actorPassedFirst?: boolean;
   truco: TrucoState;
   envido: EnvidoState;
@@ -314,15 +315,6 @@ export function resolveHandWinner(
   return null;
 }
 
-export function pardaContinuation(mode: PardaMode, trickNumber: number) {
-  if (trickNumber !== 1) return null;
-  return {
-    cardsRequired: 2 as const,
-    presentation: mode === 'abierta' ? 'mayor-arriba' : 'juntas-cerradas',
-    allowsRaiseBetweenReveal: mode === 'abierta',
-  };
-}
-
 export function createEngineSnapshot({
   deck,
   seats,
@@ -488,12 +480,17 @@ export function raiseEnvido(
   const pending = state.pending;
   if (!pending || pending.by === by)
     throw new Error('El Envite debe replicarlo el equipo contrario.');
-  if (kind === 'n-mas' && amount < 1)
+  if (
+    kind === 'n-mas' &&
+    (!Number.isInteger(amount) || amount < 1 || amount > 32)
+  )
     throw new Error('El aumento debe ser positivo.');
   const stake =
     kind === 'falta'
       ? faltaValue(score, target)
       : pending.stake + (kind === 'envido' ? 2 : amount);
+  if (stake <= pending.stake)
+    throw new Error('La falta debe aumentar la apuesta pendiente.');
   return {
     status: 'pending',
     acceptedStake: pending.stake,
@@ -631,23 +628,6 @@ export function resolveFlor(
   };
 }
 
-export function canDeclareFlor({
-  mode,
-  isPie,
-  cardsPlayed,
-  announcedALey,
-}: {
-  mode: 'off' | 'a-ley' | 'por-derecho';
-  isPie: boolean;
-  cardsPlayed: number;
-  announcedALey: boolean;
-}) {
-  if (mode === 'off') return false;
-  if (mode === 'por-derecho') return cardsPlayed === 0;
-  if (isPie) return cardsPlayed === 0;
-  return cardsPlayed === 0 || (cardsPlayed === 1 && announcedALey);
-}
-
 export function applyAwards(
   match: MatchState,
   awards: readonly ScoreAward[],
@@ -665,7 +645,7 @@ export function applyAwards(
     score: { ...match.score },
   };
   for (const award of ordered) {
-    if (next.complete) break;
+    if (next.complete || next.gameComplete) break;
     if (award.amount === 'game') {
       next.score[award.team] = next.target;
     } else {
@@ -685,26 +665,6 @@ export function applyAwards(
   return next;
 }
 
-export function privandoTeams(score: Record<TeamId, number>, target: number) {
-  return (['A', 'B'] as TeamId[]).filter((team) => score[team] === target - 1);
-}
-
-export function resolvePrive(
-  entries: Array<{ seatId: SeatId; team: TeamId; hand: TrucoCard[] }>,
-  vira: TrucoCard,
-  manoOrder: readonly SeatId[],
-) {
-  const winnerSeatId = resolveDeclarationTie(
-    entries,
-    vira,
-    manoOrder,
-    'envido',
-  );
-  const team =
-    entries.find((entry) => entry.seatId === winnerSeatId)?.team ?? null;
-  return team ? { team, amount: 1 as const, reason: 'prive' as const } : null;
-}
-
 export function legalActions(context: LegalActionContext): LegalAction[] {
   if (context.matchComplete || context.handComplete) return [];
   const actor = context.seats.find((seat) => seat.id === context.actorSeatId);
@@ -712,22 +672,20 @@ export function legalActions(context: LegalActionContext): LegalAction[] {
   const active = context.actorSeatId === context.activeSeatId;
   const actorHasFlor = hasFlor(context.actorHand, context.vira);
   const effectiveFlor = context.florMode !== 'off' && actorHasFlor;
-  const actorHasReservada = isFlorReservada(context.actorHand, context.vira);
   const actorDeclaredFlor = context.actorDeclaredFlor === true;
 
   if (context.priority.active === 'truco' && context.truco.pending) {
     if (context.truco.pending.by === actor.team) return [];
     if (effectiveFlor && !actorDeclaredFlor) {
-      return context.opposingFlorDeclared
-        ? ['declare-flor', 'call-flor-envida']
-        : ['declare-flor'];
+      return ['declare-flor'];
     }
     const actions: LegalAction[] = ['answer-quiero', 'answer-no-quiero'];
     if (nextTrucoCall(context.truco.pending.call)) actions.push('raise-truco');
     if (
       context.firstTrick &&
       !context.actorHasPlayedFirstCard &&
-      (!effectiveFlor || actorHasReservada)
+      context.envido.status === 'idle' &&
+      !effectiveFlor
     ) {
       actions.push('call-envido', 'call-falta');
     }
@@ -748,25 +706,35 @@ export function legalActions(context: LegalActionContext): LegalAction[] {
     ) {
       return ['declare-flor'];
     }
-    return ['answer-quiero', 'answer-no-quiero', 'raise-envido'];
+    if (context.priority.active === 'flor' && !effectiveFlor) return [];
+    return [
+      'answer-quiero',
+      'answer-no-quiero',
+      'raise-envido',
+      ...(context.priority.active === 'flor' &&
+      context.envido.pending.kind === 'flor'
+        ? (['declare-flor', 'call-flor-envida'] as const)
+        : []),
+    ];
   }
 
   if (!active || context.priority.active !== 'play') return [];
+  // The digital table announces Flor before playing, so it cannot be silently lost.
+  if (
+    effectiveFlor &&
+    !actorDeclaredFlor &&
+    context.firstTrick &&
+    !context.actorHasPlayedFirstCard
+  )
+    return ['declare-flor'];
   const actions: LegalAction[] = [
     context.pardaRevealWindow ? 'play-stack' : 'play-card',
     'fold',
   ];
   if (context.firstTrick && !context.actorHasPlayedFirstCard) {
     if (!context.actorPassedFirst) actions.push('pass-card');
-    if (
-      context.envido.status === 'idle' &&
-      (!effectiveFlor || actorHasReservada)
-    ) {
+    if (context.envido.status === 'idle' && !effectiveFlor) {
       actions.push('call-envido', 'call-falta');
-    }
-    if (effectiveFlor && !actorDeclaredFlor) {
-      actions.push('declare-flor');
-      if (context.opposingFlorDeclared) actions.push('call-flor-envida');
     }
   }
   if (
@@ -776,10 +744,6 @@ export function legalActions(context: LegalActionContext): LegalAction[] {
     actions.push('call-truco');
   }
   return [...new Set(actions)];
-}
-
-function idForCard(card: TrucoCard) {
-  return `${card.rank}-${card.suit}`;
 }
 
 function teamForSeat(snapshot: EngineSnapshot, seatId: SeatId) {
@@ -814,9 +778,6 @@ export function legalActionsForSnapshot(
     Object.keys(snapshot.pardaStacks ?? {}).length < snapshot.seats.length;
   const actorHand = dealtHandForSeat(snapshot, actorSeatId);
   const currentHand = snapshot.hands[actorSeatId] ?? [];
-  const opposingFlorDeclared = snapshot.florDeclarations.some(
-    (seatId) => teamForSeat(snapshot, seatId) !== actor.team,
-  );
   return legalActions({
     actorSeatId,
     activeSeatId: snapshot.activeSeatId,
@@ -832,7 +793,6 @@ export function legalActionsForSnapshot(
     pardaEngine: rules.pardaEngine,
     pardaRevealWindow,
     actorDeclaredFlor: snapshot.florDeclarations.includes(actorSeatId),
-    opposingFlorDeclared,
     actorPassedFirst:
       currentHand.length > 0 &&
       currentHand.every((card) => card.passed === true),
@@ -948,6 +908,56 @@ function settleDeclaredFlor(
   }
 }
 
+/** Score Envite before Truco, only after every player had a chance to announce Flor. */
+function finishHand(
+  snapshot: EngineSnapshot,
+  trucoAward: ScoreAward,
+  events: string[],
+) {
+  const awards: ScoreAward[] = [];
+  if (!snapshot.florDeclarations.length && snapshot.envido.awardPending) {
+    if (snapshot.envido.status === 'accepted') {
+      const winnerSeat = resolveDeclarationTie(
+        snapshot.seats.map((seat) => ({
+          seatId: seat.id,
+          hand: dealtHandForSeat(snapshot, seat.id),
+        })),
+        snapshot.vira,
+        manoOrder(snapshot),
+        'envido',
+      );
+      if (!winnerSeat) throw new Error('No se pudo resolver el Envite.');
+      const resolved = resolveEnvido(
+        snapshot.envido,
+        teamForSeat(snapshot, winnerSeat),
+      );
+      snapshot.envido = resolved.state;
+      awards.push(resolved.award);
+      events.push(
+        `${winnerSeat} ganó el Envite con ${envidoScore(dealtHandForSeat(snapshot, winnerSeat), snapshot.vira)} tantos.`,
+      );
+    } else if (
+      snapshot.envido.status === 'resolved' &&
+      snapshot.envido.winner
+    ) {
+      awards.push({
+        team: snapshot.envido.winner,
+        amount: snapshot.envido.acceptedStake,
+        reason: 'envido',
+      });
+    }
+  }
+  snapshot.envido.awardPending = false;
+  snapshot.match = applyAwards(snapshot.match, [...awards, trucoAward]);
+  snapshot.handComplete = true;
+  if (snapshot.match.gameComplete) {
+    const winner = snapshot.match.score.A >= snapshot.match.target ? 'A' : 'B';
+    events.push(
+      `${snapshot.match.complete ? 'Serie terminada' : 'Chico ganado'}: ganó ${winner}.`,
+    );
+  }
+}
+
 function opponentOf(team: TeamId): TeamId {
   return team === 'A' ? 'B' : 'A';
 }
@@ -1054,9 +1064,7 @@ export function transition(
 
   if (command.type === 'PLAY_CARD') {
     const hand = next.hands[actorSeatId] ?? [];
-    const cardIndex = hand.findIndex(
-      (card) => idForCard(card) === command.cardId,
-    );
+    const cardIndex = hand.findIndex((card) => cardId(card) === command.cardId);
     if (cardIndex < 0)
       throw new Error('La carta no está en la mano del actor.');
     const [card] = hand.splice(cardIndex, 1);
@@ -1065,12 +1073,7 @@ export function transition(
         'Una carta solo queda pasada mediante la acción de pasar.',
       );
     }
-    next.played.push({
-      actorSeatId,
-      seatId: actorSeatId,
-      team: actorTeam,
-      card,
-    } as TrickPlay);
+    next.played.push({ seatId: actorSeatId, team: actorTeam, card });
     events.push(`${actorSeatId} jugó ${card.rank} de ${card.suit}.`);
 
     const trickPlays = next.played.slice(
@@ -1094,15 +1097,9 @@ export function transition(
         : `La vuelta fue para ${result.winnerTeam}.`,
     );
     if (winner) {
-      next.match = applyAwards(next.match, [
-        trucoHandAward(next.truco, winner),
-      ]);
-      next.handComplete = true;
+      finishHand(next, trucoHandAward(next.truco, winner), events);
       next.activeSeatId = result.winningSeatId ?? next.manoSeatId;
       events.push(`La base fue para ${winner}.`);
-      if (next.match.complete) events.push(`Serie terminada: ganó ${winner}.`);
-      else if (next.match.gameComplete)
-        events.push(`Chico ganado por ${winner}.`);
       return { state: next, events };
     }
     next.trickNumber += 1;
@@ -1115,8 +1112,8 @@ export function transition(
     if (hand.length !== 2 || new Set(command.cardIds).size !== 2) {
       throw new Error('La parda exige exactamente las dos cartas restantes.');
     }
-    const top = hand.find((card) => idForCard(card) === command.cardIds[0]);
-    const hidden = hand.find((card) => idForCard(card) === command.cardIds[1]);
+    const top = hand.find((card) => cardId(card) === command.cardIds[0]);
+    const hidden = hand.find((card) => cardId(card) === command.cardIds[1]);
     if (!top || !hidden) throw new Error('La pila contiene una carta ajena.');
     if (trucoRank(top, next.vira) < trucoRank(hidden, next.vira)) {
       throw new Error('En la parda tradicional la carta mayor debe ir arriba.');
@@ -1144,10 +1141,7 @@ export function transition(
     const resolution = resolvePardaStacks(next);
     next.played.push(...resolution.revealed);
     next.trickResults.push(resolution.result);
-    next.match = applyAwards(next.match, [
-      trucoHandAward(next.truco, resolution.winnerTeam),
-    ]);
-    next.handComplete = true;
+    finishHand(next, trucoHandAward(next.truco, resolution.winnerTeam), events);
     next.activeSeatId = resolution.winnerSeatId;
     events.push(
       resolution.usedHidden
@@ -1156,10 +1150,6 @@ export function transition(
           : `Se destapó el desempate: la base fue para ${resolution.winnerTeam}.`
         : `La carta de arriba resolvió la base para ${resolution.winnerTeam}.`,
     );
-    if (next.match.complete)
-      events.push(`Serie terminada: ganó ${resolution.winnerTeam}.`);
-    else if (next.match.gameComplete)
-      events.push(`Chico ganado por ${resolution.winnerTeam}.`);
     return { state: next, events };
   }
 
@@ -1173,10 +1163,7 @@ export function transition(
   }
 
   if (command.type === 'FOLD_HAND') {
-    next.match = applyAwards(next.match, [
-      trucoHandAward(next.truco, opponentOf(actorTeam)),
-    ]);
-    next.handComplete = true;
+    finishHand(next, trucoHandAward(next.truco, opponentOf(actorTeam)), events);
     events.push(`${actorSeatId} se fue al mazo.`);
     return { state: next, events };
   }
@@ -1221,6 +1208,11 @@ export function transition(
   }
 
   if (command.type === 'RAISE_ENVIDO') {
+    if (
+      next.priority.active === 'flor' &&
+      !next.florDeclarations.includes(actorSeatId)
+    )
+      next.florDeclarations.push(actorSeatId);
     next.envido = raiseEnvido(
       next.envido,
       actorTeam,
@@ -1243,40 +1235,54 @@ export function transition(
   }
 
   if (command.type === 'DECLARE_FLOR') {
-    if (!hasFlor(dealtHandForSeat(next, actorSeatId), next.vira)) {
-      throw new Error('La mano no tiene Flor.');
+    if (next.priority.active === 'flor' && next.envido.pending) {
+      return transition(
+        snapshot,
+        actorSeatId,
+        { type: 'ANSWER_CALL', answer: 'quiero' },
+        rules,
+        commandId,
+      );
     }
-    if (!next.florDeclarations.includes(actorSeatId))
-      next.florDeclarations.push(actorSeatId);
-    events.push(command.mode === 'a-ley' ? 'A ley.' : 'Flor tengo.');
-    if (next.priority.active === 'truco') {
-      next.priority = { active: 'flor', suspendedTruco: next.truco.pending };
-    } else if (next.priority.active === 'envido') {
-      next.priority = {
-        active: 'flor',
-        suspendedTruco: next.priority.suspendedTruco,
+    next.florDeclarations.push(actorSeatId);
+    events.push(`${actorSeatId} cantó Flor.`);
+    next.priority = { active: 'flor', suspendedTruco: next.truco.pending };
+    // Flor cancels even an accepted Envite: its points wait until the hand ends.
+    next.envido = createEnvidoState();
+    const opposingFlor = next.seats.some(
+      (seat) =>
+        seat.team !== actorTeam &&
+        hasFlor(dealtHandForSeat(next, seat.id), next.vira),
+    );
+    if (opposingFlor) {
+      next.envido = {
+        ...createEnvidoState(),
+        status: 'pending',
+        pending: {
+          by: actorTeam,
+          bySeatId: actorSeatId,
+          stake: rules.florPoints,
+          rejectionAward: rules.florPoints,
+          kind: 'flor',
+        },
       };
+      events.push(
+        'Flor pendiente: el rival puede comparar, envidar o decir «No quiero».',
+      );
+    } else {
+      settleDeclaredFlor(next, rules, events);
     }
-    settleDeclaredFlor(next, rules, events);
     return { state: next, events };
   }
 
   if (command.type === 'CALL_FLOR_ENVIDA') {
-    if (!hasFlor(dealtHandForSeat(next, actorSeatId), next.vira)) {
-      throw new Error('La mano no tiene Flor.');
-    }
-    if (!next.florDeclarations.includes(actorSeatId))
-      next.florDeclarations.push(actorSeatId);
-    next.envido = callEnvido(
-      next.envido,
-      actorTeam,
-      next.match.score,
-      next.match.target,
+    return transition(
+      snapshot,
+      actorSeatId,
+      { type: 'RAISE_ENVIDO', amount: 2 },
+      rules,
+      commandId,
     );
-    if (next.envido.pending) next.envido.pending.bySeatId = actorSeatId;
-    next.priority = { active: 'flor', suspendedTruco: next.truco.pending };
-    events.push('Mi Flor envida.');
-    return { state: next, events };
   }
 
   if (command.type === 'ANSWER_CALL') {
@@ -1285,8 +1291,7 @@ export function transition(
       next.truco = answered.state;
       next.priority = { active: 'play', suspendedTruco: null };
       if (answered.award) {
-        next.match = applyAwards(next.match, [answered.award]);
-        next.handComplete = true;
+        finishHand(next, answered.award, events);
       }
       events.push(command.answer === 'quiero' ? 'Quiero.' : 'No quiero.');
       return { state: next, events };
@@ -1297,44 +1302,48 @@ export function transition(
       const answered = answerEnvido(next.envido, actorTeam, command.answer);
       next.envido = answered.state;
       const awards: ScoreAward[] = [];
-      if (answered.award) awards.push(answered.award);
-      if (command.answer === 'quiero') {
-        const entries = next.seats.map((seat) => ({
-          seatId: seat.id,
-          team: seat.team,
-          hand: dealtHandForSeat(next, seat.id),
-        }));
-        const winnerSeat = resolveDeclarationTie(
-          entries,
-          next.vira,
-          manoOrder(next),
-          priorityKind === 'flor' ? 'flor' : 'envido',
+      if (priorityKind === 'envido') {
+        // Persist the unpaid award explicitly; legacy resolved Envites were already paid.
+        next.envido.awardPending = true;
+        if (answered.award)
+          next.envido.acceptedStake = Number(answered.award.amount);
+        next.priority = finishPriorityCall(next.priority);
+        events.push(
+          command.answer === 'quiero'
+            ? 'Envite querido: se contará al terminar la base, antes del Truco.'
+            : 'Envite no querido: el punto o la apuesta anterior se contará al terminar la base.',
         );
-        const winnerTeam = entries.find(
-          (entry) => entry.seatId === winnerSeat,
-        )?.team;
-        if (!winnerTeam) throw new Error('No se pudo resolver el canto.');
-        const resolution = resolveEnvido(next.envido, winnerTeam);
-        next.envido = resolution.state;
-        awards.push(resolution.award);
-        if (priorityKind === 'flor') {
-          const flor = resolveFlor(
-            entries.map((entry) => ({
-              ...entry,
-              declared: hasFlor(entry.hand, next.vira),
-            })),
-            next.vira,
-            manoOrder(next),
-            rules.florPoints,
-          );
-          if (flor)
-            awards.push({
-              team: flor.winnerTeam,
-              amount: flor.points,
-              reason: 'flor',
-            });
-        }
+        return { state: next, events };
       }
+      const entries = next.seats.map((seat) => ({
+        seatId: seat.id,
+        team: seat.team,
+        hand: dealtHandForSeat(next, seat.id),
+        declared: hasFlor(dealtHandForSeat(next, seat.id), next.vira),
+      }));
+      next.florDeclarations = entries
+        .filter((entry) => entry.declared)
+        .map((entry) => entry.seatId);
+      const flor = resolveFlor(
+        entries,
+        next.vira,
+        manoOrder(next),
+        rules.florPoints,
+      );
+      if (!flor) throw new Error('No se pudo resolver la Flor.');
+      const winner = answered.award?.team ?? flor.winnerTeam;
+      const alliedFlowers = entries.filter(
+        (entry) => entry.declared && entry.team === winner,
+      ).length;
+      const stake = answered.award
+        ? Number(answered.award.amount)
+        : next.envido.acceptedStake;
+      awards.push({
+        team: winner,
+        amount: stake + (alliedFlowers - 1) * rules.florPoints,
+        reason: 'flor',
+      });
+      next.envido = { ...next.envido, status: 'resolved', winner };
       next.match = applyAwards(next.match, awards);
       next.priority = finishPriorityCall(next.priority);
       if (next.match.gameComplete) {

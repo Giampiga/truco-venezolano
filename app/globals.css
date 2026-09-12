@@ -4490,3 +4490,67 @@ button[draggable='true']:active {
     max-width: 100%;
   }
 }
+
+/* Rules guide: one ranked list, readable in either theme and on narrow screens. */
+.card-hierarchy {
+  display: grid;
+  gap: 16px;
+}
+.card-hierarchy h3 {
+  font-size: 20px;
+  font-weight: 700;
+}
+.card-hierarchy p {
+  color: var(--muted-foreground);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.hierarchy-vira {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.hierarchy-vira > strong {
+  flex-basis: 100%;
+  font-size: 14px;
+}
+.hierarchy-vira label {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+}
+.hierarchy-ladder {
+  list-style: decimal;
+  padding-left: 28px;
+}
+.hierarchy-ladder li {
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.hierarchy-ladder li::marker {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.hierarchy-ladder strong {
+  display: block;
+  font-size: 14px;
+}
+.hierarchy-ladder span {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.card-hierarchy summary,
+.rules-agreement > summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 8px 0;
+}
+.card-hierarchy details p {
+  margin-top: 12px;
+}
+.rules-agreement .rules-detail-grid {
+  margin-top: 12px;
+}

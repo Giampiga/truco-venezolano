@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 export function EnvidoRaises({
   onSelect,
   disabled = false,
+  faltaAvailable = true,
 }: {
   onSelect: (amount: number | 'falta') => void;
   disabled?: boolean;
+  faltaAvailable?: boolean;
 }) {
   const [amount, setAmount] = useState('3');
   return (
@@ -20,7 +22,7 @@ export function EnvidoRaises({
       </Button>
       <Button
         variant="outline"
-        disabled={disabled}
+        disabled={disabled || !faltaAvailable}
         onClick={() => onSelect('falta')}
       >
         Quiero y la Falta

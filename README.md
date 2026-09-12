@@ -2,7 +2,7 @@
 
 A browser game for Venezuelan Truco, with Spanish interface copy, private or public tables, 1v1 duels and 2v2 teams. Players can practice against Truquito, invite friends, compete for Elo, and opt into room voice and camera.
 
-This repository is migrating from Sites to **Next.js on Vercel, Supabase Auth/Postgres, and optional LiveKit media**. The migration branch is `codex/vercel-launch`. The separate [Sites version](https://truco.gga.chatgpt.site) keeps its ChatGPT sign-in, D1 data, and current owner-only audience; it uses a Sites-compatible build, not this Next.js deployment. The intended address is [truco-ve.vercel.app](https://truco-ve.vercel.app), but the hosted migration is **not ready for public play**. See [launch status](#launch-status) before deploying.
+This repository runs **Next.js on Vercel, Supabase Auth/Postgres, and optional LiveKit media**. The migration is merged into `main`. The separate [Sites version](https://truco.gga.chatgpt.site) keeps its ChatGPT sign-in, D1 data, and current owner-only audience; it uses a Sites-compatible build, not this Next.js deployment. The Vercel address is [truco-ve.vercel.app](https://truco-ve.vercel.app), but the hosted migration is **not ready for public play**. See [launch status](#launch-status) before deploying.
 
 ## What is implemented
 
@@ -12,11 +12,12 @@ This repository is migrating from Sites to **Next.js on Vercel, Supabase Auth/Po
 - **Profiles:** display name, unique username, biography, friend requests, current/peak Elo, and finished online match history with opponents and results. Account labels in play and chat come from the server.
 - **Table interaction:** branched canto menus beside the hand on desktop, clear pending-canto notices, click or drag to play, and a separate stack of played cards for each player. The vira sits on the table; hover, tap, or keyboard activation opens its piece details. Ordinary visual stacking does not change turn order; the special first-parda rule has its own engine action.
 - **Communication:** floating global chat, room chat, optional voice, and separately optional cameras. Microphone/camera start off; there is no recording or transcription.
+- **Rules guide:** an interactive card ladder in “Cómo jugar” follows the engine ranking, including vira substitutions and ties. Flor disputes allow responses and raises; Envido is counted at the end of the base before Truco. Regional limitations are documented in [the rules](docs/RULES.md).
 - **Practice:** three local AI difficulties and optional explanations. Truquito is a rule-based bot, not an LLM, and receives only its legal player view.
 - **Appearance:** light/dark toggle in the lobby and practice headers, with a saved browser preference and system-theme default. Help text is tucked into disclosures where it does not need to stay visible.
 - **Installation:** a web app manifest and service worker. It caches the icon and manifest only; it does not make online matches available offline.
 
-[Game rules](docs/RULES.md) · [Competitive rules](docs/COMPETITIVE.md) · [Voice setup](docs/VOICE_SETUP.md) · [Vercel and Supabase setup](docs/VERCEL_SETUP.md)
+[Game rules](docs/RULES.md) · [Code cleanup audit](docs/CODE_AUDIT.md) · [Competitive rules](docs/COMPETITIVE.md) · [Voice setup](docs/VOICE_SETUP.md) · [Vercel and Supabase setup](docs/VERCEL_SETUP.md)
 
 ## Technologies and their jobs
 
@@ -219,7 +220,7 @@ When editing UI, keep keyboard interaction, touch dragging, readable Spanish, sm
 
 The code is prepared for the new services, with these external steps still outstanding:
 
-1. **Vercel access:** project `truco-venezolano` and the short domain are created, but newer deployments are blocked by `TEAM_ACCESS_REQUIRED` / unverified commit-author permissions. Connect the correct GitHub account and grant access to the private repository. The existing domain currently shows Vercel deployment protection, not a completed public launch.
+1. **Vercel delivery:** project `truco-venezolano` is deployed at `truco-ve.vercel.app`. The last verified GitHub integration was disconnected, so a push alone does not guarantee a new deployment. Connect the private repository for automatic builds or deploy with the authenticated CLI. Production service configuration is still required below.
 2. **Supabase:** create the project, apply the schema, set environment variables, enable anonymous/email login, configure Google/Facebook/Apple and SMTP, and verify each flow with real accounts.
 3. **LiveKit:** configure the media credentials and test two real participants, including denied device permission, mute/deafen, camera toggling, and departure.
 4. **Migration:** preserve an export of the Sites data and verify ownership when mapping old hashed ChatGPT IDs to new Supabase user IDs. Never infer account ownership from matching names. Keep Sites available until cutover is tested.

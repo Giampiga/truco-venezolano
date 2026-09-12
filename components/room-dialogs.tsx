@@ -17,6 +17,13 @@ import {
 } from '@/components/ui/native-select';
 import { Switch } from '@/components/ui/switch';
 import type { RoomConfig } from '@/lib/product-types';
+import {
+  cardHierarchy,
+  SPANISH_RANKS,
+  SPANISH_SUITS,
+  getPieces,
+  type TrucoCard,
+} from '@/lib/truco-rules';
 import type { PracticeDifficulty } from '@/lib/practice-ai';
 export function CreateRoomDialog({
   open,
@@ -530,10 +537,10 @@ export function RulesDialog({
       >
         <DialogHeader>
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
-            Mesa Las Acacias
+            TRUCO VENEZOLANO
           </p>
           <DialogTitle className="font-display text-3xl font-bold">
-            Reglas acordadas
+            Cómo jugar
           </DialogTitle>
           <DialogDescription>
             Reglas:{' '}
@@ -546,80 +553,94 @@ export function RulesDialog({
             universal.
           </DialogDescription>
         </DialogHeader>
-        <dl className="rules-detail-grid">
-          <RuleDetail
-            label="Formato"
-            value={`${config.format === '1v1' ? '2 jugadores · Mano/Pie' : '4 jugadores · parejas fijas'} · ${config.target} piedras · ${config.match === 'mejor-de-tres' ? 'mejor de 3' : 'un chico'}`}
-          />
-          <RuleDetail
-            label="Baraja"
-            value="Española de 40 · 3 cartas · vira visible"
-          />
-          <RuleDetail
-            label="Piezas"
-            value="Perico 11 · Perica 10 de la pinta; si la vira es 11 o 10, el 12 sustituye esa pieza"
-          />
-          <RuleDetail
-            label="Truco"
-            value="Sin canto 1 · Truco 3/rehúse 1 · Retruco 6/3 · Vale 9 9/6 · Vale Juego chico/9"
-          />
-          <RuleDetail
-            label="Envite"
-            value="2 · Quiero y Envido 4 · Falta · empate para Mano"
-          />
-          <RuleDetail
-            label="Flor"
-            value={
-              config.flor === 'off'
-                ? 'Sin flor'
-                : config.flor === 'por-derecho'
-                  ? 'Flor por derecho · variante regional'
-                  : 'Flor a ley · 3 por Flor · Reservada invencible condicionada'
-            }
-          />
-          <RuleDetail
-            label="Primera parda"
-            value={
-              config.parda === 'abierta'
-                ? 'Dos cartas juntas; la mayor arriba; admite repique'
-                : 'Dos cartas juntas; sin canto entre carta y destape'
-            }
-          />
-          <RuleDetail
-            label="Cartas pasadas"
-            value="Activas · cuentan para el Envido, no matan en Truco"
-          />
-          <RuleDetail
-            label="Truco abierto/cerrado"
-            value="Manos privadas para todos los asientos"
-          />
-          <RuleDetail
-            label="Tapado"
-            value={
-              config.cardPlay === 'matar-tapado'
-                ? 'Experimental; no automatizado en mesas competitivas'
-                : 'Todas las cartas visibles'
-            }
-          />
-          <RuleDetail
-            label="Final"
-            value="Se gana al alcanzar la meta de piedras · sin Privando"
-          />
-          <RuleDetail
-            label="Señas"
-            value="Permitidas, siempre visibles a toda la mesa"
-          />
-          <RuleDetail
-            label="Prioridad"
-            value="Flor anula el Envido normal; Flor/Envido/Prive se acreditan antes del Truco; luego se retoma el canto suspendido"
-          />
-        </dl>
+        <CardHierarchy />
+        <details className="rules-agreement">
+          <summary>Reglas de esta mesa</summary>
+          <dl className="rules-detail-grid">
+            <RuleDetail
+              label="Formato"
+              value={`${config.format === '1v1' ? '2 jugadores · Mano/Pie' : '4 jugadores · parejas fijas'} · ${config.target} piedras · ${config.match === 'mejor-de-tres' ? 'mejor de 3' : 'un chico'}`}
+            />
+            <RuleDetail
+              label="Baraja"
+              value="Española de 40 · 3 cartas · vira visible"
+            />
+            <RuleDetail
+              label="Piezas"
+              value="Perico 11 · Perica 10 de la pinta; si la vira es 11 o 10, el 12 sustituye esa pieza"
+            />
+            <RuleDetail
+              label="Truco"
+              value="Sin canto 1 · Truco 3/rehúse 1 · Retruco 6/3 · Vale 9 9/6 · Vale Juego chico/9"
+            />
+            <RuleDetail
+              label="Envite"
+              value="Envido 2 · Quiero y Envido 4 · Falta del que va ganando · empate para Mano · se cuenta al terminar la base"
+            />
+            <RuleDetail
+              label="Flor"
+              value={
+                config.flor === 'off'
+                  ? 'Sin flor'
+                  : config.flor === 'por-derecho'
+                    ? 'Flor por derecho · variante regional'
+                    : 'Flor anunciada antes de jugar · 3 por flor · Reservada gana la comparación'
+              }
+            />
+            <RuleDetail
+              label="Primera parda"
+              value={
+                config.parda === 'abierta'
+                  ? 'Dos cartas juntas; la mayor arriba; admite repique'
+                  : 'Dos cartas juntas; sin canto entre carta y destape'
+              }
+            />
+            <RuleDetail
+              label="Cartas pasadas"
+              value="Activas · cuentan para el Envido, no matan en Truco"
+            />
+            <RuleDetail
+              label="Truco abierto/cerrado"
+              value="Manos privadas para todos los asientos"
+            />
+            <RuleDetail
+              label="Tapado"
+              value={
+                config.cardPlay === 'matar-tapado'
+                  ? 'Experimental; no automatizado en mesas competitivas'
+                  : 'Todas las cartas visibles'
+              }
+            />
+            <RuleDetail
+              label="Final"
+              value="Se gana al alcanzar la meta de piedras · sin Privando"
+            />
+            <RuleDetail
+              label="Señas"
+              value="Permitidas, siempre visibles a toda la mesa"
+            />
+            <RuleDetail
+              label="Prioridad"
+              value="Flor anula el Envido normal; se puede responder y envidar con Flor. El Envite se acredita antes del Truco; luego se retoma el canto suspendido"
+            />
+          </dl>
+        </details>
         <div className="rules-caveat">
           <Info className="size-4" />
           <p>
-            Muerte segura/falsa, Flor 4/5 y Reservada “cobra todo” siguen
-            desactivadas: FEVETRU las nombra como modalidades, pero aún no
-            publica una semántica ejecutable completa.
+            Aquí la Flor se anuncia antes de jugar y la primera parda se juega
+            con las dos cartas juntas. Privando, matar tapado, Flor de 4/5 y
+            Reservada «cobra todo» no están habilitados. Las reglas regionales
+            pueden variar. Consulta las{' '}
+            <a
+              href="https://www.ludoteka.com/juegos/truco-venezolano/reglas"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              reglas de referencia
+            </a>
+            .
           </p>
         </div>
         <DialogFooter>
@@ -636,5 +657,97 @@ function RuleDetail({ label, value }: { label: string; value: string }) {
       <dt>{label}</dt>
       <dd>{value}</dd>
     </div>
+  );
+}
+
+function CardHierarchy() {
+  const [vira, setVira] = useState<TrucoCard>({ rank: 6, suit: 'copas' });
+  const { perico, perica } = getPieces(vira);
+  return (
+    <section className="card-hierarchy" aria-labelledby="card-hierarchy-title">
+      <h3 id="card-hierarchy-title">¿Qué carta le gana a cuál?</h3>
+      <p>
+        De mayor a menor: cada fila le gana a todas las de abajo. Las cartas de
+        una misma fila empatan, sin importar la pinta.
+      </p>
+      <div className="hierarchy-vira">
+        <strong>Prueba otra vira</strong>
+        <label>
+          Número
+          <NativeSelect
+            value={vira.rank}
+            onChange={(event) =>
+              setVira({
+                ...vira,
+                rank: Number(event.target.value) as TrucoCard['rank'],
+              })
+            }
+          >
+            {SPANISH_RANKS.map((rank) => (
+              <NativeSelectOption key={rank} value={rank}>
+                {rank}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </label>
+        <label>
+          Pinta
+          <NativeSelect
+            value={vira.suit}
+            onChange={(event) =>
+              setVira({
+                ...vira,
+                suit: event.target.value as TrucoCard['suit'],
+              })
+            }
+          >
+            {SPANISH_SUITS.map((suit) => (
+              <NativeSelectOption key={suit} value={suit}>
+                {suit}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </label>
+      </div>
+      <p aria-live="polite">
+        Perico: {perico.rank} de {perico.suit}. Perica: {perica.rank} de{' '}
+        {perica.suit}.{' '}
+        {vira.rank === 10 || vira.rank === 11
+          ? 'El 12 sustituye a la pieza que salió de vira.'
+          : 'Las piezas son el 11 y el 10 de la pinta de la vira.'}{' '}
+        La vira queda en la mesa: no se reparte ni se juega.
+      </p>
+      <ol className="hierarchy-ladder">
+        {cardHierarchy(vira).map(({ strength, label, cards }) => (
+          <li key={strength}>
+            <strong>{label}</strong>
+            <span>
+              {cards.map((card) => `${card.rank} de ${card.suit}`).join(' · ')}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <details>
+        <summary>¿Y si hay empate o una carta pasada?</summary>
+        <p>
+          Si empatan rivales en la primera vuelta, cada jugador coloca sus dos
+          cartas restantes juntas, con la mayor arriba. Si las de arriba
+          empatan, solo quienes empataron destapan la otra. Si persiste el
+          empate, gana el que esté primero en el orden de mano entre los
+          empatados.
+        </p>
+        <p>
+          Si se empata la segunda o la tercera vuelta, gana quien ganó la
+          primera. Dos cartas iguales de compañeros no producen parda. Una carta
+          pasada pierde contra cualquier carta sin pasar y conserva su valor
+          para el Envido.
+        </p>
+      </details>
+      <p>
+        Esta escalera es para ganar vueltas. En el Envido se suman tantos: dos
+        cartas de la misma pinta suman 20 más sus números; las figuras valen 0.
+        Con Perico o Perica, se suman 30 o 29 más la mejor otra carta.
+      </p>
+    </section>
   );
 }

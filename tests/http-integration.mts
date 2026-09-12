@@ -84,7 +84,9 @@ for (const format of ['1v1', '2v2'] as const) {
       const legal = view.game.legal;
       const hand = view.game.private.hand;
       let command;
-      if (legal.includes('answer-no-quiero'))
+      if (legal.includes('declare-flor'))
+        command = { type: 'DECLARE_FLOR', mode: 'flor' };
+      else if (legal.includes('answer-no-quiero'))
         command = { type: 'ANSWER_CALL', answer: 'no-quiero' };
       else if (legal.includes('play-stack')) command = { type: 'FOLD_HAND' };
       else if (legal.includes('play-card'))
