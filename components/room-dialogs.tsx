@@ -531,11 +531,8 @@ export function RulesDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton
-        className="max-h-[calc(100vh-2rem)] overflow-y-auto sm:max-w-2xl"
-      >
-        <DialogHeader>
+      <DialogContent showCloseButton className="rules-dialog sm:max-w-2xl">
+        <DialogHeader className="rules-dialog-header">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">
             TRUCO VENEZOLANO
           </p>
@@ -543,107 +540,135 @@ export function RulesDialog({
             Cómo jugar
           </DialogTitle>
           <DialogDescription>
-            Reglas:{' '}
+            Esta mesa juega con{' '}
             {config.preset === 'oriental'
               ? 'Oriental clásico'
               : config.preset === 'rapida'
                 ? 'Mesa rápida'
                 : 'Competitiva larga'}
-            . Es una configuración explícita de esta mesa, no una regla
-            universal.
+            . Abre una sección para consultar lo que necesitas.
           </DialogDescription>
         </DialogHeader>
-        <CardHierarchy />
-        <details className="rules-agreement">
-          <summary>Reglas de esta mesa</summary>
-          <dl className="rules-detail-grid">
-            <RuleDetail
-              label="Formato"
-              value={`${config.format === '1v1' ? '2 jugadores · Mano/Pie' : '4 jugadores · parejas fijas'} · ${config.target} piedras · ${config.match === 'mejor-de-tres' ? 'mejor de 3' : 'un chico'}`}
-            />
-            <RuleDetail
-              label="Baraja"
-              value="Española de 40 · 3 cartas · vira visible"
-            />
-            <RuleDetail
-              label="Piezas"
-              value="Perico 11 · Perica 10 de la pinta; si la vira es 11 o 10, el 12 sustituye esa pieza"
-            />
-            <RuleDetail
-              label="Truco"
-              value="Sin canto 1 · Truco 3/rehúse 1 · Retruco 6/3 · Vale 9 9/6 · Vale Juego chico/9"
-            />
-            <RuleDetail
-              label="Envite"
-              value="Envido 2 · Quiero y Envido 4 · Falta del que va ganando · empate para Mano · querido: al terminar la base · no querido: pago inmediato"
-            />
-            <RuleDetail
-              label="Flor"
-              value={
-                config.flor === 'off'
-                  ? 'Sin flor'
-                  : config.flor === 'por-derecho'
-                    ? 'Flor por derecho · repítela antes de cada carta'
-                    : 'Repite Flor antes de cada carta o se invalida · 3 por flor · Reservada gana la comparación'
-              }
-            />
-            <RuleDetail
-              label="Primera parda"
-              value={
-                config.parda === 'abierta'
-                  ? 'Dos cartas juntas; la mayor arriba; admite repique'
-                  : 'Dos cartas juntas; sin canto entre carta y destape'
-              }
-            />
-            <RuleDetail
-              label="Cartas pasadas"
-              value="Activas · cuentan para el Envido, no matan en Truco"
-            />
-            <RuleDetail
-              label="Truco abierto/cerrado"
-              value="Manos privadas para todos los asientos"
-            />
-            <RuleDetail
-              label="Tapado"
-              value={
-                config.cardPlay === 'matar-tapado'
-                  ? 'Experimental; no automatizado en mesas competitivas'
-                  : 'Todas las cartas visibles'
-              }
-            />
-            <RuleDetail
-              label="Final"
-              value="Se gana al alcanzar la meta de piedras · sin Privando"
-            />
-            <RuleDetail
-              label="Señas"
-              value="Permitidas, siempre visibles a toda la mesa"
-            />
-            <RuleDetail
-              label="Prioridad"
-              value="Flor anula el Envido normal; se puede responder y envidar con Flor. El Envite se acredita antes del Truco; luego se retoma el canto suspendido"
-            />
-          </dl>
-        </details>
-        <div className="rules-caveat">
-          <Info className="size-4" />
-          <p>
-            Aquí la Flor se anuncia antes de jugar y la primera parda se juega
-            con las dos cartas juntas. Privando, matar tapado, Flor de 4/5 y
-            Reservada «cobra todo» no están habilitados. Las reglas regionales
-            pueden variar. Consulta las{' '}
-            <a
-              href="https://www.ludoteka.com/juegos/truco-venezolano/reglas"
-              target="_blank"
-              rel="noreferrer"
-              className="underline"
-            >
-              reglas de referencia
-            </a>
-            .
-          </p>
+        <div className="rules-dialog-body">
+          <details className="rules-chapter">
+            <summary>1. Lo básico: de la primera carta al marcador</summary>
+            <ol className="rules-steps">
+              <li>
+                <strong>Recibe tus cartas.</strong> Cada jugador recibe tres. La
+                vira queda boca arriba y determina el Perico y la Perica.
+              </li>
+              <li>
+                <strong>Juega por turnos.</strong> Empieza la mano. La carta más
+                fuerte gana la vuelta; gana la base quien se lleva dos vueltas.
+                Los empates tienen reglas especiales.
+              </li>
+              <li>
+                <strong>Elige tus cantos.</strong> Truco sube la apuesta de la
+                base. Envido compara los tantos de las cartas; Flor tiene
+                prioridad cuando está habilitada.
+              </li>
+              <li>
+                <strong>Revisa los puntos.</strong> Al terminar la base verás
+                cuánto ganó cada equipo y por qué. Gana el chico quien llega a{' '}
+                {config.target} piedras.
+              </li>
+            </ol>
+          </details>
+          <details className="rules-chapter">
+            <summary>2. Valor de las cartas y empates</summary>
+            <CardHierarchy />
+          </details>
+          <details className="rules-chapter rules-agreement">
+            <summary>3. Cantos y reglas de esta mesa</summary>
+            <dl className="rules-detail-grid">
+              <RuleDetail
+                label="Formato"
+                value={`${config.format === '1v1' ? '2 jugadores · Mano/Pie' : '4 jugadores · parejas fijas'} · ${config.target} piedras · ${config.match === 'mejor-de-tres' ? 'mejor de 3' : 'un chico'}`}
+              />
+              <RuleDetail
+                label="Baraja"
+                value="Española de 40 · 3 cartas · vira visible"
+              />
+              <RuleDetail
+                label="Piezas"
+                value="Perico 11 · Perica 10 de la pinta; si la vira es 11 o 10, el 12 sustituye esa pieza"
+              />
+              <RuleDetail
+                label="Truco"
+                value="Sin canto 1 · Truco 3/rehúse 1 · Retruco 6/3 · Vale 9 9/6 · Vale Juego chico/9"
+              />
+              <RuleDetail
+                label="Envite"
+                value="Envido 2 · Quiero y Envido 4 · Falta del que va ganando · empate para Mano · querido: al terminar la base · no querido: pago inmediato"
+              />
+              <RuleDetail
+                label="Flor"
+                value={
+                  config.flor === 'off'
+                    ? 'Sin flor'
+                    : config.flor === 'por-derecho'
+                      ? 'Flor por derecho · repítela antes de cada carta'
+                      : 'Repite Flor antes de cada carta o se invalida · 3 por flor · Reservada gana la comparación'
+                }
+              />
+              <RuleDetail
+                label="Primera parda"
+                value={
+                  config.parda === 'abierta'
+                    ? 'Dos cartas juntas; la mayor arriba; admite repique'
+                    : 'Dos cartas juntas; sin canto entre carta y destape'
+                }
+              />
+              <RuleDetail
+                label="Cartas pasadas"
+                value="Activas · cuentan para el Envido, no matan en Truco"
+              />
+              <RuleDetail
+                label="Truco abierto/cerrado"
+                value="Manos privadas para todos los asientos"
+              />
+              <RuleDetail
+                label="Tapado"
+                value={
+                  config.cardPlay === 'matar-tapado'
+                    ? 'Experimental; no automatizado en mesas competitivas'
+                    : 'Todas las cartas visibles'
+                }
+              />
+              <RuleDetail
+                label="Final"
+                value="Se gana al alcanzar la meta de piedras · sin Privando"
+              />
+              <RuleDetail
+                label="Señas"
+                value="Permitidas, siempre visibles a toda la mesa"
+              />
+              <RuleDetail
+                label="Prioridad"
+                value="Flor anula el Envido normal; se puede responder y envidar con Flor. El Envite se acredita antes del Truco; luego se retoma el canto suspendido"
+              />
+            </dl>
+            <div className="rules-caveat">
+              <Info className="size-4" />
+              <p>
+                Si hay Flor, repítela antes de cada carta. La primera parda se
+                juega con las dos cartas juntas. Privando, matar tapado, Flor de
+                4/5 y Reservada «cobra todo» no están habilitados. Las reglas
+                regionales pueden variar. Consulta las{' '}
+                <a
+                  href="https://www.ludoteka.com/juegos/truco-venezolano/reglas"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline"
+                >
+                  reglas de referencia
+                </a>
+                .
+              </p>
+            </div>
+          </details>
         </div>
-        <DialogFooter>
+        <DialogFooter className="rules-dialog-footer">
           <Button onClick={() => onOpenChange(false)}>Entendido</Button>
         </DialogFooter>
       </DialogContent>

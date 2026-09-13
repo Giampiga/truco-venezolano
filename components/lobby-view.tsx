@@ -369,14 +369,15 @@ export function LobbyView(props: Props) {
         </aside>
       </div>
       <footer className="club-footer">
-        <span>TRUCO / VENEZUELA</span>
-        <span>40 cartas. Mil maneras de cantarlo.</span>
         <span>
           Hecho por{' '}
           <a href="https://giampi.me" target="_blank" rel="noopener noreferrer">
-            giampiga
+            <strong>giampiga</strong>{' '}
+            <ArrowUpRight size={14} aria-hidden="true" />
           </a>
         </span>
+        <span>40 cartas. Mil maneras de cantarlo.</span>
+        <span className="club-footer-brand">TRUCO / VENEZUELA</span>
       </footer>
     </div>
   );
