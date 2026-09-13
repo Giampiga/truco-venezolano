@@ -23,15 +23,18 @@ import { tablePosition } from '@/lib/table-seats';
 export function TableVira({
   card,
   children,
+  manoPosition,
 }: {
   card: TrucoCard;
   children: ReactNode;
+  manoPosition?: ReturnType<typeof tablePosition>;
 }) {
   const details = describeVira(card);
   return (
     <Popover>
       <PopoverTrigger
         className="table-vira"
+        data-mano={manoPosition}
         openOnHover
         delay={200}
         closeDelay={150}
@@ -58,7 +61,6 @@ export function CantoNotice({
   you,
   name,
   canAnswer,
-  onRespond,
 }: {
   state: Pick<
     EngineSnapshot,
@@ -67,7 +69,6 @@ export function CantoNotice({
   you: string;
   name: (id: string) => string;
   canAnswer: boolean;
-  onRespond?: () => void;
 }) {
   const canto = pendingCanto(state);
   if (!canto) return null;
@@ -81,34 +82,26 @@ export function CantoNotice({
     : own
       ? 'Esperando la respuesta del equipo rival.'
       : 'Tu pareja debe responder.';
-  if (onRespond) {
-    if (own) return null;
-    return (
-      <div className="opponent-canto-banner">
-        <div role="alert" aria-atomic="true">
-          <span>{caller} canta</span>
-          <strong>«{canto.label}»</strong>
-          <p>{prompt}</p>
-        </div>
-        {canAnswer && <Button onClick={onRespond}>Responder</Button>}
-      </div>
-    );
-  }
   return (
-    <output className="canto-notice" data-opponent={!own} aria-live="off">
-      <span className="canto-caller">{caller} canta</span>
-      <strong>«{canto.label}»</strong>
+    <output className="canto-notice" data-opponent={!own} aria-live="polite">
+      <span className="canto-title">
+        <span className="canto-caller">{caller} canta</span>
+        <strong>«{canto.label}»</strong>
+      </span>
       <p className="canto-response-prompt">{prompt}</p>
-      <dl className="canto-outcomes">
-        <div>
-          <dt>Si quieres</dt>
-          <dd>{canto.accept}</dd>
-        </div>
-        <div>
-          <dt>Si no quieres</dt>
-          <dd>{canto.reject}</dd>
-        </div>
-      </dl>
+      <details className="canto-explanation">
+        <summary>¿Qué pasa si quiero o no quiero?</summary>
+        <dl className="canto-outcomes">
+          <div>
+            <dt>Si quieres</dt>
+            <dd>{canto.accept}</dd>
+          </div>
+          <div>
+            <dt>Si no quieres</dt>
+            <dd>{canto.reject}</dd>
+          </div>
+        </dl>
+      </details>
       {canto.suspended && (
         <p className="mt-3">
           Después se responde al {canto.suspended}, si la partida sigue.
@@ -245,7 +238,12 @@ function EnvidoResult({
       aria-live="polite"
     >
       <strong>
-        {title} · {result.declined ? 'No querido' : 'Resultado de la base'}
+        {title} ·{' '}
+        {result.cancelled
+          ? 'Anulado por Flor'
+          : result.declined
+            ? 'No querido'
+            : 'Resultado de la base'}
       </strong>
       <dl>
         {result.totals.map((seat) => (
@@ -253,20 +251,30 @@ function EnvidoResult({
             <dt>{name(seat.id)}</dt>
             <dd>
               {seat.valid === false
-                ? 'Sin Flor válida'
+                ? seat.tantos > 0
+                  ? `${seat.tantos} tantos · Flor invalidada`
+                  : 'Sin Flor'
                 : `${seat.tantos} tantos`}
             </dd>
           </div>
         ))}
       </dl>
       <p>
-        {winners.map((seat) => name(seat.id)).join(' / ')}: +{result.points}{' '}
-        {result.points === 1 ? 'punto' : 'puntos'}.
-        {result.declined
-          ? ' El rival no quiso; los tantos no deciden el resultado.'
-          : result.tied
-            ? ' Empate en tantos: gana la mano.'
-            : ''}
+        {result.cancelled ? (
+          'La Flor anuló el Envido. No suma puntos.'
+        ) : !result.winner ? (
+          'Ninguna Flor válida. No suma puntos.'
+        ) : (
+          <>
+            {winners.map((seat) => name(seat.id)).join(' / ')}: +{result.points}{' '}
+            {result.points === 1 ? 'punto' : 'puntos'}.
+            {result.declined
+              ? ' El rival no quiso; los tantos no deciden el resultado.'
+              : result.tied
+                ? ' Empate en tantos: gana la mano.'
+                : ''}
+          </>
+        )}
       </p>
     </section>
   );

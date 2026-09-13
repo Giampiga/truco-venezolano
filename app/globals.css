@@ -4086,9 +4086,6 @@ button[draggable='true']:active {
   transform: translateY(-50%);
   cursor: pointer;
 }
-.table-stage[data-format='1v1'] .table-vira {
-  left: clamp(24px, 8%, 64px);
-}
 .played-stacks.partnership-piles {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4502,21 +4499,6 @@ button[draggable='true']:active {
   font-size: 14px;
   line-height: 1.6;
 }
-.hierarchy-vira {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  gap: 12px;
-}
-.hierarchy-vira > strong {
-  flex-basis: 100%;
-  font-size: 14px;
-}
-.hierarchy-vira label {
-  display: grid;
-  gap: 4px;
-  font-size: 12px;
-}
 .hierarchy-ladder {
   list-style: decimal;
   padding-left: 28px;
@@ -4736,51 +4718,41 @@ button[draggable='true']:active {
   }
 }
 
-.opponent-canto-banner {
+/* Compact canto notice beside the cards; details expand only when requested. */
+.canto-title {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 20px;
-  border: 2px solid var(--primary);
-  background: var(--card);
-  color: var(--foreground);
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
 }
-.opponent-canto-banner > div {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.opponent-canto-banner span,
 .canto-caller {
-  display: block;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
 }
-.opponent-canto-banner strong,
 .player-console .canto-notice strong {
-  display: block;
-  font-size: clamp(20px, 3vw, 28px);
-  line-height: 1.3;
-  margin-block: 4px;
+  font-size: 22px;
+  line-height: 1.2;
+  color: var(--primary);
 }
-.opponent-canto-banner p {
-  font-size: 14px;
-}
-.opponent-canto-banner > button {
-  flex-shrink: 0;
-}
-.player-console .canto-notice[data-opponent='true'] {
-  border: 2px solid var(--primary);
-  padding: 14px;
-  background: var(--card);
+.player-console .canto-notice {
+  padding: 8px 12px;
+  margin: 0 0 8px;
+  border-left: 4px solid var(--primary);
+  background: var(--muted);
 }
 .canto-response-prompt {
-  font-weight: 600;
-  margin-block: 8px 12px;
+  margin-top: 4px;
+  font-size: 13px;
+}
+.canto-explanation summary {
+  cursor: pointer;
+  font-size: 12px;
+  margin-top: 6px;
 }
 .canto-outcomes {
   display: grid;
-  gap: 12px;
+  gap: 10px;
+  margin-top: 10px;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -4788,6 +4760,25 @@ button[draggable='true']:active {
   font-weight: 700;
 }
 .canto-outcomes dd {
-  margin-top: 2px;
   color: var(--muted-foreground);
+}
+.call-dock:has(.canto-notice) > div:first-of-type,
+.call-tray:has(.canto-notice) > div:first-of-type {
+  display: none;
+}
+.table-vira[data-mano='top'] {
+  left: calc(50% + clamp(95px, 18%, 180px));
+  top: 42%;
+  transform: translate(-50%, -50%);
+}
+.table-vira[data-mano='bottom'] {
+  left: calc(50% - clamp(95px, 18%, 180px));
+  top: 58%;
+  transform: translate(-50%, -50%);
+}
+.player-play-area .felt > .duel-piles {
+  inset-inline: 12px;
+}
+.online-game[data-format='1v1'] .felt-center {
+  padding-left: 8px;
 }

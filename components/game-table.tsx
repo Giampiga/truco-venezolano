@@ -287,14 +287,6 @@ function commandPrompt(command: EngineCommand) {
           : 'Declarar Flor',
     };
   }
-  if (command.type === 'PASS_CARDS') {
-    return {
-      eyebrow: 'Cartas pasadas',
-      title: '¿Pasas la primera?',
-      copy: 'Las tres quedan pasadas para el Truco, pero conservan su identidad al calcular el Envite.',
-      confirm: 'Pasar las tres',
-    };
-  }
   if (command.type === 'FOLD_HAND') {
     return {
       eyebrow: 'Fin de la base',
@@ -805,16 +797,6 @@ export function GameTable({
 
       <div className="table-layout">
         <div className="player-play-area">
-          <CantoNotice
-            state={snapshot}
-            you="human"
-            name={(id) => playerName(id, config)}
-            canAnswer={humanLegal.includes('answer-quiero')}
-            onRespond={() => {
-              cantoDock.current?.scrollIntoView({ block: 'center' });
-              cantoDock.current?.focus({ preventScroll: true });
-            }}
-          />
           <section
             className="table-stage"
             data-format={config.format}
@@ -868,7 +850,14 @@ export function GameTable({
                 renderCard={(card) => <FaceCard card={card} compact />}
               />
               {seats.length === 2 && (
-                <TableVira card={snapshot.vira}>
+                <TableVira
+                  card={snapshot.vira}
+                  manoPosition={tablePosition(
+                    seats,
+                    snapshot.manoSeatId,
+                    'human',
+                  )}
+                >
                   <FaceCard card={snapshot.vira} vira />
                 </TableVira>
               )}
@@ -1232,11 +1221,19 @@ export function GameTable({
                   )}
                 {humanLegal.includes('pass-card') && (
                   <Button
-                    onClick={() => setPendingCommand({ type: 'PASS_CARDS' })}
+                    disabled={!selected || paused}
+                    onClick={() =>
+                      selected &&
+                      humanCommand({
+                        type: 'PLAY_CARD',
+                        cardId: selected,
+                        passed: true,
+                      })
+                    }
                     variant="secondary"
                     className="h-11 rounded-xl"
                   >
-                    Pasar cartas
+                    Pasar carta
                   </Button>
                 )}
                 {humanLegal.includes('fold') && (

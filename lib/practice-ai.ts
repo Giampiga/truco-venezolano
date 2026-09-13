@@ -83,8 +83,6 @@ export function observeForAi(
         type: 'PLAY_STACK',
         cardIds: [ordered[0].id, ordered[1].id],
       });
-    } else if (action === 'pass-card') {
-      legalCommands.push({ type: 'PASS_CARDS' });
     } else if (action === 'fold') {
       legalCommands.push({ type: 'FOLD_HAND' });
     } else if (action === 'call-envido') {

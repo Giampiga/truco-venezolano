@@ -38,7 +38,8 @@ restantes con la mayor arriba. Solo quienes empatan arriba destapan la otra;
 si persiste, gana el primero entre los empatados en orden de mano. La parda
 abierta admite cantos durante la presentación; la cerrada no. Dos cartas iguales
 de compañeros no generan parda. Las cartas pasadas pierden contra cualquier carta
-sin pasar y conservan su valor para contar el Envite.
+sin pasar y conservan su valor para contar el Envite. Para pasar, selecciona una
+carta y pulsa «Pasar carta»: solo esa carta se juega pasada y el turno continúa.
 
 ## Cantos y puntuación
 

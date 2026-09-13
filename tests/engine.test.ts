@@ -1307,3 +1307,144 @@ void test('score breakdown records actual points and stops counting after a chic
   ]);
   assert.deepEqual(state.match.score, { A: 24, B: 0 });
 });
+
+void test('passing plays only the selected card, advances the turn, and keeps original Envite values', () => {
+  const initial = dealtSnapshot(
+    { human: whiteFlor, bot: noFlor },
+    { ...rules, florMode: 'off' },
+  );
+  const before = JSON.stringify(initial);
+  assert.throws(() =>
+    transition(
+      initial,
+      'human',
+      { type: 'PLAY_CARD', cardId: '1-espadas', passed: true },
+      initial.rules,
+    ),
+  );
+  let state = transition(
+    initial,
+    'human',
+    { type: 'PLAY_CARD', cardId: '7-oros', passed: true },
+    initial.rules,
+  ).state;
+  assert.equal(JSON.stringify(initial), before);
+  assert.equal(state.activeSeatId, 'bot');
+  assert.equal(state.played[0].card.passed, true);
+  assert.deepEqual(state.hands.human, whiteFlor.slice(1));
+  assert.deepEqual(state.dealtHands.human, whiteFlor);
+  assert.throws(() =>
+    transition(
+      state,
+      'human',
+      { type: 'PLAY_CARD', cardId: '6-oros', passed: true },
+      state.rules,
+    ),
+  );
+  state = transition(
+    state,
+    'bot',
+    { type: 'PLAY_CARD', cardId: '1-espadas' },
+    state.rules,
+  ).state;
+  assert.equal(state.trickResults[0].winnerTeam, 'B');
+  const card = state.hands.bot[0];
+  state = transition(
+    state,
+    'bot',
+    { type: 'PLAY_CARD', cardId: `${card.rank}-${card.suit}` },
+    state.rules,
+  ).state;
+  assert.ok(legalActionsForSnapshot(state, 'human').includes('pass-card'));
+  state = transition(
+    state,
+    'human',
+    { type: 'PLAY_CARD', cardId: '6-oros', passed: true },
+    state.rules,
+  ).state;
+  assert.equal(state.handComplete, true);
+  assert.equal(state.hands.human.length, 1);
+  assert.equal(state.played.filter((p) => p.card.passed).length, 2);
+  assert.deepEqual(state.dealtHands.human, whiteFlor);
+});
+
+void test('base results retain cancelled Envido and invalidated Flor totals without revealing them early', () => {
+  let state = dealtSnapshot({ human: noFlor, bot: whiteFlor });
+  state = transition(
+    state,
+    'human',
+    { type: 'CALL_ENVIDO', amount: 2 },
+    state.rules,
+  ).state;
+  state = transition(
+    state,
+    'bot',
+    { type: 'DECLARE_FLOR', mode: 'flor' },
+    state.rules,
+  ).state;
+  assert.equal(projectPublic(state).envidoResult, null);
+  assert.equal(projectPublic(state).florResult, null);
+  state = transition(
+    state,
+    'human',
+    { type: 'PLAY_CARD', cardId: '1-espadas' },
+    state.rules,
+  ).state;
+  state = transition(
+    state,
+    'bot',
+    { type: 'PLAY_CARD', cardId: '7-oros' },
+    state.rules,
+  ).state;
+  const card = state.hands.human[0];
+  state = transition(
+    state,
+    'human',
+    { type: 'PLAY_CARD', cardId: `${card.rank}-${card.suit}` },
+    state.rules,
+  ).state;
+  state = transition(
+    state,
+    'bot',
+    { type: 'PLAY_CARD', cardId: '6-oros', passed: true },
+    state.rules,
+  ).state;
+  assert.equal(state.handComplete, true);
+  const view = projectPublic(state);
+  assert.equal(view.envidoResult?.cancelled, true);
+  assert.equal(view.envidoResult?.points, 0);
+  assert.equal(view.envidoResult?.totals.length, 2);
+  assert.equal(view.florResult?.winner, null);
+  assert.equal(view.florResult?.points, 0);
+  assert.equal(view.florResult?.totals.find((s) => s.id === 'bot')?.tantos, 38);
+  assert.equal(
+    view.florResult?.totals.find((s) => s.id === 'bot')?.valid,
+    false,
+  );
+  const next = projectPublic(beginNextHand(state, createSpanishDeck()));
+  assert.equal(next.envidoResult, null);
+  assert.equal(next.florResult, null);
+});
+
+void test('a Flor lost before its first announcement still appears in the base results', () => {
+  let state = dealtSnapshot({ human: whiteFlor, bot: noFlor });
+  state = transition(
+    state,
+    'human',
+    { type: 'PLAY_CARD', cardId: '7-oros', passed: true },
+    state.rules,
+  ).state;
+  state = transition(state, 'bot', { type: 'FOLD_HAND' }, state.rules).state;
+  const view = projectPublic(state);
+  assert.equal(view.envidoResult, null);
+  assert.equal(view.florResult?.winner, null);
+  assert.equal(view.florResult?.points, 0);
+  assert.equal(
+    view.florResult?.totals.find((s) => s.id === 'human')?.tantos,
+    38,
+  );
+  assert.equal(
+    view.florResult?.totals.find((s) => s.id === 'human')?.valid,
+    false,
+  );
+});

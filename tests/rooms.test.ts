@@ -226,3 +226,12 @@ void test('room settings reject unimplemented four- and five-point Flor', () => 
   for (const florPoints of ['4', '5'])
     assert.throws(() => validateConfig({ ...DEFAULT_CONFIG, florPoints }));
 });
+
+void test('passing requires a selected card and rejects the obsolete pass-all command', () => {
+  assert.deepEqual(
+    validateCommand({ type: 'PLAY_CARD', cardId: '7-oros', passed: true }),
+    { type: 'PLAY_CARD', cardId: '7-oros', passed: true },
+  );
+  assert.throws(() => validateCommand({ type: 'PLAY_CARD', passed: true }));
+  assert.throws(() => validateCommand({ type: 'PASS_CARDS' }));
+});

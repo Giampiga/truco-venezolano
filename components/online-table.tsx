@@ -10,7 +10,7 @@ import {
   CantoBranch,
   TableVira,
 } from '@/components/table-context';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { ChevronRight, Flag, Layers, Sparkles } from 'lucide-react';
 import { EnvidoRaises } from '@/components/envido-raises';
 import { Button } from '@/components/ui/button';
@@ -72,7 +72,6 @@ export function OnlineTable({
   pending: boolean;
   connected: boolean;
 }) {
-  const cantoDock = useRef<HTMLDivElement>(null);
   const game = room.game!;
   const state = game.public;
   const legal = game.legal;
@@ -195,16 +194,6 @@ export function OnlineTable({
           )}
         </output>
       )}
-      <CantoNotice
-        state={state}
-        you={room.you}
-        name={(id) => (id === room.you ? 'Tú' : name(id))}
-        canAnswer={legal.includes('answer-quiero')}
-        onRespond={() => {
-          cantoDock.current?.scrollIntoView({ block: 'center' });
-          cantoDock.current?.focus({ preventScroll: true });
-        }}
-      />
       <div className="online-felt">
         <div className="opponent-line">
           {opponents.map((seat) => (
@@ -230,7 +219,14 @@ export function OnlineTable({
         </div>
         <div className="felt-center">
           {state.seats.length === 2 && (
-            <TableVira card={state.vira}>
+            <TableVira
+              card={state.vira}
+              manoPosition={tablePosition(
+                state.seats,
+                state.manoSeatId,
+                room.you,
+              )}
+            >
               <PlayingCard card={state.vira} small />
             </TableVira>
           )}
@@ -373,12 +369,7 @@ export function OnlineTable({
                 <ChevronRight size={16} />
               </Button>
             </div>
-            <div
-              className="call-tray"
-              ref={cantoDock}
-              tabIndex={-1}
-              aria-label="Cantos y acciones"
-            >
+            <div className="call-tray" aria-label="Cantos y acciones">
               <CantoNotice
                 state={state}
                 you={room.you}
@@ -538,16 +529,18 @@ export function OnlineTable({
                 {legal.includes('pass-card') && (
                   <Button
                     variant="ghost"
-                    disabled={disabled}
+                    disabled={disabled || selected.length !== 1}
                     onClick={() =>
-                      setConfirmation({
-                        title: 'Pasar las tres cartas',
-                        command: { type: 'PASS_CARDS' },
+                      selected.length === 1 &&
+                      void command({
+                        type: 'PLAY_CARD',
+                        cardId: cardId(selected[0]),
+                        passed: true,
                       })
                     }
                   >
                     <Layers size={15} />
-                    Pasar
+                    Pasar carta
                   </Button>
                 )}
                 {legal.includes('fold') && (
