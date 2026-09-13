@@ -6,6 +6,14 @@ import {
   PopoverTitle,
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from '@/components/ui/dialog';
 import { Info } from 'lucide-react';
 import { describeVira, type EngineSnapshot } from '@/lib/truco-engine';
 import type { TrucoCard } from '@/lib/truco-rules';
@@ -114,14 +122,18 @@ export function FlorReminder({
   ) : null;
 }
 
-export function HandSummary({
-  state,
-  name,
-}: {
+type HandSummaryProps = {
   state: ReturnType<typeof import('@/lib/truco-engine').projectPublic>;
   name: (id: string) => string;
-}) {
-  if (!state.handComplete) return null;
+};
+
+export function HandSummary(props: HandSummaryProps) {
+  return props.state.handComplete ? (
+    <HandSummaryDialog key={props.state.handNumber} {...props} />
+  ) : null;
+}
+
+function HandSummaryDialog({ state, name }: HandSummaryProps) {
   const labels = {
     envido: 'Envido',
     flor: 'Flor',
@@ -129,60 +141,69 @@ export function HandSummary({
     prive: 'Privando',
   };
   return (
-    <section
-      className="hand-summary"
-      aria-label="Puntos de esta base"
-      aria-live="polite"
-    >
-      <strong>Base {state.handNumber} · Reparto de puntos</strong>
-      <div className="hand-summary-teams">
-        {(['A', 'B'] as const).map((team) => {
-          const awards = state.handAwards.filter(
-            (award) => award.team === team,
-          );
-          const total = state.match.score[team] - state.handStartScore[team];
-          return (
-            <div key={team}>
-              <h3>
-                {state.seats
-                  .filter((seat) => seat.team === team)
-                  .map((seat) => name(seat.id))
-                  .join(' / ')}{' '}
-                <b>+{total}</b>
-              </h3>
-              {awards.length ? (
-                <ul>
-                  {awards.map((award, index) => (
-                    <li key={index}>
-                      {award.amount} {award.amount === 1 ? 'punto' : 'puntos'}{' '}
-                      por {labels[award.reason]}
-                      {award.reason === 'envido' &&
-                      state.envido.answer === 'no-quiero'
-                        ? ' no querido'
-                        : ''}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>
-                  {total
-                    ? `${total} puntos de esta base guardada.`
-                    : 'Sin puntos en esta base.'}
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <EnvidoResult result={state.envidoResult} name={name} />
-      <EnvidoResult result={state.florResult} name={name} title="Flor" />
-      {!!state.invalidFlor.length && (
-        <p>
-          Flor invalidada: {state.invalidFlor.map(name).join(' / ')}. No suma
-          puntos.
-        </p>
-      )}
-    </section>
+    <Dialog defaultOpen>
+      <DialogTrigger
+        render={<Button variant="outline" className="justify-self-start" />}
+      >
+        Ver puntos de la base
+      </DialogTrigger>
+      <DialogContent className="hand-summary max-h-[85dvh] overflow-y-auto sm:max-w-lg">
+        <DialogTitle className="pr-8">
+          Base {state.handNumber} · Reparto de puntos
+        </DialogTitle>
+        <DialogDescription>
+          Así se repartieron los puntos de esta base.
+        </DialogDescription>
+        <div className="hand-summary-teams">
+          {(['A', 'B'] as const).map((team) => {
+            const awards = state.handAwards.filter(
+              (award) => award.team === team,
+            );
+            const total = state.match.score[team] - state.handStartScore[team];
+            return (
+              <div key={team}>
+                <h3>
+                  {state.seats
+                    .filter((seat) => seat.team === team)
+                    .map((seat) => name(seat.id))
+                    .join(' / ')}{' '}
+                  <b>+{total}</b>
+                </h3>
+                {awards.length ? (
+                  <ul>
+                    {awards.map((award, index) => (
+                      <li key={index}>
+                        {award.amount} {award.amount === 1 ? 'punto' : 'puntos'}{' '}
+                        por {labels[award.reason]}
+                        {award.reason === 'envido' &&
+                        state.envido.answer === 'no-quiero'
+                          ? ' no querido'
+                          : ''}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>
+                    {total
+                      ? `${total} puntos de esta base guardada.`
+                      : 'Sin puntos en esta base.'}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <EnvidoResult result={state.envidoResult} name={name} />
+        <EnvidoResult result={state.florResult} name={name} title="Flor" />
+        {!!state.invalidFlor.length && (
+          <p>
+            Flor invalidada: {state.invalidFlor.map(name).join(' / ')}. No suma
+            puntos.
+          </p>
+        )}
+        <DialogClose render={<Button />}>Volver a la mesa</DialogClose>
+      </DialogContent>
+    </Dialog>
   );
 }
 

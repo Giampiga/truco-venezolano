@@ -18,6 +18,35 @@ import { RankingPanel } from '@/components/ranking-panel';
 import { Input } from '@/components/ui/input';
 import type { GameFormat, RoomSummary } from '@/lib/product-types';
 
+const botRooms: RoomSummary[] = [
+  {
+    id: 'practice-1v1',
+    name: 'Duelo con Truquito',
+    host: '1 bot criollo',
+    players: '1/2',
+    format: '1v1',
+    opponent: 'ai',
+    score: '24 piedras',
+    rule: 'Oriental clásico',
+    voice: 0,
+    tone: 'green',
+    status: 'open',
+  },
+  {
+    id: 'practice-2v2',
+    name: 'Parejas con bots',
+    host: '3 bots: aprendiz, criollo y maestro',
+    players: '3/4',
+    format: '2v2',
+    opponent: 'ai',
+    score: '24 piedras',
+    rule: 'Oriental clásico',
+    voice: 0,
+    tone: 'green',
+    status: 'open',
+  },
+];
+
 type Props = {
   matchmaking: ReactNode;
   nickname: string;
@@ -44,7 +73,7 @@ export function LobbyView(props: Props) {
   const [filter, setFilter] = useState<'all' | GameFormat>('all');
   const [mode, setMode] = useState<'casual' | 'ranked'>('casual');
   const [search, setSearch] = useState('');
-  const rooms = props.rooms.filter(
+  const rooms = [...props.rooms, ...botRooms].filter(
     (room) =>
       !!room.ranked === (mode === 'ranked') &&
       (filter === 'all' || room.format === filter) &&
@@ -207,7 +236,8 @@ export function LobbyView(props: Props) {
                 Volver a conectar
               </Button>
             </div>
-          ) : rooms.length ? (
+          ) : null}
+          {rooms.length ? (
             <div className="live-room-list">
               {rooms.map((room) => (
                 <article className="live-room-row" key={room.id}>
@@ -222,9 +252,17 @@ export function LobbyView(props: Props) {
                     <div className="room-meta">
                       <span>
                         <Users size={14} />
-                        {room.players}
+                        {room.opponent === 'ai'
+                          ? `${room.players} · Tu puesto libre`
+                          : room.players}
                       </span>
                       <span>{room.score}</span>
+                      {room.opponent === 'ai' && (
+                        <span>
+                          <Bot size={14} /> Práctica · Sin voz ni cámara · Sin
+                          ranking
+                        </span>
+                      )}
                       {room.camera && (
                         <span>
                           <Video size={14} /> Cámara opcional
@@ -240,7 +278,11 @@ export function LobbyView(props: Props) {
                   </div>
                   <Button
                     variant="outline"
-                    onClick={() => props.onJoin(room)}
+                    onClick={() =>
+                      botRooms.includes(room)
+                        ? props.onBotTable(room.format)
+                        : props.onJoin(room)
+                    }
                     disabled={
                       props.busy ||
                       room.players.split('/')[0] === room.players.split('/')[1]
@@ -251,7 +293,7 @@ export function LobbyView(props: Props) {
                 </article>
               ))}
             </div>
-          ) : (
+          ) : !props.error && !props.loading ? (
             <div className="lobby-empty">
               <Users size={28} strokeWidth={1.3} />
               <h3>
@@ -271,28 +313,7 @@ export function LobbyView(props: Props) {
                 Abrir una mesa <Plus size={16} />
               </Button>
             </div>
-          )}
-          {mode === 'casual' && (
-            <section
-              className="bot-tables"
-              aria-label="Mesas de práctica con bots"
-            >
-              <h3>Mesas de práctica con bots</h3>
-              <p>
-                Solo tú y la IA. Sin voz, sin cámara y sin puntos de ranking.
-              </p>
-              <button onClick={() => props.onBotTable('1v1')}>
-                <strong>Duelo con Truquito</strong>
-                <span>1v1 · 1 bot criollo</span>
-                <span>Entrar →</span>
-              </button>
-              <button onClick={() => props.onBotTable('2v2')}>
-                <strong>Parejas con bots</strong>
-                <span>2v2 · 3 bots: aprendiz, criollo y maestro</span>
-                <span>Entrar →</span>
-              </button>
-            </section>
-          )}
+          ) : null}
           <div className="lobby-footnote">
             <span className="connection-light online" />
             Las reglas se acuerdan antes de repartir.
