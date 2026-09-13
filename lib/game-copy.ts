@@ -12,6 +12,7 @@ export function gameEventText(
     'jugó ': 'Jugaste ',
     'apiló sus dos cartas': 'Apilaste tus dos cartas',
     'pasó sus tres cartas': 'Pasaste tus tres cartas',
+    'pasó ': 'Pasaste ',
     'se fue al mazo': 'Te fuiste al mazo',
   };
   for (const [verb, replacement] of Object.entries(personal)) {

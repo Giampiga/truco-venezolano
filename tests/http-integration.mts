@@ -93,6 +93,7 @@ for (const format of ['1v1', '2v2'] as const) {
         command = {
           type: 'PLAY_CARD',
           cardId: `${hand[0].rank}-${hand[0].suit}`,
+          passed: legal.includes('pass-card') && moves % 4 === 0,
         };
       if (command) {
         room = await user(path, {
@@ -101,6 +102,10 @@ for (const format of ['1v1', '2v2'] as const) {
           id: crypto.randomUUID(),
           command,
         });
+        if (command.type === 'PLAY_CARD' && command.passed) {
+          assert.equal(room.game.public.played.at(-1).card.passed, true);
+          assert.deepEqual(room.game.private.hand, hand.slice(1));
+        }
         acted = true;
         break;
       }

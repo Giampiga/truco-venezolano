@@ -30,7 +30,6 @@ export function validateCommand(input: unknown): EngineCommand {
         type: value.type,
         cardIds: [value.cardIds[0], value.cardIds[1]] as [string, string],
       };
-    case 'PASS_CARDS':
     case 'FOLD_HAND':
     case 'CALL_FLOR_ENVIDA':
       return { type: value.type };

@@ -17,13 +17,7 @@ import {
 } from '@/components/ui/native-select';
 import { Switch } from '@/components/ui/switch';
 import type { RoomConfig } from '@/lib/product-types';
-import {
-  cardHierarchy,
-  SPANISH_RANKS,
-  SPANISH_SUITS,
-  getPieces,
-  type TrucoCard,
-} from '@/lib/truco-rules';
+import { cardHierarchy, getPieces, type TrucoCard } from '@/lib/truco-rules';
 import type { PracticeDifficulty } from '@/lib/practice-ai';
 export function CreateRoomDialog({
   open,
@@ -686,7 +680,7 @@ function RuleDetail({ label, value }: { label: string; value: string }) {
 }
 
 function CardHierarchy() {
-  const [vira, setVira] = useState<TrucoCard>({ rank: 6, suit: 'copas' });
+  const vira: TrucoCard = { rank: 6, suit: 'copas' };
   const { perico, perica } = getPieces(vira);
   return (
     <section className="card-hierarchy" aria-labelledby="card-hierarchy-title">
@@ -695,45 +689,7 @@ function CardHierarchy() {
         De mayor a menor: cada fila le gana a todas las de abajo. Las cartas de
         una misma fila empatan, sin importar la pinta.
       </p>
-      <div className="hierarchy-vira">
-        <strong>Prueba otra vira</strong>
-        <label>
-          Número
-          <NativeSelect
-            value={vira.rank}
-            onChange={(event) =>
-              setVira({
-                ...vira,
-                rank: Number(event.target.value) as TrucoCard['rank'],
-              })
-            }
-          >
-            {SPANISH_RANKS.map((rank) => (
-              <NativeSelectOption key={rank} value={rank}>
-                {rank}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </label>
-        <label>
-          Pinta
-          <NativeSelect
-            value={vira.suit}
-            onChange={(event) =>
-              setVira({
-                ...vira,
-                suit: event.target.value as TrucoCard['suit'],
-              })
-            }
-          >
-            {SPANISH_SUITS.map((suit) => (
-              <NativeSelectOption key={suit} value={suit}>
-                {suit}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </label>
-      </div>
+      <p>Ejemplo con vira de 6 de copas:</p>
       <p aria-live="polite">
         Perico: {perico.rank} de {perico.suit}. Perica: {perica.rank} de{' '}
         {perica.suit}.{' '}

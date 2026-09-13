@@ -120,7 +120,6 @@ export type LegalAction =
 export type EngineCommand =
   | { type: 'PLAY_CARD'; cardId: string; passed?: boolean }
   | { type: 'PLAY_STACK'; cardIds: [string, string] }
-  | { type: 'PASS_CARDS' }
   | { type: 'FOLD_HAND' }
   | { type: 'CALL_ENVIDO'; amount: 2 | 'falta' }
   | { type: 'RAISE_ENVIDO'; amount: number | 'falta' }
@@ -145,7 +144,6 @@ export type LegalActionContext = {
   actorDeclaredFlor?: boolean;
   actorFlorInvalid?: boolean;
   actorFlorAnnouncedForPlay?: boolean;
-  actorPassedFirst?: boolean;
   truco: TrucoState;
   envido: EnvidoState;
   priority: CallPriority;
@@ -174,6 +172,7 @@ export type EngineSnapshot = {
   florDeclarations: SeatId[];
   florAnnouncedPlays?: Record<SeatId, number>;
   invalidFlor?: SeatId[];
+  envidoCancelledByFlor?: boolean;
   handAwards?: Array<ScoreAward & { amount: number }>;
   truco: TrucoState;
   envido: EnvidoState;
@@ -362,6 +361,7 @@ export function createEngineSnapshot({
     trickResults: [],
     pardaStacks: {},
     florDeclarations: [],
+    envidoCancelledByFlor: false,
     florAnnouncedPlays: {},
     invalidFlor: [],
     handAwards: [],
@@ -734,10 +734,10 @@ export function legalActions(context: LegalActionContext): LegalAction[] {
     context.pardaRevealWindow ? 'play-stack' : 'play-card',
     'fold',
   ];
+  if (!context.pardaRevealWindow) actions.push('pass-card');
   if (effectiveFlor && !context.actorFlorAnnouncedForPlay)
     actions.push('declare-flor');
   if (context.firstTrick && !context.actorHasPlayedFirstCard) {
-    if (!context.actorPassedFirst) actions.push('pass-card');
     if (context.envido.status === 'idle' && !effectiveFlor) {
       actions.push('call-envido', 'call-falta');
     }
@@ -782,7 +782,6 @@ export function legalActionsForSnapshot(
     snapshot.trickNumber === 2 &&
     Object.keys(snapshot.pardaStacks ?? {}).length < snapshot.seats.length;
   const actorHand = dealtHandForSeat(snapshot, actorSeatId);
-  const currentHand = snapshot.hands[actorSeatId] ?? [];
   return legalActions({
     actorSeatId,
     activeSeatId: snapshot.activeSeatId,
@@ -802,9 +801,6 @@ export function legalActionsForSnapshot(
     actorFlorAnnouncedForPlay:
       snapshot.florAnnouncedPlays?.[actorSeatId] ===
       snapshot.played.filter((play) => play.seatId === actorSeatId).length,
-    actorPassedFirst:
-      currentHand.length > 0 &&
-      currentHand.every((card) => card.passed === true),
     truco: snapshot.truco,
     envido: snapshot.envido,
     priority: snapshot.priority,
@@ -1005,9 +1001,9 @@ function opponentOf(team: TeamId): TeamId {
 }
 
 function requiredAction(command: EngineCommand): LegalAction {
-  if (command.type === 'PLAY_CARD') return 'play-card';
+  if (command.type === 'PLAY_CARD')
+    return command.passed ? 'pass-card' : 'play-card';
   if (command.type === 'PLAY_STACK') return 'play-stack';
-  if (command.type === 'PASS_CARDS') return 'pass-card';
   if (command.type === 'FOLD_HAND') return 'fold';
   if (command.type === 'CALL_ENVIDO') {
     return command.amount === 'falta' ? 'call-falta' : 'call-envido';
@@ -1114,13 +1110,11 @@ export function transition(
     if (cardIndex < 0)
       throw new Error('La carta no está en la mano del actor.');
     const [card] = hand.splice(cardIndex, 1);
-    if (command.passed && !card.passed) {
-      throw new Error(
-        'Una carta solo queda pasada mediante la acción de pasar.',
-      );
-    }
+    if (command.passed) card.passed = true;
     next.played.push({ seatId: actorSeatId, team: actorTeam, card });
-    events.push(`${actorSeatId} jugó ${card.rank} de ${card.suit}.`);
+    events.push(
+      `${actorSeatId} ${card.passed ? 'pasó' : 'jugó'} ${card.rank} de ${card.suit}.`,
+    );
 
     const trickPlays = next.played.slice(
       (next.trickNumber - 1) * next.seats.length,
@@ -1197,16 +1191,6 @@ export function transition(
           : `Se destapó el desempate: la base fue para ${resolution.winnerTeam}.`
         : `La carta de arriba resolvió la base para ${resolution.winnerTeam}.`,
     );
-    return { state: next, events };
-  }
-
-  if (command.type === 'PASS_CARDS') {
-    validateFlorBeforePlay(next, actorSeatId, events);
-    next.hands[actorSeatId] = next.hands[actorSeatId].map((card) => ({
-      ...card,
-      passed: true,
-    }));
-    events.push(`${actorSeatId} pasó sus tres cartas.`);
     return { state: next, events };
   }
 
@@ -1306,6 +1290,7 @@ export function transition(
     next.handAwards = (next.handAwards ?? []).filter(
       (award) => award.reason !== 'envido',
     );
+    next.envidoCancelledByFlor = next.envido.status !== 'idle';
     next.envido = { ...createEnvidoState(), kind: 'flor' };
     const opposingFlor = next.seats.some(
       (seat) =>
@@ -1445,6 +1430,7 @@ export function beginNextHand(
     trickResults: [],
     pardaStacks: {},
     florDeclarations: [],
+    envidoCancelledByFlor: false,
     florAnnouncedPlays: {},
     invalidFlor: [],
     handAwards: [],
@@ -1473,6 +1459,7 @@ export function restartCurrentHand(snapshot: EngineSnapshot): EngineSnapshot {
     trickResults: [],
     pardaStacks: {},
     florDeclarations: [],
+    envidoCancelledByFlor: false,
     florAnnouncedPlays: {},
     invalidFlor: [],
     handAwards: [],
@@ -1496,14 +1483,20 @@ export function envidoResult(
   snapshot: EngineSnapshot,
   kind: 'envido' | 'flor' = 'envido',
 ) {
+  const cancelled = kind === 'envido' && !!snapshot.envidoCancelledByFlor;
+  if (!snapshot.handComplete) return null;
   if (
-    !snapshot.handComplete ||
-    (kind === 'envido'
-      ? snapshot.florDeclarations.length > 0
-      : snapshot.envido.kind !== 'flor') ||
-    snapshot.envido.status !== 'resolved' ||
-    snapshot.envido.awardPending ||
-    !snapshot.envido.winner
+    kind === 'envido' &&
+    !cancelled &&
+    (snapshot.florDeclarations.length > 0 ||
+      snapshot.envido.status !== 'resolved' ||
+      snapshot.envido.awardPending)
+  )
+    return null;
+  if (
+    kind === 'flor' &&
+    snapshot.envido.kind !== 'flor' &&
+    !snapshot.invalidFlor?.length
   )
     return null;
   const totals = snapshot.seats.map((seat) => ({
@@ -1523,15 +1516,25 @@ export function envidoResult(
   const best = Math.max(...totals.map((seat) => seat.tantos));
   return {
     totals,
-    winner: snapshot.envido.winner,
-    points:
-      kind === 'flor'
+    winner:
+      cancelled || (kind === 'flor' && snapshot.envido.kind !== 'flor')
+        ? null
+        : snapshot.envido.winner,
+    ...(cancelled ? { cancelled: true } : {}),
+    points: cancelled
+      ? 0
+      : kind === 'flor'
         ? (snapshot.handAwards ?? [])
             .filter((award) => award.reason === 'flor')
             .reduce((sum, award) => sum + award.amount, 0)
         : snapshot.envido.acceptedStake,
-    declined: snapshot.envido.answer === 'no-quiero',
+    declined:
+      !cancelled &&
+      (kind === 'envido' || snapshot.envido.kind === 'flor') &&
+      snapshot.envido.answer === 'no-quiero',
     tied:
+      !cancelled &&
+      kind === 'envido' &&
       new Set(
         totals.filter((seat) => seat.tantos === best).map((seat) => seat.team),
       ).size > 1,
