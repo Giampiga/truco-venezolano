@@ -2015,12 +2015,12 @@ select:focus-visible {
   justify-content: space-between;
   gap: 12px;
   margin-top: 42px;
-  padding: 23px 0;
+  padding: 23px 0 88px;
   border-top: 1px solid var(--border);
-  color: #768078;
+  color: var(--muted-foreground);
   font-size: 12px;
 }
-.club-footer > span:first-child {
+.club-footer-brand {
   font-weight: 600;
   letter-spacing: 0.13em;
 }
@@ -4625,6 +4625,116 @@ button[draggable='true']:active {
   text-decoration: underline;
 }
 .club-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--foreground);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.club-footer a:hover {
+  color: var(--primary);
+}
+.club-footer a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+}
+
+.rules-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  overflow: hidden;
+}
+.rules-dialog-header {
+  flex-shrink: 0;
+  padding: 24px 48px 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.rules-dialog-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 24px 24px;
+}
+.rules-chapter {
+  border-bottom: 1px solid var(--border);
+}
+.rules-chapter > summary {
+  padding: 20px 0;
+  cursor: pointer;
+  font-size: 15px;
   font-weight: 650;
-  text-underline-offset: 3px;
+  line-height: 1.5;
+}
+.rules-chapter > summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.rules-chapter[open] {
+  padding-bottom: 24px;
+}
+.rules-steps {
+  display: grid;
+  gap: 16px;
+  list-style: decimal;
+  padding-left: 22px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+}
+.rules-steps strong {
+  color: var(--foreground);
+}
+.rules-dialog .card-hierarchy {
+  gap: 20px;
+}
+.rules-dialog .rules-detail-grid {
+  grid-template-columns: 1fr;
+  margin-top: 0;
+  border: 0;
+  border-radius: 0;
+}
+.rules-dialog .rules-detail-grid > div {
+  min-height: 0;
+  padding: 16px 0;
+  border-right: 0;
+}
+.rules-dialog .rules-detail-grid > div:first-child {
+  padding-top: 0;
+}
+.rules-dialog .rules-detail-grid > div:last-child {
+  border-bottom: 0;
+}
+.rules-dialog .rules-detail-grid dt {
+  font-size: 12px;
+}
+.rules-dialog .rules-detail-grid dd {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.7;
+  font-weight: 400;
+}
+.rules-dialog .rules-caveat {
+  margin-top: 24px;
+  line-height: 1.6;
+}
+.rules-dialog-footer {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 16px 24px;
+}
+@media (max-width: 640px) {
+  .rules-dialog-header {
+    padding: 20px 44px 16px 20px;
+  }
+  .rules-dialog-body {
+    padding: 4px 20px 20px;
+  }
+  .rules-dialog-footer {
+    padding: 12px 20px;
+  }
 }
