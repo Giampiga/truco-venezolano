@@ -58,6 +58,7 @@ export function CantoNotice({
   you,
   name,
   canAnswer,
+  onRespond,
 }: {
   state: Pick<
     EngineSnapshot,
@@ -66,6 +67,7 @@ export function CantoNotice({
   you: string;
   name: (id: string) => string;
   canAnswer: boolean;
+  onRespond?: () => void;
 }) {
   const canto = pendingCanto(state);
   if (!canto) return null;
@@ -74,25 +76,43 @@ export function CantoNotice({
     ? name(canto.bySeatId)
     : callers.map((seat) => name(seat.id)).join(' / ');
   const own = callers.some((seat) => seat.id === you);
+  const prompt = canAnswer
+    ? 'Te toca responder.'
+    : own
+      ? 'Esperando la respuesta del equipo rival.'
+      : 'Tu pareja debe responder.';
+  if (onRespond) {
+    if (own) return null;
+    return (
+      <div className="opponent-canto-banner">
+        <div role="alert" aria-atomic="true">
+          <span>{caller} canta</span>
+          <strong>«{canto.label}»</strong>
+          <p>{prompt}</p>
+        </div>
+        {canAnswer && <Button onClick={onRespond}>Responder</Button>}
+      </div>
+    );
+  }
   return (
-    <output className="canto-notice">
-      <strong>
-        {caller}: «{canto.label}»
-      </strong>
-      <span className="block mt-1">
-        {canAnswer
-          ? 'Te toca responder a este canto.'
-          : own
-            ? 'Esperando la respuesta del equipo rival.'
-            : 'Tu equipo debe responder a este canto.'}
-      </span>
-      <span className="block mt-1">
-        <b>Quiero:</b> {canto.accept} <b>No quiero:</b> {canto.reject}
-      </span>
+    <output className="canto-notice" data-opponent={!own} aria-live="off">
+      <span className="canto-caller">{caller} canta</span>
+      <strong>«{canto.label}»</strong>
+      <p className="canto-response-prompt">{prompt}</p>
+      <dl className="canto-outcomes">
+        <div>
+          <dt>Si quieres</dt>
+          <dd>{canto.accept}</dd>
+        </div>
+        <div>
+          <dt>Si no quieres</dt>
+          <dd>{canto.reject}</dd>
+        </div>
+      </dl>
       {canto.suspended && (
-        <span className="block mt-1">
+        <p className="mt-3">
           Después se responde al {canto.suspended}, si la partida sigue.
-        </span>
+        </p>
       )}
     </output>
   );
@@ -201,7 +221,7 @@ function HandSummaryDialog({ state, name }: HandSummaryProps) {
             puntos.
           </p>
         )}
-        <DialogClose render={<Button />}>Volver a la mesa</DialogClose>
+        <DialogClose render={<Button />}>Continuar</DialogClose>
       </DialogContent>
     </Dialog>
   );

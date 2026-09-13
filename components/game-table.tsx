@@ -805,6 +805,16 @@ export function GameTable({
 
       <div className="table-layout">
         <div className="player-play-area">
+          <CantoNotice
+            state={snapshot}
+            you="human"
+            name={(id) => playerName(id, config)}
+            canAnswer={humanLegal.includes('answer-quiero')}
+            onRespond={() => {
+              cantoDock.current?.scrollIntoView({ block: 'center' });
+              cantoDock.current?.focus({ preventScroll: true });
+            }}
+          />
           <section
             className="table-stage"
             data-format={config.format}
