@@ -21,6 +21,7 @@ export async function GET() {
   try {
     if (
       !process.env.DATABASE_URL &&
+      !process.env.POSTGRES_URL &&
       !(
         process.env.NODE_ENV !== 'production' &&
         process.env.TRUCO_LOCAL_DATABASE

@@ -4581,3 +4581,83 @@ button[draggable='true']:active {
 [data-card-drop-active] {
   background: color-mix(in oklch, var(--primary) 15%, transparent);
 }
+
+.hand-summary {
+  padding: 16px;
+  background: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.hand-summary-teams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 14px;
+}
+.hand-summary-teams h3 {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+.hand-summary-teams h3 b {
+  display: block;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.hand-summary-teams ul {
+  padding: 0;
+  list-style: none;
+}
+.hand-summary .envido-result {
+  margin-top: 12px;
+  padding: 12px 0 0;
+  border-bottom: 0;
+}
+.flor-reminder {
+  display: block;
+  flex-basis: 100%;
+  color: var(--foreground);
+  max-width: 38ch;
+}
+
+.bot-tables {
+  padding: 20px;
+  border-top: 1px solid var(--border);
+}
+.bot-tables h3 {
+  font-weight: 650;
+}
+.bot-tables p {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.bot-tables button {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  width: 100%;
+  text-align: left;
+  gap: 4px 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+}
+.bot-tables button > span:first-of-type {
+  grid-column: 1;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.bot-tables button > span:last-child {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+}
+.bot-tables button:hover strong,
+.club-footer a:hover {
+  text-decoration: underline;
+}
+.club-footer a {
+  font-weight: 650;
+  text-underline-offset: 3px;
+}

@@ -52,18 +52,24 @@ sin pasar y conservan su valor para contar el Envite.
   más la mejor otra carta. Sin pareja ni pieza, vale la carta numérica mayor.
   Los empates se resuelven por orden de mano.
 - La Flor anula el Envido normal, incluso si ya fue querido. Por eso el Envite
-  querido o rechazado se acredita al terminar la base, antes del Truco. Si
+  querido se acredita al terminar la base, antes del Truco. El rechazado paga
+  inmediatamente; si después se canta Flor, ese pago se anula. Si un pago
   completa el chico, el Truco ya no suma.
 - Flor: tres cartas de la misma pinta, una pieza y otras dos de la misma pinta,
   o ambas piezas (Reservada). La Reservada gana la comparación de flores.
-- En esta mesa digital se exige anunciar la Flor antes de jugar. «A ley» usa
+- Esta mesa usa la regla solicitada de **repetir Flor antes de cada carta**.
+  Jugar sin repetirla invalida la Flor de ese jugador para el resto de la base.
+  En primera parda se repite antes de colocar las dos cartas juntas.
+  Es una regla de esta mesa, distinta del anuncio inicial descrito en Ludoteka. «A ley» usa
   esa misma declaración; no implementa el anuncio diferido de algunas mesas.
   Si hay Flor rival, se puede comparar, rechazar o decir «Mi flor envida».
   La apuesta inicial incluye 3 de Flor; envidarla suma 2. Si se rechaza un
   aumento, se paga lo ya apostado. Cada Flor aliada adicional suma 3 al equipo
   ganador. Un jugador sin Flor no responde a una disputa de flores.
 - Flor y Envido suspenden un Truco pendiente; después se retoma su respuesta.
-  La Flor se acredita al resolverse. Si cierra el chico, termina la base.
+  La Flor se valida y acredita al terminar la base, contando solo las flores
+  anunciadas y conservadas. El resumen desglosa los puntos de Flor/Envido y
+  Truco por equipo; nunca se suman premios después de cerrar el chico.
 
 La meta puede ser 12, 24 o 32 piedras; se juega un chico o al mejor de tres.
 Competitivo fija 24 piedras, un chico, Flor de 3 y primera parda abierta.

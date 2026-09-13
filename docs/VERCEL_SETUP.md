@@ -1,6 +1,6 @@
 # Truco: new Vercel + Supabase projects
 
-The `codex/vercel-launch` branch runs on standard Next.js, with Supabase Auth and Postgres. The [Sites version](https://truco.gga.chatgpt.site) is a separate, compatible build that retains ChatGPT sign-in and D1 data. It remains owner-only. Do not deploy this Next.js branch directly through Sites; Google, Facebook, Apple, and email sign-in require the Supabase setup below.
+The `main` branch runs on standard Next.js, with Supabase Auth and Postgres. The [Sites version](https://truco.gga.chatgpt.site) is a separate, compatible build that retains ChatGPT sign-in and D1 data. It remains owner-only. Do not deploy this Next.js branch directly through Sites; Google, Facebook, Apple, and email sign-in require the Supabase setup below.
 
 ## 1. Create Supabase
 
@@ -8,13 +8,13 @@ Create a new project in your Supabase organization. Save its database password i
 
 All game tables have RLS enabled with **no client policies**. The Next.js server accesses them with the server-side Postgres connection. Never expose `DATABASE_URL` or database credentials in browser variables. Clients cannot read opponents' hands or other users' histories directly.
 
-In **Connect**, copy the Transaction pooler connection string (port 6543) to `DATABASE_URL`. The app disables prepared statements for that pooler and requires certificate-verified TLS. Copy the project URL and publishable key into `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+In **Connect**, copy the Transaction pooler connection string (port 6543) to `DATABASE_URL`. The Vercel integration supplies `POSTGRES_URL`, which is also supported. The app disables prepared statements and verifies TLS using the public Supabase Root 2021 CA in `supabase/prod-ca-2021.crt` (expires April 26, 2031). This is a public trust certificate, not a database credential; its source is the download linked from Supabase Database Settings. Copy the project URL and publishable key into `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 
 ## 2. Create Vercel
 
-The project `giampigas-projects/truco-venezolano` has been created. Its short production address is **https://truco-ve.vercel.app**, attached to the project for future deployments; use it for `NEXT_PUBLIC_SITE_URL` and Supabase Site URL/callback settings. GitHub auto-deployment still needs Vercel access to the private repository. Preview deployment is currently blocked with `TEAM_ACCESS_REQUIRED`: Vercel cannot verify the commit author’s permission, including after switching this repository to the GitHub noreply address. Connect the correct GitHub account in Vercel and grant this project/repository access before retrying. Supabase has not been provisioned yet.
+The project `giampigas-projects/truco-venezolano` has been created. Its short production address is **https://truco-ve.vercel.app**, attached to the project for future deployments; use it for `NEXT_PUBLIC_SITE_URL` and Supabase Site URL/callback settings. GitHub auto-deployment still needs Vercel access to the private repository. Preview deployment is currently blocked with `TEAM_ACCESS_REQUIRED`: Vercel cannot verify the commit author’s permission, including after switching this repository to the GitHub noreply address. Connect the correct GitHub account in Vercel and grant this project/repository access before retrying. The free Supabase project `truco` (`bhovtgdbgekcrplkntot`) is now provisioned and connected; the existing schema has been applied to all eight game tables with RLS enabled.
 
-Import `Giampiga/truco-venezolano`, select Next.js, and use `codex/vercel-launch` for the migration preview. Set the three variables above and `NEXT_PUBLIC_SITE_URL` to the chosen Vercel domain. Set Node.js 22 or later. Do not set `TRUCO_LOCAL_TEST_AUTH` or `TRUCO_LOCAL_DATABASE` on Vercel.
+Import `Giampiga/truco-venezolano`, select Next.js, and use `main` as the production branch. Set the three variables above and `NEXT_PUBLIC_SITE_URL` to the chosen Vercel domain. Set Node.js 22 or later. Do not set `TRUCO_LOCAL_TEST_AUTH` or `TRUCO_LOCAL_DATABASE` on Vercel.
 
 The app uses polling for rooms and chat. LiveKit runs separately; put its three credentials from `.env.example` in Vercel to enable room voice/camera. Hosting the frontend does not provision media infrastructure.
 
@@ -68,3 +68,7 @@ npm run build
 ```
 
 PGlite runs the same Postgres schema for local checks. Test identities only exist when both development mode and the explicit test switch are enabled. These checks do not prove external OAuth credentials, SMTP, real media connections, or hosted Postgres networking work.
+
+## Verification on September 13, 2026
+
+The free project and schema are connected. A temporary confirmed test account passed password login, SSR cookie verification, `/api/account`, and persisted profile reads through the actual Supabase service. The test account and profile were removed. This does not verify email delivery or social login. Email and Anonymous login are now enabled. Guest login passed in the production browser. Google/Facebook/Apple remain disabled until their provider credentials are supplied. The UI now labels unavailable social methods and offers real AI practice without creating an account.

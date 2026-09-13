@@ -4,7 +4,8 @@ import { cardDrag } from '@/lib/card-drag';
 import { tablePosition } from '@/lib/table-seats';
 import {
   CantoNotice,
-  EnvidoResult,
+  HandSummary,
+  FlorReminder,
   PlayedStacks,
   CantoBranch,
   TableVira,
@@ -271,8 +272,8 @@ export function OnlineTable({
                   : `Turno de ${name(state.activeSeatId)}`}
         </output>
       </div>
-      <EnvidoResult
-        result={state.envidoResult}
+      <HandSummary
+        state={state}
         name={(id) => (id === room.you ? 'Tú' : name(id))}
       />
       {state.handComplete ? (
@@ -323,6 +324,11 @@ export function OnlineTable({
                   </span>
                 )}
               </div>
+              <FlorReminder
+                state={state}
+                you={room.you}
+                canDeclare={legal.includes('declare-flor')}
+              />
               <div className="online-hand-cards">
                 {game.private.hand.map((card, index) => (
                   <button
@@ -398,14 +404,11 @@ export function OnlineTable({
                       variant="outline"
                       disabled={disabled}
                       onClick={() =>
-                        setConfirmation({
-                          title: `${state.truco.pending ? 'Quiero y ' : ''}${callName[nextCall]}`,
-                          command: {
-                            type: state.truco.pending
-                              ? 'RAISE_TRUCO'
-                              : 'CALL_TRUCO',
-                            call: nextCall,
-                          },
+                        void command({
+                          type: state.truco.pending
+                            ? 'RAISE_TRUCO'
+                            : 'CALL_TRUCO',
+                          call: nextCall,
                         })
                       }
                     >
@@ -483,10 +486,7 @@ export function OnlineTable({
                       variant="outline"
                       disabled={disabled}
                       onClick={() =>
-                        setConfirmation({
-                          title: 'Flor tengo',
-                          command: { type: 'DECLARE_FLOR', mode: 'flor' },
-                        })
+                        void command({ type: 'DECLARE_FLOR', mode: 'flor' })
                       }
                     >
                       Flor tengo
@@ -498,10 +498,7 @@ export function OnlineTable({
                         variant="outline"
                         disabled={disabled}
                         onClick={() =>
-                          setConfirmation({
-                            title: 'A ley',
-                            command: { type: 'DECLARE_FLOR', mode: 'a-ley' },
-                          })
+                          void command({ type: 'DECLARE_FLOR', mode: 'a-ley' })
                         }
                       >
                         A ley

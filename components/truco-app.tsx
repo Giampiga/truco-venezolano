@@ -200,15 +200,18 @@ export function TrucoApp() {
     preset: RoomConfig['preset'];
     target: RoomConfig['target'];
     guided: boolean;
+    format?: RoomConfig['format'];
   }) {
     const config: RoomConfig = {
       ...DEFAULT_CONFIG,
-      name: 'Práctica con Truquito',
-      format: '1v1',
+      name:
+        options.format === '2v2' ? 'Parejas con bots' : 'Práctica con Truquito',
+      format: options.format ?? '1v1',
       opponent: 'ai',
       preset: options.preset,
       target: options.target,
       voice: false,
+      camera: false,
       flor: options.preset === 'rapida' ? 'off' : 'a-ley',
       parda: options.preset === 'oriental' ? 'abierta' : 'cerrada',
       pardaEngine: 'apilada-clasica',
@@ -218,8 +221,8 @@ export function TrucoApp() {
       id: 'practice-ai',
       name: config.name,
       host: 'Truquito',
-      players: '2/2',
-      format: '1v1',
+      players: config.format === '2v2' ? '4/4' : '2/2',
+      format: config.format,
       opponent: 'ai',
       score: `A ${config.target} piedras`,
       rule: presetName(config.preset),
@@ -384,6 +387,10 @@ export function TrucoApp() {
                   void refresh();
                 }}
                 playing={!!online.room}
+                onPractice={() => {
+                  setAccountOpen(false);
+                  setPracticeOpen(true);
+                }}
               />
             </div>
           </div>
@@ -475,6 +482,15 @@ export function TrucoApp() {
             onJoin={(room) => void join(room.id)}
             onJoinCode={(code) => void join(code)}
             onPractice={() => setPracticeOpen(true)}
+            onBotTable={(format) =>
+              startPractice({
+                format,
+                difficulty: 'criollo',
+                preset: 'oriental',
+                target: '24',
+                guided: false,
+              })
+            }
             onRefresh={() => void refresh()}
             onRules={() => setRulesOpen(true)}
             busy={busy}

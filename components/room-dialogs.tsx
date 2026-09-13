@@ -575,7 +575,7 @@ export function RulesDialog({
             />
             <RuleDetail
               label="Envite"
-              value="Envido 2 · Quiero y Envido 4 · Falta del que va ganando · empate para Mano · se cuenta al terminar la base"
+              value="Envido 2 · Quiero y Envido 4 · Falta del que va ganando · empate para Mano · querido: al terminar la base · no querido: pago inmediato"
             />
             <RuleDetail
               label="Flor"
@@ -583,8 +583,8 @@ export function RulesDialog({
                 config.flor === 'off'
                   ? 'Sin flor'
                   : config.flor === 'por-derecho'
-                    ? 'Flor por derecho · variante regional'
-                    : 'Flor anunciada antes de jugar · 3 por flor · Reservada gana la comparación'
+                    ? 'Flor por derecho · repítela antes de cada carta'
+                    : 'Repite Flor antes de cada carta o se invalida · 3 por flor · Reservada gana la comparación'
               }
             />
             <RuleDetail

@@ -33,6 +33,7 @@ type Props = {
   onJoin: (room: RoomSummary) => void;
   onJoinCode: (code: string) => void;
   onPractice: () => void;
+  onBotTable: (format: GameFormat) => void;
   onRefresh: () => void;
   onRules: () => void;
   busy: boolean;
@@ -271,6 +272,27 @@ export function LobbyView(props: Props) {
               </Button>
             </div>
           )}
+          {mode === 'casual' && (
+            <section
+              className="bot-tables"
+              aria-label="Mesas de práctica con bots"
+            >
+              <h3>Mesas de práctica con bots</h3>
+              <p>
+                Solo tú y la IA. Sin voz, sin cámara y sin puntos de ranking.
+              </p>
+              <button onClick={() => props.onBotTable('1v1')}>
+                <strong>Duelo con Truquito</strong>
+                <span>1v1 · 1 bot criollo</span>
+                <span>Entrar →</span>
+              </button>
+              <button onClick={() => props.onBotTable('2v2')}>
+                <strong>Parejas con bots</strong>
+                <span>2v2 · 3 bots: aprendiz, criollo y maestro</span>
+                <span>Entrar →</span>
+              </button>
+            </section>
+          )}
           <div className="lobby-footnote">
             <span className="connection-light online" />
             Las reglas se acuerdan antes de repartir.
@@ -329,7 +351,10 @@ export function LobbyView(props: Props) {
         <span>TRUCO / VENEZUELA</span>
         <span>40 cartas. Mil maneras de cantarlo.</span>
         <span>
-          Hecho por <strong>giampiga</strong>
+          Hecho por{' '}
+          <a href="https://giampi.me" target="_blank" rel="noopener noreferrer">
+            giampiga
+          </a>
         </span>
       </footer>
     </div>

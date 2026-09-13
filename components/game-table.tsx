@@ -35,7 +35,8 @@ import { cardDrag } from '@/lib/card-drag';
 import { tablePosition } from '@/lib/table-seats';
 import {
   CantoNotice,
-  EnvidoResult,
+  HandSummary,
+  FlorReminder,
   PlayedStacks,
   CantoBranch,
   TableVira,
@@ -63,7 +64,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   beginNextHand,
-  envidoResult,
+  projectPublic,
   createEngineSnapshot,
   dealtHandForSeat,
   describeVira,
@@ -170,7 +171,15 @@ function seatsFor(config: RoomConfig): Seat[] {
   ];
 }
 
+const partnerBotLevels: Record<string, PracticeDifficulty> = {
+  mariale: 'aprendiz',
+  rafael: 'criollo',
+  vale: 'maestro',
+};
+
 function playerName(id: SeatId, config: RoomConfig) {
+  if (config.opponent === 'ai' && partnerBotLevels[id])
+    return `${{ mariale: 'Mariale', rafael: 'Rafael', vale: 'Vale' }[id]} · IA ${partnerBotLevels[id]}`;
   return (
     {
       opponent: config.opponent === 'ai' ? 'Truquito · IA' : 'Mariale',
@@ -192,6 +201,15 @@ function presentEvent(event: string, config: RoomConfig) {
       ]),
     ),
     'human',
+    Object.fromEntries(
+      ['A', 'B'].map((team) => [
+        team,
+        seatsFor(config)
+          .filter((seat) => seat.team === team)
+          .map((seat) => playerName(seat.id, config))
+          .join(' / '),
+      ]),
+    ),
   );
 }
 
@@ -222,23 +240,6 @@ function initialSnapshot(config: RoomConfig, resumeFromStorage: boolean) {
 }
 
 function commandPrompt(command: EngineCommand) {
-  if (command.type === 'CALL_TRUCO' || command.type === 'RAISE_TRUCO') {
-    return {
-      eyebrow: 'Escalera de Truco',
-      title:
-        command.type === 'RAISE_TRUCO'
-          ? `¿Quiero y ${callLabels[command.call]}?`
-          : `¿Cantas ${callLabels[command.call]}?`,
-      copy:
-        command.call === 'vale-juego'
-          ? 'Si se quiere, el ganador de esta base gana el chico; si se rechaza, se pagan 9 piedras.'
-          : 'El aumento queda pendiente hasta un Quiero, No quiero o repique legal del equipo rival.',
-      confirm:
-        command.type === 'RAISE_TRUCO'
-          ? `Quiero y ${callLabels[command.call]}`
-          : `Cantar ${callLabels[command.call]}`,
-    };
-  }
   if (command.type === 'CALL_ENVIDO') {
     return {
       eyebrow: 'Envite prioritario',
@@ -279,7 +280,7 @@ function commandPrompt(command: EngineCommand) {
           : command.mode === 'a-ley'
             ? 'A ley'
             : 'Flor tengo',
-      copy: 'La Flor se acredita antes del Truco y anula el Envite normal. La Reservada siempre gana la comparación.',
+      copy: 'La Flor se valida al terminar la base, antes del Truco y anula el Envite normal. La Reservada siempre gana la comparación.',
       confirm:
         command.type === 'CALL_FLOR_ENVIDA'
           ? 'Mi Flor envida'
@@ -473,7 +474,9 @@ export function GameTable({
       const observation = observeForAi(snapshot, actor, rules);
       const command = choosePracticeAiCommand(
         observation,
-        isPractice ? practiceDifficulty : 'criollo',
+        isPractice
+          ? (partnerBotLevels[actor] ?? practiceDifficulty)
+          : 'criollo',
         snapshot.gameVersion * 97 + snapshot.handNumber,
       );
       commandCounter.current += 1;
@@ -820,7 +823,7 @@ export function GameTable({
                       name={playerName(seat.id, config)}
                       seatRole={`${roleBySeat[seat.id]} · ${seat.team === 'A' ? 'Pareja' : isPractice ? 'IA' : 'Rival'}`}
                       speaking={seat.id === 'mariale' && !isPractice}
-                      bot={seat.id === 'opponent' && isPractice}
+                      bot={isPractice}
                     />
                   </div>
                 );
@@ -871,8 +874,8 @@ export function GameTable({
             </div>
           </section>
 
-          <EnvidoResult
-            result={envidoResult(snapshot)}
+          <HandSummary
+            state={projectPublic(snapshot)}
             name={(id) => playerName(id, config)}
           />
           <div className="player-console">
@@ -911,6 +914,11 @@ export function GameTable({
                           : 'Esperando'}
                 </Badge>
               </div>
+              <FlorReminder
+                state={snapshot}
+                you="human"
+                canDeclare={humanLegal.includes('declare-flor')}
+              />
               <div className="hand-cards">
                 {humanHand.map((card) => {
                   const id = cardId(card);
@@ -1080,7 +1088,7 @@ export function GameTable({
                   nextCall !== 'none' && (
                     <Button
                       onClick={() =>
-                        setPendingCommand({
+                        humanCommand({
                           type: 'RAISE_TRUCO',
                           call: nextCall,
                         })
@@ -1160,7 +1168,7 @@ export function GameTable({
                   {humanLegal.includes('declare-flor') && (
                     <Button
                       onClick={() =>
-                        setPendingCommand({
+                        humanCommand({
                           type: 'DECLARE_FLOR',
                           mode: 'flor',
                         })
@@ -1176,7 +1184,7 @@ export function GameTable({
                       <Button
                         variant="outline"
                         onClick={() =>
-                          setPendingCommand({
+                          humanCommand({
                             type: 'DECLARE_FLOR',
                             mode: 'a-ley',
                           })
@@ -1202,7 +1210,7 @@ export function GameTable({
                   nextCall !== 'none' && (
                     <Button
                       onClick={() =>
-                        setPendingCommand({
+                        humanCommand({
                           type: 'CALL_TRUCO',
                           call: nextCall,
                         })
@@ -1409,7 +1417,14 @@ export function GameTable({
                   Última vuelta:{' '}
                   {snapshot.trickResults.at(-1)?.parda
                     ? 'parda; continúa la regla configurada.'
-                    : `ganó el equipo ${snapshot.trickResults.at(-1)?.winnerTeam} por jerarquía de carta.`}
+                    : `ganó ${seats
+                        .filter(
+                          (seat) =>
+                            seat.team ===
+                            snapshot.trickResults.at(-1)?.winnerTeam,
+                        )
+                        .map((seat) => playerName(seat.id, config))
+                        .join(' / ')} por jerarquía de carta.`}
                 </p>
               )}
               {aiExplanation && (

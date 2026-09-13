@@ -1,4 +1,6 @@
 import postgres from 'postgres';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 type Rows = { rows: Record<string, unknown>[]; changes: number };
 type Query = (sql: string, values: unknown[]) => Promise<Rows>;
@@ -6,11 +8,17 @@ const database = globalThis as typeof globalThis & {
   trucoSql?: ReturnType<typeof postgres>;
 };
 function connection() {
-  if (!process.env.DATABASE_URL)
-    throw new Error('Falta configurar DATABASE_URL.');
-  return (database.trucoSql ??= postgres(process.env.DATABASE_URL, {
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (!url) throw new Error('Falta configurar la conexión a Postgres.');
+  return (database.trucoSql ??= postgres(url, {
     prepare: false,
-    ssl: true,
+    ssl: {
+      rejectUnauthorized: true,
+      ca: readFileSync(
+        join(process.cwd(), 'supabase', 'prod-ca-2021.crt'),
+        'utf8',
+      ),
+    },
     max: 3,
     types: { bigint: { to: 20, from: [20], serialize: String, parse: Number } },
   }));

@@ -34,6 +34,7 @@ export function AccountMenu({
   onName,
   onSession,
   playing,
+  onPractice,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -41,12 +42,35 @@ export function AccountMenu({
   onName: (name: string) => void;
   onSession: (registered: boolean) => void;
   playing: boolean;
+  onPractice: () => void;
 }) {
   const [account, setAccount] = useState<Account | null>(null);
   const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [providers, setProviders] = useState<Record<string, boolean> | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!open || !authConfigured) return;
+    const controller = new AbortController();
+    void fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/settings`, {
+      headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY! },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (response.ok) {
+          const settings = await response.json();
+          if (!controller.signal.aborted)
+            setProviders(settings.external ?? null);
+        }
+      })
+      .catch(() => {
+        /* A failed availability check must not discard an existing session. */
+      });
+    return () => controller.abort();
+  }, [open]);
   const [loading, setLoading] = useState(true);
   const [retry, setRetry] = useState(0);
   const [confirmation, setConfirmation] = useState<{
@@ -340,7 +364,11 @@ export function AccountMenu({
                 <Button
                   type="submit"
                   variant="outline"
-                  disabled={busy || (!account && !authConfigured)}
+                  disabled={
+                    busy ||
+                    (!account &&
+                      (!authConfigured || providers?.anonymous_users === false))
+                  }
                 >
                   {busy
                     ? 'Un momento…'
@@ -349,6 +377,23 @@ export function AccountMenu({
                       : 'Jugar como invitado'}
                 </Button>
               </form>
+              {!account && (
+                <Button
+                  variant="ghost"
+                  onClick={onPractice}
+                  disabled={busy || playing}
+                >
+                  Probar contra IA sin cuenta
+                </Button>
+              )}
+              {!account &&
+                authConfigured &&
+                providers?.anonymous_users === false && (
+                  <small>
+                    Las mesas de invitados estarán disponibles pronto. Ya puedes
+                    jugar contra Truquito sin una cuenta.
+                  </small>
+                )}
               <details className="inline-help">
                 <summary>¿Qué se guarda?</summary>
                 <p>
@@ -394,7 +439,12 @@ export function AccountMenu({
                       <Button
                         key={provider}
                         variant="outline"
-                        disabled={!authConfigured || busy || playing}
+                        disabled={
+                          !authConfigured ||
+                          providers?.[provider] === false ||
+                          busy ||
+                          playing
+                        }
                         onClick={() =>
                           void perform(async () => {
                             const options = {
@@ -420,6 +470,9 @@ export function AccountMenu({
                           : provider === 'apple'
                             ? 'Apple'
                             : 'Facebook'}
+                        {providers?.[provider] === false
+                          ? ' · Próximamente'
+                          : ''}
                       </Button>
                     ),
                   )}

@@ -699,7 +699,7 @@ void test('la parda publica solo las tapadas necesarias para el desempate', () =
   );
 });
 
-void test('Flor se declara una vez, puntúa y cancela el Envite normal', () => {
+void test('Flor waits until the base ends and cannot be announced twice before the same card', () => {
   let snapshot = createEngineSnapshot({
     deck: createSpanishDeck(),
     seats: seats1v1,
@@ -726,8 +726,8 @@ void test('Flor se declara una vez, puntúa y cancela el Envite normal', () => {
     rules,
     'flor-once',
   ).state;
-  assert.equal(snapshot.match.score.A, 3);
-  assert.equal(snapshot.envido.status, 'resolved');
+  assert.equal(snapshot.match.score.A, 0);
+  assert.equal(snapshot.envido.status, 'accepted');
   assert.equal(
     legalActionsForSnapshot(snapshot, 'human', rules).includes('declare-flor'),
     false,
@@ -863,17 +863,17 @@ const noFlor: TrucoCard[] = [
   { rank: 2, suit: 'copas' },
 ];
 
-void test('Flor is compulsory before playing, and opponents can compare or envidar it', () => {
+void test('Flor can be forfeited by playing, and opponents can compare or envidar it', () => {
   const initial = dealtSnapshot({ human: whiteFlor, bot: lesserFlor });
-  assert.deepEqual(legalActionsForSnapshot(initial, 'human'), ['declare-flor']);
-  assert.throws(() =>
-    transition(
-      initial,
-      'human',
-      { type: 'PLAY_CARD', cardId: '7-oros' },
-      rules,
-    ),
-  );
+  assert.ok(legalActionsForSnapshot(initial, 'human').includes('declare-flor'));
+  const missed = transition(
+    initial,
+    'human',
+    { type: 'PLAY_CARD', cardId: '7-oros' },
+    rules,
+  ).state;
+  assert.deepEqual(missed.invalidFlor, ['human']);
+  assert.deepEqual(initial.invalidFlor, []);
   const announced = transition(
     initial,
     'human',
@@ -892,7 +892,14 @@ void test('Flor is compulsory before playing, and opponents can compare or envid
       { type: 'ANSWER_CALL', answer },
       rules,
     ).state;
-    assert.deepEqual(done.match.score, { A: 3, B: 0 });
+    assert.deepEqual(done.match.score, { A: 0, B: 0 });
+    const finished = transition(
+      done,
+      'human',
+      { type: 'FOLD_HAND' },
+      rules,
+    ).state;
+    assert.deepEqual(finished.match.score, { A: 3, B: 1 });
     assert.equal(done.priority.active, 'play');
     assert.ok(!legalActionsForSnapshot(done, 'human').includes('declare-flor'));
   }
@@ -910,17 +917,27 @@ void test('Flor is compulsory before playing, and opponents can compare or envid
     { type: 'ANSWER_CALL', answer: 'quiero' },
     rules,
   ).state;
-  assert.deepEqual(accepted.match.score, { A: 5, B: 0 });
+  assert.deepEqual(accepted.match.score, { A: 0, B: 0 });
+  assert.deepEqual(
+    transition(accepted, 'human', { type: 'FOLD_HAND' }, rules).state.match
+      .score,
+    { A: 5, B: 1 },
+  );
   const rejected = transition(
     raised,
     'human',
     { type: 'ANSWER_CALL', answer: 'no-quiero' },
     rules,
   ).state;
-  assert.deepEqual(rejected.match.score, { A: 0, B: 3 });
+  assert.deepEqual(rejected.match.score, { A: 0, B: 0 });
+  assert.deepEqual(
+    transition(rejected, 'human', { type: 'FOLD_HAND' }, rules).state.match
+      .score,
+    { A: 0, B: 4 },
+  );
 });
 
-void test('a later Flor cancels accepted and rejected Envite before either is paid', () => {
+void test('a later Flor cancels accepted Envite and reverses its immediate rejection points', () => {
   for (const answer of ['quiero', 'no-quiero'] as const) {
     let state = dealtSnapshot({
       p1: noFlor,
@@ -948,7 +965,10 @@ void test('a later Flor cancels accepted and rejected Envite before either is pa
       { type: 'ANSWER_CALL', answer },
       rules,
     ).state;
-    assert.deepEqual(state.match.score, { A: 0, B: 0 });
+    assert.deepEqual(state.match.score, {
+      A: answer === 'no-quiero' ? 1 : 0,
+      B: 0,
+    });
     state = transition(
       state,
       'p1',
@@ -967,7 +987,7 @@ void test('a later Flor cancels accepted and rejected Envite before either is pa
       { type: 'DECLARE_FLOR', mode: 'flor' },
       rules,
     ).state;
-    assert.deepEqual(state.match.score, { A: 3, B: 0 });
+    assert.deepEqual(state.match.score, { A: 0, B: 0 });
     state = transition(state, 'p3', { type: 'FOLD_HAND' }, rules).state;
     assert.deepEqual(state.match.score, { A: 3, B: 1 });
   }
@@ -1072,7 +1092,8 @@ void test('only floral opponents answer Flor and a suspended Truco resumes', () 
     { type: 'DECLARE_FLOR', mode: 'flor' },
     rules,
   ).state;
-  assert.deepEqual(state.match.score, { A: 0, B: 3 });
+  assert.deepEqual(state.match.score, { A: 0, B: 0 });
+  assert.equal(state.envido.awardPending, true);
   assert.equal(state.priority.active, 'truco');
   assert.deepEqual(state.truco.pending, pending);
 });
@@ -1123,7 +1144,7 @@ void test('rejected Envido reveals both totals only at the end, without awarding
     state.rules,
   ).state;
   assert.equal(projectPublic(state).envidoResult, null);
-  assert.deepEqual(state.match.score, { A: 0, B: 0 });
+  assert.deepEqual(state.match.score, { A: 1, B: 0 });
   state = transition(state, 'human', { type: 'FOLD_HAND' }, state.rules).state;
   const result = projectPublic(state).envidoResult!;
   assert.equal(result.declined, true);
@@ -1132,4 +1153,157 @@ void test('rejected Envido reveals both totals only at the end, without awarding
   assert.equal(result.totals.length, 2);
   assert.ok(result.totals[1].tantos > result.totals[0].tantos);
   assert.deepEqual(state.match.score, { A: 1, B: 1 });
+});
+
+void test('Flor must be repeated before each play, including a parda stack; missing it invalidates only that player', () => {
+  for (const repeat of [true, false]) {
+    let state = dealtSnapshot({ human: whiteFlor, bot: lesserFlor });
+    for (const actor of ['human', 'bot'])
+      state = transition(
+        state,
+        actor,
+        { type: 'DECLARE_FLOR', mode: 'flor' },
+        rules,
+      ).state;
+    state = transition(
+      state,
+      'human',
+      { type: 'PLAY_CARD', cardId: '7-oros' },
+      rules,
+    ).state;
+    state = transition(
+      state,
+      'bot',
+      { type: 'PLAY_CARD', cardId: '7-bastos' },
+      rules,
+    ).state;
+    assert.ok(legalActionsForSnapshot(state, 'human').includes('declare-flor'));
+    if (repeat)
+      state = transition(
+        state,
+        'human',
+        { type: 'DECLARE_FLOR', mode: 'flor' },
+        rules,
+      ).state;
+    state = transition(
+      state,
+      'human',
+      { type: 'PLAY_CARD', cardId: '6-oros' },
+      rules,
+    ).state;
+    state = transition(
+      state,
+      'bot',
+      { type: 'DECLARE_FLOR', mode: 'flor' },
+      rules,
+    ).state;
+    state = transition(
+      state,
+      'bot',
+      { type: 'PLAY_CARD', cardId: '5-bastos' },
+      rules,
+    ).state;
+    assert.equal(state.handComplete, true);
+    assert.deepEqual(
+      state.match.score,
+      repeat ? { A: 4, B: 0 } : { A: 1, B: 3 },
+    );
+    assert.equal(
+      state.handAwards!.filter((a) => a.reason === 'flor').length,
+      1,
+    );
+    assert.deepEqual(state.invalidFlor, repeat ? [] : ['human']);
+    const next = beginNextHand(state, createSpanishDeck());
+    assert.deepEqual(next.handAwards, []);
+    assert.deepEqual(next.florAnnouncedPlays, {});
+    assert.deepEqual(next.invalidFlor, []);
+  }
+  let parda = dealtSnapshot({
+    human: [
+      { rank: 6, suit: 'oros' },
+      { rank: 7, suit: 'oros' },
+      { rank: 5, suit: 'oros' },
+    ],
+    bot: [
+      { rank: 6, suit: 'bastos' },
+      { rank: 7, suit: 'copas' },
+      { rank: 4, suit: 'espadas' },
+    ],
+  });
+  parda = transition(
+    parda,
+    'human',
+    { type: 'DECLARE_FLOR', mode: 'flor' },
+    rules,
+  ).state;
+  parda = transition(
+    parda,
+    'human',
+    { type: 'PLAY_CARD', cardId: '6-oros' },
+    rules,
+  ).state;
+  parda = transition(
+    parda,
+    'bot',
+    { type: 'PLAY_CARD', cardId: '6-bastos' },
+    rules,
+  ).state;
+  assert.ok(legalActionsForSnapshot(parda, 'human').includes('play-stack'));
+  parda = transition(
+    parda,
+    'human',
+    { type: 'PLAY_STACK', cardIds: ['7-oros', '5-oros'] },
+    rules,
+  ).state;
+  assert.deepEqual(parda.invalidFlor, ['human']);
+});
+
+void test('Perico or Perica plus a suited pair can declare Flor for every vira, including substitutions', () => {
+  for (const card of createSpanishDeck()) {
+    for (const piece of Object.values(getPieces(card))) {
+      const suit = card.suit === 'oros' ? 'bastos' : 'oros';
+      const state = dealtSnapshot({
+        human: [piece, { rank: 6, suit }, { rank: 5, suit }],
+        bot: noFlor,
+      });
+      state.vira = card;
+      assert.ok(
+        legalActionsForSnapshot(state, 'human').includes('declare-flor'),
+      );
+      const declared = transition(
+        state,
+        'human',
+        { type: 'DECLARE_FLOR', mode: 'flor' },
+        rules,
+      ).state;
+      assert.ok(declared.florDeclarations.includes('human'));
+      assert.deepEqual(declared.match.score, { A: 0, B: 0 });
+    }
+  }
+});
+
+void test('score breakdown records actual points and stops counting after a chico closes', () => {
+  let state = dealtSnapshot(
+    { human: noFlor, bot: whiteFlor },
+    { ...rules, florMode: 'off' },
+  );
+  state.match.score = { A: 23, B: 0 };
+  state.handStartScore = { ...state.match.score };
+  state = transition(
+    state,
+    'human',
+    { type: 'CALL_ENVIDO', amount: 2 },
+    state.rules,
+  ).state;
+  state = transition(
+    state,
+    'bot',
+    { type: 'ANSWER_CALL', answer: 'no-quiero' },
+    state.rules,
+  ).state;
+  assert.equal(state.handComplete, true);
+  assert.deepEqual(state.handAwards, [
+    { team: 'A', amount: 1, reason: 'envido' },
+  ]);
+  assert.deepEqual(state.match.score, { A: 24, B: 0 });
 });
