@@ -66,7 +66,7 @@ Do not run HTTP integration suites against a real user database. They create tes
 | `NEXT_PUBLIC_SITE_URL`                  | Server metadata                              | Base origin for metadata links; use `http://localhost:3013` locally and the chosen production domain when deployed |
 | `NEXT_PUBLIC_SUPABASE_URL`              | Browser/server                               | Supabase project URL                                                                                               |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`  | Browser/server                               | Publishable auth key; designed for client use                                                                      |
-| `DATABASE_URL`                          | Server only                                  | Supabase transaction-pooler URL, port 6543; certificate-verified TLS, prepared statements disabled                 |
+| `DATABASE_URL` or `POSTGRES_URL`         | Server only                                  | Supabase transaction-pooler URL, port 6543; certificate-verified TLS, prepared statements disabled                 |
 | `LIVEKIT_URL`                           | Server; supplied to authorized media clients | Secure `wss://` media endpoint                                                                                     |
 | `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` | Server only                                  | Media token signing and participant removal                                                                        |
 | `TRUCO_LOCAL_DATABASE`                  | Development/test only                        | PGlite data directory                                                                                              |
@@ -168,7 +168,7 @@ The initial schema is [`supabase/migrations/20260912000000_truco.sql`](supabase/
 
 All game tables have RLS enabled and no public client policies. Only the server database connection accesses them. Room chat and pending media revocations are part of stored room data. API responses are `no-store`; the service worker never caches them.
 
-Rooms become inaccessible after **48 hours of inactivity**; rows are not automatically deleted. Public listings only show recently active waiting rooms. Completed match history persists separately. Local practice and its resume snapshot stay in browser storage and never affect competitive Elo or online history.
+Rooms become inaccessible after **48 hours of inactivity**; rows are not automatically deleted. Public listings only show recently active waiting rooms. Completed match history persists separately. Local practice and its resume snapshot stay in browser storage and never affect competitive Elo or online history. The casual lobby includes a 1v1 bot table (Criollo) and a 2v2 table with Aprendiz, Criollo, and Maestro bots; these practice tables have voice and camera disabled.
 
 ### API guide
 
@@ -221,7 +221,7 @@ When editing UI, keep keyboard interaction, touch dragging, readable Spanish, sm
 The code is prepared for the new services, with these external steps still outstanding:
 
 1. **Vercel delivery:** project `truco-venezolano` is deployed at `truco-ve.vercel.app`. The last verified GitHub integration was disconnected, so a push alone does not guarantee a new deployment. Connect the private repository for automatic builds or deploy with the authenticated CLI. Production service configuration is still required below.
-2. **Supabase:** create the project, apply the schema, set environment variables, enable anonymous/email login, configure Google/Facebook/Apple and SMTP, and verify each flow with real accounts.
+2. **Supabase:** the free `truco` project is provisioned through Vercel and the eight game tables are initialized with RLS. Production connection variables are supplied by the integration. Email/password with a confirmed test account has passed real Supabase → SSR → Postgres verification. Anonymous login is enabled and browser-tested. Provider credentials, redirects, and SMTP must be configured/verified in its Authentication settings; account-free AI practice is available separately.
 3. **LiveKit:** configure the media credentials and test two real participants, including denied device permission, mute/deafen, camera toggling, and departure.
 4. **Migration:** preserve an export of the Sites data and verify ownership when mapping old hashed ChatGPT IDs to new Supabase user IDs. Never infer account ownership from matching names. Keep Sites available until cutover is tested.
 
@@ -231,4 +231,4 @@ Before a broad public launch, also plan actual user reporting/blocking and moder
 
 ## Credits
 
-Created by **giampiga**.
+Created by [**giampiga**](https://giampi.me).

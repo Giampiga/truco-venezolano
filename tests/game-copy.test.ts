@@ -71,3 +71,21 @@ void test('pending canto explains the active wager and suspended truco', () => {
     /3 puntos/,
   );
 });
+
+void test('team winners use player names without rewriting ordinary Spanish', () => {
+  const names = { human: 'Tú', opponent: 'Truquito' };
+  assert.equal(
+    gameEventText('La base fue para A.', names, 'human', {
+      A: 'Tú',
+      B: 'Truquito',
+    }),
+    'La base fue para ti.',
+  );
+  assert.equal(
+    gameEventText('La base fue para B.', names, 'human', {
+      A: 'Tú',
+      B: 'Truquito',
+    }),
+    'La base fue para Truquito.',
+  );
+});
