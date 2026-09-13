@@ -10,7 +10,7 @@ import {
   CantoBranch,
   TableVira,
 } from '@/components/table-context';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ChevronRight, Flag, Layers, Sparkles } from 'lucide-react';
 import { EnvidoRaises } from '@/components/envido-raises';
 import { Button } from '@/components/ui/button';
@@ -72,6 +72,7 @@ export function OnlineTable({
   pending: boolean;
   connected: boolean;
 }) {
+  const cantoDock = useRef<HTMLDivElement>(null);
   const game = room.game!;
   const state = game.public;
   const legal = game.legal;
@@ -194,6 +195,16 @@ export function OnlineTable({
           )}
         </output>
       )}
+      <CantoNotice
+        state={state}
+        you={room.you}
+        name={(id) => (id === room.you ? 'Tú' : name(id))}
+        canAnswer={legal.includes('answer-quiero')}
+        onRespond={() => {
+          cantoDock.current?.scrollIntoView({ block: 'center' });
+          cantoDock.current?.focus({ preventScroll: true });
+        }}
+      />
       <div className="online-felt">
         <div className="opponent-line">
           {opponents.map((seat) => (
@@ -362,7 +373,12 @@ export function OnlineTable({
                 <ChevronRight size={16} />
               </Button>
             </div>
-            <div className="call-tray" aria-label="Cantos y acciones">
+            <div
+              className="call-tray"
+              ref={cantoDock}
+              tabIndex={-1}
+              aria-label="Cantos y acciones"
+            >
               <CantoNotice
                 state={state}
                 you={room.you}

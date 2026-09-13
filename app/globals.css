@@ -4287,9 +4287,6 @@ button[draggable='true']:active {
     grid-template-columns: minmax(340px, 0.8fr) minmax(280px, 1.2fr);
     align-items: stretch;
   }
-  .player-console .canto-notice strong {
-    font-size: 14px;
-  }
   .player-console .hand-zone,
   .player-console .your-hand {
     display: grid;
@@ -4737,4 +4734,60 @@ button[draggable='true']:active {
   .rules-dialog-footer {
     padding: 12px 20px;
   }
+}
+
+.opponent-canto-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border: 2px solid var(--primary);
+  background: var(--card);
+  color: var(--foreground);
+}
+.opponent-canto-banner > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.opponent-canto-banner span,
+.canto-caller {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+.opponent-canto-banner strong,
+.player-console .canto-notice strong {
+  display: block;
+  font-size: clamp(20px, 3vw, 28px);
+  line-height: 1.3;
+  margin-block: 4px;
+}
+.opponent-canto-banner p {
+  font-size: 14px;
+}
+.opponent-canto-banner > button {
+  flex-shrink: 0;
+}
+.player-console .canto-notice[data-opponent='true'] {
+  border: 2px solid var(--primary);
+  padding: 14px;
+  background: var(--card);
+}
+.canto-response-prompt {
+  font-weight: 600;
+  margin-block: 8px 12px;
+}
+.canto-outcomes {
+  display: grid;
+  gap: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.canto-outcomes dt {
+  font-weight: 700;
+}
+.canto-outcomes dd {
+  margin-top: 2px;
+  color: var(--muted-foreground);
 }
