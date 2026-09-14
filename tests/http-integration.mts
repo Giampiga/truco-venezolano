@@ -16,7 +16,7 @@ for (const format of ['1v1', '2v2'] as const) {
         format,
         target: '12',
         ranked: format === '1v1',
-        isPrivate: format === '1v1',
+        ...(format === '1v1' ? { isPrivate: true } : {}),
       },
       name: 'Ana',
     },
@@ -30,7 +30,13 @@ for (const format of ['1v1', '2v2'] as const) {
     publicRooms.rooms.some((item: { id: string }) => item.id === room.id),
     format === '2v2',
   );
-  await b(`/api/rooms/${room.code}`, { type: 'join', name: 'Luis' });
+  const listedRoom = publicRooms.rooms.find(
+    (item: { id: string }) => item.id === room.id,
+  );
+  await b(`/api/rooms/${listedRoom?.id ?? room.code}`, {
+    type: 'join',
+    name: 'Luis',
+  });
   if (format === '2v2') {
     await c(path, { type: 'join', name: 'Luna' });
     await d(path, { type: 'join', name: 'José' });

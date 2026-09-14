@@ -103,7 +103,6 @@ export function TrucoApp() {
           ?.toUpperCase()
           .slice(0, 6) ?? '',
       );
-      void refresh();
     }, 0);
     const handler = (event: Event) => {
       event.preventDefault();
@@ -128,10 +127,16 @@ export function TrucoApp() {
   }, [roomId]);
   useEffect(() => {
     if (!online.room && !practice) {
-      const timer = setInterval(() => {
+      const refreshVisible = () => {
         if (!document.hidden) void refresh();
-      }, 15000);
-      return () => clearInterval(timer);
+      };
+      refreshVisible();
+      const timer = setInterval(refreshVisible, 5000);
+      document.addEventListener('visibilitychange', refreshVisible);
+      return () => {
+        clearInterval(timer);
+        document.removeEventListener('visibilitychange', refreshVisible);
+      };
     }
   }, [online.room, practice, refresh]);
   useEffect(() => {
