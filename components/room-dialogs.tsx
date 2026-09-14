@@ -297,13 +297,17 @@ export function CreateRoomDialog({
             </fieldset>
             <div className="switch-row sm:col-span-2">
               <span>
-                <strong>Mesa privada</strong>
-                <small>Código y enlace para invitar.</small>
+                <strong>Visible en el salón</strong>
+                <small>
+                  {config.isPrivate
+                    ? 'Mesa privada: solo se entra con el código o el enlace. No aparece en la lista.'
+                    : 'Aparece en la lista de mesas para que otros jugadores puedan sentarse.'}
+                </small>
               </span>
               <Switch
-                aria-label="Hacer la mesa privada"
-                checked={config.isPrivate}
-                onCheckedChange={(value) => update('isPrivate', value)}
+                aria-label="Mostrar la mesa en el salón"
+                checked={!config.isPrivate}
+                onCheckedChange={(visible) => update('isPrivate', !visible)}
               />
             </div>
             <div className="switch-row sm:col-span-2">

@@ -32,7 +32,7 @@ export const DEFAULT_CONFIG: RoomConfig = {
   voice: true,
   camera: false,
   ranked: false,
-  isPrivate: true,
+  isPrivate: false,
 };
 export const presetName = (preset: RoomConfig['preset']) =>
   ({
